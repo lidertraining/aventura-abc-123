@@ -492,9 +492,9 @@ const EASY_CONS = ["M","P","B","T","D","L"];
 const AZ = "ABCDEFGHIJLMNOPQRSTUVXZ".split("");
 const LETTER_SOUND = {
   A:"á", E:"é", I:"i", O:"ó", U:"u",
-  B:"bê", C:"cê", D:"dê", F:"éfe", G:"gê", J:"jóta", L:"éle", M:"ême",
-  N:"êne", P:"pê", R:"érre", S:"ésse", T:"tê", V:"vê", X:"xis", H:"agá", Z:"zê", Q:"quê",
-  K:"cá", W:"dábliu", Y:"ípsilon"
+  B:"bê", C:"cê", D:"dê", F:"efe", G:"gê", J:"jota", L:"ele", M:"eme",
+  N:"ene", P:"pê", R:"erre", S:"esse", T:"tê", V:"vê", X:"xis", H:"agá", Z:"zê", Q:"quê",
+  K:"cá", W:"dáblio", Y:"ípsilon"
 };
 const CONFUSABLE = [["B","D","P","Q"],["M","N","U","V"],["E","F","L","T"],["C","G","O","Q"],["I","J","L","T"]];
 
@@ -633,10 +633,13 @@ const DE_COLORS = [
   {v:"LILA",d:"🟣"},{v:"SCHWARZ",d:"⚫"},{v:"WEISS",d:"⚪"},{v:"ROSA",d:"🩷"},{v:"BRAUN",d:"🟤"}
 ];
 const DE_ANIMALS = [
-  {v:"KATZE",d:"🐱"},{v:"HUND",d:"🐶"},{v:"FISCH",d:"🐟"},{v:"VOGEL",d:"🐦"},{v:"LÖWE",d:"🦁"},
-  {v:"BÄR",d:"🐻"},{v:"AFFE",d:"🐵"},{v:"SCHWEIN",d:"🐷"},{v:"KUH",d:"🐮"},{v:"ENTE",d:"🦆"},
-  {v:"PFERD",d:"🐴"},{v:"HASE",d:"🐰"},{v:"FROSCH",d:"🐸"},{v:"ELEFANT",d:"🐘"}
+  {v:"KATZE",d:"🐱",g:"f"},{v:"HUND",d:"🐶",g:"m"},{v:"FISCH",d:"🐟",g:"m"},{v:"VOGEL",d:"🐦",g:"m"},{v:"LÖWE",d:"🦁",g:"m"},
+  {v:"BÄR",d:"🐻",g:"m"},{v:"AFFE",d:"🐵",g:"m"},{v:"SCHWEIN",d:"🐷",g:"n"},{v:"KUH",d:"🐮",g:"f"},{v:"ENTE",d:"🦆",g:"f"},
+  {v:"PFERD",d:"🐴",g:"n"},{v:"HASE",d:"🐰",g:"m"},{v:"FROSCH",d:"🐸",g:"m"},{v:"ELEFANT",d:"🐘",g:"m"}
 ];
+/* concordância do alemão: artigo por gênero + adjetivo flexionado (LILA/ROSA/ORANGE não flexionam) */
+const DE_ART = {m:"Der", f:"Die", n:"Das"};
+const deAdj = (c,g)=> (c==="LILA"||c==="ROSA"||c==="ORANGE")? c : c+(g==="m"?"ER":g==="f"?"E":"ES");
 const DE_FOOD = [
   {v:"APFEL",d:"🍎"},{v:"BANANE",d:"🍌"},{v:"EI",d:"🥚"},{v:"MILCH",d:"🥛"},{v:"BROT",d:"🍞"},
   {v:"KUCHEN",d:"🍰"},{v:"EIS",d:"🍦"},{v:"PIZZA",d:"🍕"},{v:"KEKS",d:"🍪"},{v:"BONBON",d:"🍬"},
@@ -735,7 +738,7 @@ const WORD_GRADES = [WG1, WG2, WG3, WG4, WG5, WG6];
 const STORIES = [
   { t:["O GATO SUBIU NO MURO.","ELE VIU UM PASSARINHO."], q:"Quem o gato viu?", a:"🐦", opts:["🐦","🐟","🌸"] },
   { t:["A MENINA COMEU UMA UVA.","A UVA ESTAVA DOCE."], q:"O que a menina comeu?", a:"🍇", opts:["🍇","🍰","🍕"] },
-  { t:["O SAPO PULOU NA LAGOA.","A AGUA ESTAVA FRIA."], q:"Onde o sapo pulou?", a:"🌊", opts:["🌊","🛏️","🚗"] },
+  { t:["O SAPO PULOU NA LAGOA.","A ÁGUA ESTAVA FRIA."], q:"Onde o sapo pulou?", a:"🌊", opts:["🌊","🛏️","🚗"] },
   { t:["O MENINO GANHOU UMA BOLA.","ELE JOGOU COM O PAI."], q:"O que o menino ganhou?", a:"⚽", opts:["⚽","📖","🎈"] },
   { t:["A VACA COME CAPIM.","O CAPIM É VERDE."], q:"O que a vaca come?", a:"🌿", opts:["🌿","🍦","🍪"] },
   { t:["O CACHORRO ACHOU UM OSSO.","ELE FICOU MUITO FELIZ."], q:"O que o cachorro achou?", a:"🦴", opts:["🦴","🧸","🍎"] },
@@ -1855,7 +1858,7 @@ function mathLesson(lv){
     case 6: return [
       sc(lsRow(lsTiles(["6"],"gold")+lsB("←","ls-pulse")+lsTiles(["7"])), "Vem ANTES = um passo PRA TRÁS!", "E quem vem ANTES do sete? Agora o passinho é pra TRÁS: SEIS! O vizinho de trás!")];
     case 7: return [
-      sc(lsRow(lsCount(5,"🍪",.3)+lsB("×")+lsCount(3,"🍪",.3)), "Qual grupo tem MAIS?", "Qual tem mais? Conte os dois grupinhos: cinco... e três! O CINCO ganha, porque vem depois na fila dos números!")];
+      sc(lsRow(lsCount(5,"🍪",.3)+lsE("🆚",.4)+lsCount(3,"🍪",.3)), "Qual grupo tem MAIS?", "Qual tem mais? Conte os dois grupinhos: cinco... e três! O CINCO ganha, porque vem depois na fila dos números!")];
     case 8: return [
       sc(lsSum(2,1,"🍎"), "Somar é JUNTAR!", "Somar é JUNTAR os grupinhos! Duas maçãs... mais uma maçã..."),
       sc(lsCount(3,"🍎"), "Junta tudo e conta: TRÊS!", "Agora junta tudo e conta: um, dois, TRÊS! Dois mais um é igual a três!")];
@@ -3048,7 +3051,7 @@ function genDe(lv){
     const aPool = deep? DE_ANIMALS : DE_ANIMALS.slice(0,8);
     const color = pick(cPool);
     const animal = pick(aPool);
-    const makePair = (c,a)=>({v:`${c.v} ${a.v}`, d:`${c.d}${a.d}`, c, a});
+    const makePair = (c,a)=>({v:`${deAdj(c.v,a.g)} ${a.v}`, d:`${c.d}${a.d}`, c, a});
     const correct = makePair(color, animal);
     const opts = [correct];
     let guard = 0;
@@ -3071,21 +3074,22 @@ function genDe(lv){
     const aPool = deep? DE_ANIMALS : DE_ANIMALS.slice(0,8);
     const color = pick(cPool);
     const animal = pick(aPool);
-    const correct = {d:`${animal.d}${color.d}`, v:`Das ${animal.v} ist ${color.v}`};
+    const deSent = (a,c)=>`${DE_ART[a.g]||"Das"} ${a.v} ist ${c.v}`;
+    const correct = {d:`${animal.d}${color.d}`, v:deSent(animal,color)};
     const opts = [correct];
     let guard = 0;
     while(opts.length<3 && guard++<50){
       const oc = pick(cPool), oa = pick(aPool);
       if(oc===color && oa===animal) continue;
-      const o = {d:`${oa.d}${oc.d}`, v:`Das ${oa.v} ist ${oc.v}`};
+      const o = {d:`${oa.d}${oc.d}`, v:deSent(oa,oc)};
       if(!opts.some(x=>x.d===o.d)) opts.push(o);
     }
     return {
       kind:"opts", prompt:"Leia a frase em alemão!",
-      visual:`<div class="read-sentence" style="font-size:clamp(18px,4.6vw,28px);">DAS ${animal.v} IST ${color.v}</div>`,
+      visual:`<div class="read-sentence" style="font-size:clamp(18px,4.6vw,28px);">${(DE_ART[animal.g]||"Das").toUpperCase()} ${animal.v} IST ${color.v}</div>`,
       speech:[ptT("Leia a frase e ache as figuras!")],
-      hintSpeech: deT(`Das ${animal.v} ist ${color.v}!`),
-      okSpeech:[deT(`Das ${animal.v} ist ${color.v}!`)],
+      hintSpeech: deT(deSent(animal,color)+"!"),
+      okSpeech:[deT(deSent(animal,color)+"!")],
       optClass:"emoji-opt",
       options: shuffle(opts).map(o=>({label:o.d, correct:o===correct, say:{t:o.v, lang:"de-DE"}}))
     };
