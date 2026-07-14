@@ -73,6 +73,7 @@
   #btn-shop  { background:linear-gradient(135deg,#f7971e,#ffd200); box-shadow:0 6px 0 #c47f12; color:#5d3600; }
   #btn-album { background:linear-gradient(135deg,#a8e063,#56ab2f); box-shadow:0 6px 0 #3f7f22; }
   #btn-journey { background:linear-gradient(135deg,#c471f5,#a044ff); box-shadow:0 6px 0 #6a3093; }
+  #btn-classes { background:linear-gradient(135deg,#36d1dc,#5b86e5); box-shadow:0 6px 0 #3f66c4; }
 
   /* perfis */
   .profile-grid { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:12px; }
@@ -239,8 +240,9 @@
 
   /* jornada */
   .jtabs { display:flex; gap:8px; margin:6px 0 4px; }
-  .jtab { border:none; border-radius:99px; padding:9px 16px; font-family:inherit; font-weight:700; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:14.5px; }
+  .jtab, .ctab { border:none; border-radius:99px; padding:9px 16px; font-family:inherit; font-weight:700; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:14.5px; }
   .jtab.sel { background:linear-gradient(135deg,#c471f5,#a044ff); color:#fff; box-shadow:0 3px 0 #6a3093; }
+  .ctab.sel { background:linear-gradient(135deg,#36d1dc,#5b86e5); color:#fff; box-shadow:0 3px 0 #3f66c4; }
   .j-list { width:100%; max-width:430px; display:flex; flex-direction:column; gap:6px; margin-top:6px; }
   .j-item {
     display:flex; gap:9px; align-items:center; font-size:14px; color:#666b90; padding:9px 13px;
@@ -385,6 +387,10 @@
       <span class="ic">🗺️</span>
       <span class="tx"><b>JORNADA</b><span>Veja o caminho e treine níveis para ganhar moedas</span></span>
     </button>
+    <button class="mode-btn" id="btn-classes">
+      <span class="ic">📺</span>
+      <span class="tx"><b>AULINHAS</b><span>Estude com a Professora Corujinha sem precisar jogar!</span></span>
+    </button>
     <button class="mode-btn" id="btn-ranking" style="background:linear-gradient(135deg,#f7971e,#ffd200);box-shadow:0 6px 0 #b8860b;">
       <span class="ic">🥇</span>
       <span class="tx"><b>RANKING</b><span>Quem completou mais níveis? Quem se dedicou mais?</span></span>
@@ -435,6 +441,20 @@
     </div>
     <div class="j-list" id="journey-list"></div>
     <button class="back-btn" id="btn-back-journey" style="margin-top:14px;">⬅ Voltar</button>
+  </div>
+
+  <!-- AULINHAS (biblioteca de aulas) -->
+  <div class="screen" id="screen-classes">
+    <h1 class="title" style="font-size:26px;">📺 Aulinhas</h1>
+    <p class="subtitle">Toque numa aula para assistir com a Professora Corujinha! 🦉</p>
+    <div class="jtabs">
+      <button class="ctab sel" data-track="pt">📚 Português</button>
+      <button class="ctab" data-track="math">🔢 Matemática</button>
+      <button class="ctab" data-track="en">🌎 Inglês</button>
+      <button class="ctab" data-track="de">🥨 Alemão</button>
+    </div>
+    <div class="j-list" id="classes-list"></div>
+    <button class="back-btn" id="btn-back-classes" style="margin-top:14px;">⬅ Voltar</button>
   </div>
 
   <!-- AULINHA DA PROFESSORA -->
@@ -1968,11 +1988,11 @@ function langLesson(track, lv){
   return null;
 }
 
-function playLesson(track, lv, after){
+function playLesson(track, lv, after, noMark){
   const Lz = lessonFor(track, lv);
   if(!Lz){ if(after) after(); return; }
   stopMic();
-  lesson = { L:Lz, track, lv, ix:0, gen:0, after };
+  lesson = { L:Lz, track, lv, ix:0, gen:0, after, noMark };
   $("#lesson-name").textContent = "Aula: " + (TRACKS[track].levels[lv-1]||"").replace(/[🎧🎤👑🏅📖]/g,"").trim();
   $("#lesson-sub").textContent = `${TRACKS[track].icon} ${TRACKS[track].name} · Nível ${lv} · Professora Corujinha`;
   $("#lesson-dots").innerHTML = Lz.scenes.map(()=>"<span></span>").join("");
@@ -1996,7 +2016,7 @@ function lessonDone(){
   const l = lesson; lesson = null;
   if("speechSynthesis" in window) speechSynthesis.cancel();
   const p = P();
-  if(p){ p.les = p.les || {pt:0,math:0,en:0,de:0}; p.les[l.track] = Math.max(p.les[l.track]||0, l.lv); save(); }
+  if(p && !l.noMark){ p.les = p.les || {pt:0,math:0,en:0,de:0}; p.les[l.track] = Math.max(p.les[l.track]||0, l.lv); save(); }
   if(l.after) l.after();
 }
 /* aula automática só na 1ª vez que a criança chega no nível */
@@ -3163,6 +3183,33 @@ function renderJourney(){
   }
 }
 
+/* =============== AULINHAS (biblioteca de aulas) =============== */
+let classesTrack = "pt";
+function openClasses(track){
+  if(track) classesTrack = track;
+  document.querySelectorAll(".ctab").forEach(b=>b.classList.toggle("sel", b.dataset.track===classesTrack));
+  renderClasses();
+  showScreen("screen-classes");
+}
+function renderClasses(){
+  const p = P(), t = classesTrack, list = $("#classes-list");
+  list.innerHTML = "";
+  const cur = Math.min(p.lv[t], maxOf(t));
+  TRACKS[t].levels.forEach((name,i)=>{
+    const lv = i+1;
+    const seen = ((p.les||{})[t]||0) >= lv;
+    const item = document.createElement("button");
+    item.className = "j-item " + (lv===cur? "now" : seen? "done" : "");
+    item.innerHTML = `<span class="jn">${lv}</span>
+      <span class="jt">${name}</span>
+      <span class="js">${lv===cur? "⭐ Atual 📺" : seen? "✔ Vista 📺" : "Assistir 📺"}</span>`;
+    /* aula à frente do nível atual não marca como vista — assim a aula
+       automática dos níveis do meio não é pulada quando a criança chegar lá */
+    item.onclick = ()=>{ sndTap(); playLesson(t, lv, ()=>openClasses(t), lv > cur); };
+    list.appendChild(item);
+  });
+}
+
 /* =============== RANKING =============== */
 function openRanking(){
   const total = TRACK_KEYS.reduce((s,t)=>s+maxOf(t),0);
@@ -3285,6 +3332,11 @@ function init(){
     speak("Bem-vindo à loja! Compre figurinhas com suas moedas!"); };
   $("#btn-album").onclick = ()=>{ sndTap(); renderAlbum(); showScreen("screen-album"); };
   $("#btn-journey").onclick = ()=>{ sndTap(); openJourney(); };
+  $("#btn-classes").onclick = ()=>{ sndTap(); openClasses(); };
+  $("#btn-back-classes").onclick = ()=>{ sndTap(); goHome(); };
+  document.querySelectorAll(".ctab").forEach(b=>{
+    b.onclick = ()=>{ sndTap(); openClasses(b.dataset.track); };
+  });
   $("#btn-ranking").onclick = ()=>{ sndTap(); openRanking(); };
   $("#btn-ranking-prof").onclick = ()=>{ sndTap(); openRanking(); };
 
