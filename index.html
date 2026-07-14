@@ -1,0 +1,2878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🌟 Aventura do ABC e 123</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body { height:100%; overflow:hidden; }
+  body {
+    font-family:'Fredoka','Comic Sans MS','Segoe UI',sans-serif;
+    background:linear-gradient(135deg,#7f7fd5 0%,#86a8e7 50%,#91eae4 100%);
+    display:flex; align-items:center; justify-content:center; position:relative;
+  }
+  .bubble { position:absolute; border-radius:50%; opacity:.18; background:#fff; animation:floatUp linear infinite; pointer-events:none; z-index:0; }
+  @keyframes floatUp { from { transform:translateY(110vh) scale(.6) rotate(0); } to { transform:translateY(-15vh) scale(1.1) rotate(360deg); } }
+  .floatmoji { position:absolute; font-size:38px; opacity:.25; pointer-events:none; z-index:0; animation:drift ease-in-out infinite alternate; }
+  @keyframes drift { from { transform:translateY(0) rotate(-8deg); } to { transform:translateY(-30px) rotate(8deg); } }
+
+  #app {
+    width:min(560px,96vw); height:min(880px,98vh);
+    background:rgba(255,255,255,.93); border-radius:34px;
+    box-shadow:0 24px 60px rgba(30,30,80,.35);
+    position:relative; z-index:2; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .screen { display:none; flex-direction:column; align-items:center; flex:1; padding:10px 20px 20px; overflow-y:auto; }
+  .screen.active { display:flex; animation:pop .45s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform:scale(.85); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+  #hud { width:100%; display:flex; align-items:center; justify-content:space-between; padding:12px 16px 4px; gap:8px; }
+  .hud-pill {
+    background:linear-gradient(135deg,#ffd54f,#ffb300); color:#5d3600; font-weight:700; font-size:20px;
+    padding:8px 16px; border-radius:999px; box-shadow:0 4px 0 #e69100; cursor:pointer; border:none; font-family:inherit;
+    display:flex; align-items:center; gap:6px; transition:transform .2s;
+  }
+  .hud-pill.bump { animation:bump .5s; }
+  @keyframes bump { 30% { transform:scale(1.3) rotate(-6deg); } }
+  .hud-btn { background:#fff; border:none; font-size:24px; width:48px; height:48px; border-radius:15px; box-shadow:0 4px 0 #cfd4ff; cursor:pointer; }
+  .hud-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #cfd4ff; }
+  #profile-chip {
+    display:flex; align-items:center; gap:6px; background:#fff; border:none; cursor:pointer;
+    border-radius:15px; padding:5px 12px; box-shadow:0 4px 0 #cfd4ff;
+    font-family:inherit; font-weight:700; color:#454a75; font-size:15px; min-height:48px;
+  }
+  #profile-chip .av { font-size:26px; }
+  #profile-chip:active { transform:translateY(3px); box-shadow:0 1px 0 #cfd4ff; }
+
+  #mascot, .mascot { font-size:80px; animation:mascotJump 2.6s ease-in-out infinite; cursor:pointer; filter:drop-shadow(0 8px 10px rgba(0,0,0,.18)); }
+  @keyframes mascotJump { 0%,100%{transform:translateY(0) rotate(-3deg);} 50%{transform:translateY(-16px) rotate(3deg);} }
+  h1.title {
+    font-size:clamp(24px,6vw,34px); text-align:center; line-height:1.15; margin:2px 0;
+    background:linear-gradient(90deg,#ff5f6d,#ffc371,#38ef7d,#40c9ff,#a044ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:700;
+  }
+  .subtitle { color:#7a7fa8; font-size:15px; margin-bottom:8px; text-align:center; }
+
+  .mode-btn {
+    width:100%; max-width:420px; border:none; cursor:pointer; border-radius:22px;
+    padding:13px 20px; margin:5px 0; display:flex; align-items:center; gap:14px;
+    font-family:inherit; font-weight:700; color:#fff; transition:transform .15s;
+  }
+  .mode-btn:active { transform:scale(.96); }
+  .mode-btn .ic { font-size:38px; }
+  .mode-btn .tx { text-align:left; flex:1; }
+  .mode-btn .tx b { font-size:22px; display:block; }
+  .mode-btn .tx span { font-size:12.5px; opacity:.92; font-weight:400; display:block; }
+  #btn-pt    { background:linear-gradient(135deg,#36d1dc,#5b86e5); box-shadow:0 6px 0 #3d63b8; }
+  #btn-math  { background:linear-gradient(135deg,#ff9966,#ff5e62); box-shadow:0 6px 0 #d33f43; }
+  #btn-en    { background:linear-gradient(135deg,#11998e,#38ef7d); box-shadow:0 6px 0 #0c6b62; }
+  #btn-de    { background:linear-gradient(135deg,#f9d423,#e14e4e); box-shadow:0 6px 0 #9c2b2b; }
+  #btn-shop  { background:linear-gradient(135deg,#f7971e,#ffd200); box-shadow:0 6px 0 #c47f12; color:#5d3600; }
+  #btn-album { background:linear-gradient(135deg,#a8e063,#56ab2f); box-shadow:0 6px 0 #3f7f22; }
+  #btn-journey { background:linear-gradient(135deg,#c471f5,#a044ff); box-shadow:0 6px 0 #6a3093; }
+
+  /* perfis */
+  .profile-grid { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:12px; }
+  .profile-card {
+    width:140px; padding:16px 10px 14px; border-radius:24px; background:#fff;
+    box-shadow:0 6px 0 #d9dcf5; border:3px solid #eceef9; cursor:pointer; text-align:center;
+    animation:popIn .4s backwards; transition:transform .15s; font-family:inherit;
+  }
+  .profile-card:active { transform:scale(.94); }
+  .profile-card .av { font-size:52px; display:block; }
+  .profile-card .nm { font-weight:700; color:#454a75; font-size:18px; margin-top:4px; display:block; }
+  .profile-card .lv { font-size:11px; color:#9aa; margin-top:2px; display:block; line-height:1.5; }
+  .profile-card.add { border:3px dashed #b8bce0; background:#f7f8fe; color:#9aa; }
+  .avatar-pick { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0; }
+  .avatar-pick button { font-size:32px; background:#f2f3fb; border:3px solid transparent; border-radius:14px; padding:6px 9px; cursor:pointer; }
+  .avatar-pick button.sel { border-color:#5b86e5; background:#e3ecff; transform:scale(1.12); }
+  #name-input {
+    font-family:inherit; font-size:20px; padding:10px 14px; border-radius:14px;
+    border:3px solid #cfd4ff; width:82%; text-align:center; outline:none; color:#454a75;
+  }
+
+  /* jogo */
+  #level-badge {
+    background:linear-gradient(135deg,#a044ff,#6a3093); color:#fff; padding:7px 18px;
+    border-radius:999px; font-size:15px; font-weight:700; box-shadow:0 4px 0 #4d2069; margin-bottom:2px;
+    text-align:center; max-width:100%;
+  }
+  #level-badge.practice { background:linear-gradient(135deg,#f7971e,#ffb300); box-shadow:0 4px 0 #c47f12; color:#5d3600; }
+  #progress-track { width:80%; max-width:340px; height:16px; background:#e8e9f7; border-radius:999px; margin:8px 0 3px; overflow:hidden; }
+  #progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#38ef7d,#11998e); border-radius:999px; transition:width .5s cubic-bezier(.34,1.56,.64,1); }
+  .progress-label { font-size:12.5px; color:#9aa; margin-bottom:4px; }
+
+  #question-area { flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:150px; }
+  #prompt-text { font-size:clamp(18px,4.4vw,23px); font-weight:600; color:#454a75; text-align:center; line-height:1.3; }
+  #visual-area { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; font-size:clamp(30px,7vw,46px); max-width:100%; }
+  .emoji-group { display:flex; flex-wrap:wrap; justify-content:center; gap:3px; max-width:260px; }
+  .emoji-item { animation:popIn .4s cubic-bezier(.34,1.56,.64,1) backwards; }
+  .emoji-item.gone { opacity:.22; filter:grayscale(1); }
+  @keyframes popIn { from { transform:scale(0) rotate(-30deg); } to { transform:scale(1) rotate(0); } }
+  .op-sign { font-size:clamp(34px,8vw,52px); font-weight:700; color:#ff5e62; }
+  .num-big { font-size:clamp(48px,12vw,72px); font-weight:700; color:#454a75; }
+  .big-emoji { font-size:clamp(76px,18vw,110px); animation:popIn .5s cubic-bezier(.34,1.56,.64,1); filter:drop-shadow(0 6px 8px rgba(0,0,0,.15)); }
+  .duo-emoji { font-size:clamp(52px,13vw,80px); animation:popIn .5s cubic-bezier(.34,1.56,.64,1); }
+  .read-word { font-size:clamp(38px,10vw,58px); font-weight:700; color:#454a75; letter-spacing:4px; animation:popIn .5s; }
+  .read-sentence { font-size:clamp(24px,6vw,34px); font-weight:700; color:#454a75; letter-spacing:1px; text-align:center; line-height:1.3; animation:popIn .5s; }
+
+  #speak-again {
+    background:linear-gradient(135deg,#ffd54f,#ffb300); border:none; cursor:pointer;
+    font-family:inherit; font-weight:700; color:#5d3600; font-size:15px;
+    padding:8px 18px; border-radius:999px; box-shadow:0 4px 0 #e69100;
+  }
+  #speak-again:active { transform:translateY(3px); box-shadow:0 1px 0 #e69100; }
+
+  #answers { width:100%; display:flex; flex-direction:column; align-items:center; gap:10px; padding:8px 0 4px; }
+  .opts-row { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; width:100%; }
+  .ans-btn {
+    min-width:84px; padding:13px 15px; border:none; border-radius:20px;
+    font-family:inherit; font-size:clamp(25px,6vw,34px); font-weight:700; color:#fff; cursor:pointer;
+    transition:transform .15s; animation:popIn .4s cubic-bezier(.34,1.56,.64,1) backwards;
+  }
+  .ans-btn:active { transform:scale(.94); }
+  .ans-btn.mid-text { font-size:clamp(19px,4.4vw,25px); }
+  .ans-btn.small-text { font-size:clamp(14px,3.5vw,18px); min-width:0; width:100%; max-width:420px; text-align:center; }
+  .ans-btn.emoji-opt { font-size:clamp(34px,8vw,44px); }
+  .ans-c0 { background:linear-gradient(135deg,#ff6b9d,#ee2a7b); box-shadow:0 6px 0 #b81b5c; }
+  .ans-c1 { background:linear-gradient(135deg,#48c6ef,#6f86d6); box-shadow:0 6px 0 #4c60ad; }
+  .ans-c2 { background:linear-gradient(135deg,#a8e063,#56ab2f); box-shadow:0 6px 0 #3f7f22; }
+  .ans-c3 { background:linear-gradient(135deg,#f7971e,#ffd200); box-shadow:0 6px 0 #c47f12; color:#6b4a00; }
+  .ans-c4 { background:linear-gradient(135deg,#c471f5,#fa71cd); box-shadow:0 6px 0 #8e44ad; }
+  .ans-btn.correct { animation:winPulse .6s; background:linear-gradient(135deg,#38ef7d,#11998e) !important; box-shadow:0 6px 0 #0c6b62 !important; color:#fff !important; }
+  @keyframes winPulse { 30% { transform:scale(1.2); } }
+  .ans-btn.wrong { animation:shake .5s; opacity:.4; }
+  .ans-btn.hint { animation:bump .7s infinite; outline:4px solid #ffd200; }
+  @keyframes shake { 20%,60%{transform:translateX(-9px);} 40%,80%{transform:translateX(9px);} }
+
+  /* teclados */
+  #typed-display {
+    min-width:150px; padding:6px 20px; border-radius:16px; background:#eef0ff;
+    color:#454a75; font-size:32px; font-weight:700; text-align:center; letter-spacing:5px; min-height:54px;
+  }
+  #typed-display.shake { animation:shake .5s; background:#ffe3e3; }
+  .hint-text { font-size:15px; color:#a044ff; font-weight:700; min-height:20px; letter-spacing:3px; }
+  .keypad { display:grid; grid-template-columns:repeat(3,72px); gap:7px; justify-content:center; }
+  .abcpad { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; width:100%; max-width:440px; }
+  .key-btn {
+    font-family:inherit; font-size:22px; font-weight:700; padding:10px 0; border:none;
+    border-radius:13px; background:#fff; color:#454a75; box-shadow:0 4px 0 #d9dcf5; cursor:pointer;
+  }
+  .abcpad .key-btn { font-size:19px; padding:9px 0; }
+  .key-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #d9dcf5; }
+  .key-ok  { background:linear-gradient(135deg,#38ef7d,#11998e); color:#fff; box-shadow:0 4px 0 #0c6b62; }
+  .key-del { background:#ffe3e3; color:#c0392b; box-shadow:0 4px 0 #e5b3b3; }
+
+  /* montar palavra (fichas) */
+  .slots { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; }
+  .slot {
+    min-width:48px; height:54px; border-radius:13px; background:#eef0ff; border:3px dashed #c3c8f0;
+    display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#454a75; padding:0 6px;
+  }
+  .slot.filled { background:linear-gradient(135deg,#a8e063,#56ab2f); border:3px solid transparent; color:#fff; animation:winPulse .4s; }
+  .tiles { display:flex; gap:9px; justify-content:center; flex-wrap:wrap; }
+  .tile {
+    font-family:inherit; font-size:24px; font-weight:700; padding:11px 15px; border:none;
+    border-radius:15px; color:#fff; background:linear-gradient(135deg,#48c6ef,#6f86d6);
+    box-shadow:0 5px 0 #4c60ad; cursor:pointer; animation:popIn .4s backwards;
+  }
+  .tile:active { transform:scale(.94); }
+  .tile.used { visibility:hidden; }
+  .tile.hint { animation:bump .7s infinite; outline:4px solid #ffd200; }
+  .tile.shake { animation:shake .4s; }
+
+  /* microfone */
+  #mic-btn {
+    font-size:42px; width:104px; height:104px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#ff6b9d,#ee2a7b); box-shadow:0 7px 0 #b81b5c;
+  }
+  #mic-btn:active { transform:translateY(4px); box-shadow:0 2px 0 #b81b5c; }
+  #mic-btn.listening { animation:pulseMic 1s infinite; background:linear-gradient(135deg,#38ef7d,#11998e); box-shadow:0 7px 0 #0c6b62; }
+  @keyframes pulseMic { 50% { transform:scale(1.12); } }
+  #mic-heard { font-size:15px; color:#7a7fa8; min-height:22px; text-align:center; }
+  .skip-btn {
+    background:#eef0ff; border:none; cursor:pointer; font-family:inherit; color:#6a6fa5;
+    font-weight:700; font-size:14px; padding:8px 16px; border-radius:999px;
+  }
+
+  #feedback { min-height:30px; font-size:20px; font-weight:700; text-align:center; }
+  #feedback.good { color:#11998e; animation:pop .4s; }
+  #feedback.bad  { color:#ff5e62; animation:pop .4s; }
+  .back-btn {
+    background:#eef0ff; border:none; cursor:pointer; font-family:inherit; color:#6a6fa5;
+    font-weight:600; font-size:15px; padding:9px 18px; border-radius:999px; margin-top:6px;
+  }
+
+  /* loja e álbum */
+  .grid4 { display:grid; grid-template-columns:repeat(3,1fr); gap:11px; width:100%; max-width:440px; margin-top:10px; }
+  @media (min-width:480px) { .grid4 { grid-template-columns:repeat(4,1fr); } }
+  .shop-card {
+    border-radius:19px; padding:11px 5px 9px; text-align:center; background:#fff;
+    box-shadow:0 5px 0 #d9dcf5; border:3px solid #e7e9f7;
+    display:flex; flex-direction:column; gap:3px; align-items:center;
+    animation:popIn .4s backwards; position:relative; overflow:hidden;
+  }
+  .shop-card .emo { font-size:38px; }
+  .shop-card .nm { font-size:11.5px; font-weight:700; color:#454a75; line-height:1.1; }
+  .shop-card .rar { font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:99px; color:#fff; }
+  .rar-comum { background:#90a4ae; } .rar-raro { background:#42a5f5; }
+  .rar-epico { background:#ab47bc; } .rar-lendario { background:linear-gradient(90deg,#f7971e,#ffd200); color:#6b4a00; }
+  .shop-card.r-raro { border-color:#a9d4fb; }
+  .shop-card.r-epico { border-color:#d6a6e8; background:linear-gradient(160deg,#fff,#faf3ff); }
+  .shop-card.r-lendario { border-color:#ffd200; background:linear-gradient(160deg,#fffbe6,#fff3bf); }
+  .shop-card.locked-card .emo { filter:grayscale(1); opacity:.45; }
+  .buy-btn {
+    font-family:inherit; border:none; border-radius:99px; padding:5px 11px; font-size:12.5px;
+    font-weight:700; cursor:pointer; background:linear-gradient(135deg,#ffd54f,#ffb300);
+    color:#5d3600; box-shadow:0 3px 0 #e69100; margin-top:2px;
+  }
+  .buy-btn:active { transform:translateY(2px); box-shadow:0 1px 0 #e69100; }
+  .buy-btn:disabled { filter:grayscale(1); opacity:.5; cursor:default; }
+  .owned-tag { font-size:12.5px; font-weight:700; color:#11998e; margin-top:2px; }
+  .shine { position:absolute; top:0; left:-80%; width:55%; height:100%; background:linear-gradient(120deg,transparent,rgba(255,255,255,.85),transparent); animation:shine 2.6s infinite; pointer-events:none; }
+  @keyframes shine { to { left:135%; } }
+
+  /* jornada */
+  .jtabs { display:flex; gap:8px; margin:6px 0 4px; }
+  .jtab { border:none; border-radius:99px; padding:9px 16px; font-family:inherit; font-weight:700; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:14.5px; }
+  .jtab.sel { background:linear-gradient(135deg,#c471f5,#a044ff); color:#fff; box-shadow:0 3px 0 #6a3093; }
+  .j-list { width:100%; max-width:430px; display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+  .j-item {
+    display:flex; gap:9px; align-items:center; font-size:14px; color:#666b90; padding:9px 13px;
+    border:none; border-radius:14px; background:#f6f7fd; font-family:inherit; font-weight:600;
+    cursor:pointer; text-align:left; width:100%;
+  }
+  .j-item .jn { width:26px; height:26px; border-radius:50%; background:#dfe2f5; color:#666b90; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none; }
+  .j-item .jt { flex:1; }
+  .j-item .js { font-size:12px; font-weight:700; flex:none; }
+  .j-item.done { background:#e9fbf3; color:#11998e; }
+  .j-item.done .jn { background:#38ef7d; color:#fff; }
+  .j-item.now { background:#f3e9ff; color:#a044ff; box-shadow:0 3px 0 #d6a6e8; }
+  .j-item.now .jn { background:#a044ff; color:#fff; }
+  .j-item.lock { opacity:.5; cursor:default; }
+
+  /* overlay */
+  #overlay {
+    position:absolute; inset:0; background:rgba(40,20,80,.55); z-index:50;
+    display:none; align-items:center; justify-content:center; backdrop-filter:blur(3px);
+  }
+  #overlay.show { display:flex; }
+  #overlay-card {
+    background:#fff; border-radius:28px; padding:26px 24px; text-align:center;
+    width:min(420px,90%); max-height:88%; overflow-y:auto;
+    animation:pop .5s cubic-bezier(.34,1.56,.64,1); box-shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  #overlay-card .big { font-size:74px; animation:mascotJump 1.4s infinite; display:inline-block; }
+  #overlay-card h2 { color:#454a75; font-size:25px; margin:8px 0 6px; }
+  #overlay-card p { color:#7a7fa8; font-size:16px; margin-bottom:14px; }
+  .ov-btn {
+    background:linear-gradient(135deg,#38ef7d,#11998e); color:#fff; border:none;
+    font-family:inherit; font-size:19px; font-weight:700; padding:12px 30px;
+    border-radius:999px; box-shadow:0 5px 0 #0c6b62; cursor:pointer; margin:3px;
+  }
+  .ov-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #0c6b62; }
+  .ov-btn.alt { background:linear-gradient(135deg,#f7971e,#ffd200); color:#5d3600; box-shadow:0 5px 0 #c47f12; }
+
+  .confetti { position:absolute; width:12px; height:12px; z-index:60; top:-20px; animation:confFall linear forwards; pointer-events:none; }
+  @keyframes confFall { to { transform:translateY(110vh) rotate(720deg); opacity:.8; } }
+
+  #parents-card { text-align:left; }
+  #parents-card h3 { color:#5b86e5; margin:12px 0 4px; font-size:16.5px; }
+  #parents-card p, #parents-card li, #parents-card td, #parents-card th { color:#666b90; font-size:13.5px; line-height:1.5; user-select:text; }
+  #parents-card ul { padding-left:20px; }
+  #parents-card table { width:100%; border-collapse:collapse; margin:6px 0; }
+  #parents-card td, #parents-card th { border-bottom:1px solid #e7e9f7; padding:4px 6px; text-align:center; }
+  #parents-card th { color:#454a75; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="hud">
+    <button id="profile-chip" style="visibility:hidden;"><span class="av">🙂</span><span class="pn"></span></button>
+    <button class="hud-pill" id="coin-pill">🪙 <span id="coin-count">0</span></button>
+    <button class="hud-btn" id="btn-parents" title="Para os pais">ℹ️</button>
+  </div>
+
+  <!-- PERFIS -->
+  <div class="screen active" id="screen-profiles">
+    <div class="mascot">🦊</div>
+    <h1 class="title">Quem vai jogar?</h1>
+    <p class="subtitle">Cada jogador tem sua própria aventura!</p>
+    <div class="profile-grid" id="profiles-list"></div>
+    <button class="ov-btn alt" id="btn-ranking-prof" style="margin-top:16px;">🏆 Ranking da família</button>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="screen-home">
+    <div id="mascot">🦊</div>
+    <h1 class="title">Aventura do ABC e 123</h1>
+    <p class="subtitle" id="home-greet">Toque na raposinha para ela falar!</p>
+    <button class="mode-btn" id="btn-pt">
+      <span class="ic">📚</span>
+      <span class="tx"><b>PORTUGUÊS</b><span id="pt-sub"></span></span>
+    </button>
+    <button class="mode-btn" id="btn-math">
+      <span class="ic">🔢</span>
+      <span class="tx"><b>MATEMÁTICA</b><span id="math-sub"></span></span>
+    </button>
+    <button class="mode-btn" id="btn-en">
+      <span class="ic">🌎</span>
+      <span class="tx"><b>INGLÊS</b><span id="en-sub"></span></span>
+    </button>
+    <button class="mode-btn" id="btn-de">
+      <span class="ic">🥨</span>
+      <span class="tx"><b>ALEMÃO</b><span id="de-sub"></span></span>
+    </button>
+    <button class="mode-btn" id="btn-shop">
+      <span class="ic">🛒</span>
+      <span class="tx"><b>LOJA</b><span id="shop-sub">Compre figurinhas com suas moedas!</span></span>
+    </button>
+    <button class="mode-btn" id="btn-album">
+      <span class="ic">🏆</span>
+      <span class="tx"><b>ÁLBUM</b><span id="album-sub">Suas figurinhas</span></span>
+    </button>
+    <button class="mode-btn" id="btn-journey">
+      <span class="ic">🗺️</span>
+      <span class="tx"><b>JORNADA</b><span>Veja o caminho e treine níveis para ganhar moedas</span></span>
+    </button>
+    <button class="mode-btn" id="btn-ranking" style="background:linear-gradient(135deg,#f7971e,#ffd200);box-shadow:0 6px 0 #b8860b;">
+      <span class="ic">🥇</span>
+      <span class="tx"><b>RANKING</b><span>Quem completou mais níveis? Quem se dedicou mais?</span></span>
+    </button>
+  </div>
+
+  <!-- JOGO -->
+  <div class="screen" id="screen-game">
+    <div id="level-badge">Nível 1</div>
+    <div id="progress-track"><div id="progress-fill"></div></div>
+    <div class="progress-label" id="progress-label"></div>
+    <div id="question-area">
+      <div id="prompt-text"></div>
+      <div id="visual-area"></div>
+      <button id="speak-again">🔊 Ouvir de novo</button>
+    </div>
+    <div id="feedback"></div>
+    <div id="answers"></div>
+    <button class="back-btn" id="btn-back">⬅ Voltar</button>
+  </div>
+
+  <!-- LOJA -->
+  <div class="screen" id="screen-shop">
+    <h1 class="title" style="font-size:28px;">🛒 Loja de Figurinhas</h1>
+    <p class="subtitle">Ganhe moedas acertando e compre figurinhas raras!</p>
+    <div class="grid4" id="shop-grid"></div>
+    <button class="back-btn" id="btn-back-shop" style="margin-top:16px;">⬅ Voltar</button>
+  </div>
+
+  <!-- ÁLBUM -->
+  <div class="screen" id="screen-album">
+    <h1 class="title" style="font-size:28px;">🏆 Meu Álbum</h1>
+    <p class="subtitle" id="album-count"></p>
+    <div class="grid4" id="album-grid"></div>
+    <button class="back-btn" id="btn-back-album" style="margin-top:16px;">⬅ Voltar</button>
+  </div>
+
+  <!-- JORNADA -->
+  <div class="screen" id="screen-journey">
+    <h1 class="title" style="font-size:26px;">🗺️ Jornada</h1>
+    <p class="subtitle">Toque num nível feito para treinar e ganhar moedas!</p>
+    <div class="jtabs">
+      <button class="jtab sel" data-track="pt">📚 Português</button>
+      <button class="jtab" data-track="math">🔢 Matemática</button>
+      <button class="jtab" data-track="en">🌎 Inglês</button>
+      <button class="jtab" data-track="de">🥨 Alemão</button>
+    </div>
+    <div class="j-list" id="journey-list"></div>
+    <button class="back-btn" id="btn-back-journey" style="margin-top:14px;">⬅ Voltar</button>
+  </div>
+
+  <div id="overlay"><div id="overlay-card"></div></div>
+</div>
+
+<script>
+"use strict";
+
+/* =============== DADOS GERAIS =============== */
+const AVATARS = ["🦁","🐯","🦊","🐼","🐸","🦄","🐙","🐵","🐶","🐱","🤖","🦖"];
+const COUNT_EMOJIS = ["🍎","🍌","🍓","🐶","🐱","⭐","🎈","🚗","🦆","🐟","🍪","⚽"];
+const PRAISE = ["Muito bem!","Você é demais!","Acertou! Parabéns!","Uau, que inteligente!","Isso aí, campeão!","Perfeito!","Você é um gênio!","Sensacional!"];
+const ENCOURAGE = ["Quase! Tente de novo!","Você consegue! Tenta mais uma vez!","Vamos tentar de novo!","Pensa mais um pouquinho!"];
+
+/* ---- PORTUGUÊS ---- */
+const VOWELS = ["A","E","I","O","U"];
+const EASY_CONS = ["M","P","B","T","D","L"];
+const AZ = "ABCDEFGHIJLMNOPQRSTUVXZ".split("");
+const LETTER_SOUND = {
+  A:"á", E:"é", I:"i", O:"ó", U:"u",
+  B:"bê", C:"cê", D:"dê", F:"éfe", G:"gê", J:"jóta", L:"éle", M:"ême",
+  N:"êne", P:"pê", R:"érre", S:"ésse", T:"tê", V:"vê", X:"xis", H:"agá", Z:"zê", Q:"quê",
+  K:"cá", W:"dábliu", Y:"ípsilon"
+};
+const CONFUSABLE = [["B","D","P","Q"],["M","N","U","V"],["E","F","L","T"],["C","G","O","Q"],["I","J","L","T"]];
+
+const SYL_FAMILIES = {
+  M:["MA","ME","MI","MO","MU"], P:["PA","PE","PI","PO","PU"], L:["LA","LE","LI","LO","LU"],
+  S:["SA","SE","SI","SO","SU"], B:["BA","BE","BI","BO","BU"], T:["TA","TE","TI","TO","TU"],
+  V:["VA","VE","VI","VO","VU"], N:["NA","NE","NI","NO","NU"], D:["DA","DE","DI","DO","DU"],
+  F:["FA","FE","FI","FO","FU"], R:["RA","RE","RI","RO","RU"], J:["JA","JE","JI","JO","JU"],
+  C:["CA","CO","CU"], G:["GA","GO","GU"]
+};
+
+const WORDS = [
+  { w:"GATO", e:"🐱", syl:["GA","TO"] },  { w:"BOLA", e:"⚽", syl:["BO","LA"] },
+  { w:"CASA", e:"🏠", syl:["CA","SA"] },  { w:"PATO", e:"🦆", syl:["PA","TO"] },
+  { w:"UVA",  e:"🍇", syl:["U","VA"] },   { w:"VACA", e:"🐮", syl:["VA","CA"] },
+  { w:"SAPO", e:"🐸", syl:["SA","PO"] },  { w:"RATO", e:"🐭", syl:["RA","TO"] },
+  { w:"LOBO", e:"🐺", syl:["LO","BO"] },  { w:"DADO", e:"🎲", syl:["DA","DO"] },
+  { w:"PIPA", e:"🪁", syl:["PI","PA"] },  { w:"FOCA", e:"🦭", syl:["FO","CA"] },
+  { w:"MOTO", e:"🛵", syl:["MO","TO"] },  { w:"MALA", e:"🧳", syl:["MA","LA"] },
+  { w:"LUA",  e:"🌙", syl:["LU","A"] },   { w:"MAPA", e:"🗺️", syl:["MA","PA"] },
+  { w:"MEIA", e:"🧦", syl:["MEI","A"] },  { w:"MEL",  e:"🍯", syl:["MEL"] },
+  { w:"SOL",  e:"☀️", syl:["SOL"] },      { w:"BOLO", e:"🍰", syl:["BO","LO"] },
+  { w:"PENA", e:"🪶", syl:["PE","NA"] },  { w:"SINO", e:"🔔", syl:["SI","NO"] },
+  { w:"SUCO", e:"🧃", syl:["SU","CO"] },  { w:"GELO", e:"🧊", syl:["GE","LO"] },
+  { w:"VELA", e:"🕯️", syl:["VE","LA"] },  { w:"FADA", e:"🧚", syl:["FA","DA"] },
+  { w:"NAVIO", e:"🚢", syl:["NA","VI","O"] }, { w:"PIANO", e:"🎹", syl:["PI","A","NO"] }
+];
+const WORDS_BIG = [
+  { w:"MACACO", e:"🐒", syl:["MA","CA","CO"] }, { w:"CAVALO", e:"🐴", syl:["CA","VA","LO"] },
+  { w:"SAPATO", e:"👟", syl:["SA","PA","TO"] }, { w:"BANANA", e:"🍌", syl:["BA","NA","NA"] },
+  { w:"TOMATE", e:"🍅", syl:["TO","MA","TE"] }, { w:"GIRAFA", e:"🦒", syl:["GI","RA","FA"] },
+  { w:"PIPOCA", e:"🍿", syl:["PI","PO","CA"] }, { w:"MENINO", e:"👦", syl:["ME","NI","NO"] },
+  { w:"MENINA", e:"👧", syl:["ME","NI","NA"] }, { w:"JANELA", e:"🪟", syl:["JA","NE","LA"] },
+  { w:"BONECA", e:"🪆", syl:["BO","NE","CA"] }, { w:"PANELA", e:"🍲", syl:["PA","NE","LA"] },
+  { w:"CANETA", e:"🖊️", syl:["CA","NE","TA"] }, { w:"ABACAXI", e:"🍍", syl:["A","BA","CA","XI"] },
+  { w:"CENOURA", e:"🥕", syl:["CE","NOU","RA"] }, { w:"FOGUETE", e:"🚀", syl:["FO","GUE","TE"] }
+];
+/* todas começam com a MESMA letra → precisa ler a 2ª letra */
+const SECOND_SETS = [
+  { words:[{w:"MALA",e:"🧳"},{w:"MEIA",e:"🧦"},{w:"MILHO",e:"🌽"},{w:"MOTO",e:"🛵"}] },
+  { words:[{w:"PATO",e:"🦆"},{w:"PENA",e:"🪶"},{w:"PIPA",e:"🪁"},{w:"POTE",e:"🫙"}] },
+  { words:[{w:"BALA",e:"🍬"},{w:"BOLA",e:"⚽"},{w:"BULE",e:"🫖"}] },
+  { words:[{w:"SAPO",e:"🐸"},{w:"SINO",e:"🔔"},{w:"SOPA",e:"🍲"},{w:"SUCO",e:"🧃"}] },
+  { words:[{w:"LATA",e:"🥫"},{w:"LOBO",e:"🐺"},{w:"LUPA",e:"🔍"},{w:"LEITE",e:"🥛"}] },
+  { words:[{w:"GATO",e:"🐱"},{w:"GELO",e:"🧊"},{w:"GOTA",e:"💧"}] }
+];
+const SIM_SETS = [
+  { fam:["GATO","PATO","RATO","MATO"], emo:{GATO:"🐱",PATO:"🦆",RATO:"🐭",MATO:"🌿"} },
+  { fam:["MALA","BALA","SALA","FALA"], emo:{MALA:"🧳",BALA:"🍬",SALA:"🛋️",FALA:"🗣️"} },
+  { fam:["BOCA","FOCA","TOCA"],        emo:{BOCA:"👄",FOCA:"🦭",TOCA:"🕳️"} },
+  { fam:["LUA","RUA","UVA"],           emo:{LUA:"🌙",RUA:"🛣️",UVA:"🍇"} },
+  { fam:["BOLA","BOLO","LOBO"],        emo:{BOLA:"⚽",BOLO:"🍰",LOBO:"🐺"} },
+  { fam:["VACA","FACA","VELA"],        emo:{VACA:"🐮",FACA:"🔪",VELA:"🕯️"} }
+];
+const DIGRAPH_WORDS = [
+  { w:"CHAVE", e:"🔑", syl:["CHA","VE"] }, { w:"CHUVA", e:"🌧️", syl:["CHU","VA"] },
+  { w:"MILHO", e:"🌽", syl:["MI","LHO"] }, { w:"ABELHA", e:"🐝", syl:["A","BE","LHA"] },
+  { w:"COELHO", e:"🐰", syl:["CO","E","LHO"] }, { w:"NINHO", e:"🪺", syl:["NI","NHO"] },
+  { w:"BANHO", e:"🛁", syl:["BA","NHO"] }, { w:"GALINHA", e:"🐔", syl:["GA","LI","NHA"] },
+  { w:"CARRO", e:"🚗", syl:["CAR","RO"] }, { w:"OSSO", e:"🦴", syl:["OS","SO"] }
+];
+const CLUSTER_WORDS = [
+  { w:"TREM", e:"🚂" }, { w:"PRATO", e:"🍽️" }, { w:"FLOR", e:"🌸" },
+  { w:"GLOBO", e:"🌍" }, { w:"PLANTA", e:"🪴" }, { w:"ZEBRA", e:"🦓" },
+  { w:"LIVRO", e:"📖" }, { w:"TIGRE", e:"🐯" }
+];
+const SENTENCES = [
+  { t:"O GATO BEBE LEITE",    e:"🐱🥛" }, { t:"O MENINO JOGA BOLA",   e:"👦⚽" },
+  { t:"A MENINA COME UVA",    e:"👧🍇" }, { t:"O PATO NADA NA LAGOA", e:"🦆🌊" },
+  { t:"O CACHORRO CORRE",     e:"🐶💨" }, { t:"A VACA COME CAPIM",    e:"🐮🌿" },
+  { t:"O MACACO COME BANANA", e:"🐒🍌" }, { t:"O SAPO PULA NA LAGOA", e:"🐸💦" }
+];
+const MIC_WORDS_PT = ["GATO","BOLA","CASA","PATO","SAPO","LUA","SOL","MEL","VACA","MALA","MOTO","BOLO","BANANA","MACACO","MENINO","MENINA"];
+const DITADO_EASY = ["GATO","BOLA","CASA","PATO","UVA","VACA","SAPO","RATO","LOBO","DADO","PIPA","FOCA","MOTO","MALA","LUA","MEL","SOL","BOLO","MAPA"];
+const DITADO_HARD = ["MACACO","CAVALO","SAPATO","BANANA","TOMATE","GIRAFA","PIPOCA","MENINO","MENINA","JANELA","BONECA","PANELA"];
+
+/* ---- INGLÊS ---- */
+const EN_COLORS = [
+  {v:"RED",d:"🔴"},{v:"BLUE",d:"🔵"},{v:"GREEN",d:"🟢"},{v:"YELLOW",d:"🟡"},{v:"ORANGE",d:"🟠"},
+  {v:"PURPLE",d:"🟣"},{v:"BLACK",d:"⚫"},{v:"WHITE",d:"⚪"},{v:"PINK",d:"🩷"},{v:"BROWN",d:"🟤"}
+];
+const EN_ANIMALS = [
+  {v:"CAT",d:"🐱"},{v:"DOG",d:"🐶"},{v:"FISH",d:"🐟"},{v:"BIRD",d:"🐦"},{v:"LION",d:"🦁"},
+  {v:"BEAR",d:"🐻"},{v:"MONKEY",d:"🐵"},{v:"PIG",d:"🐷"},{v:"COW",d:"🐮"},{v:"DUCK",d:"🦆"},
+  {v:"HORSE",d:"🐴"},{v:"RABBIT",d:"🐰"},{v:"FROG",d:"🐸"},{v:"ELEPHANT",d:"🐘"}
+];
+const EN_FOOD = [
+  {v:"APPLE",d:"🍎"},{v:"BANANA",d:"🍌"},{v:"EGG",d:"🥚"},{v:"MILK",d:"🥛"},{v:"BREAD",d:"🍞"},
+  {v:"CAKE",d:"🍰"},{v:"ICE CREAM",d:"🍦"},{v:"PIZZA",d:"🍕"},{v:"ORANGE",d:"🍊"},{v:"COOKIE",d:"🍪"},
+  {v:"CANDY",d:"🍬"},{v:"WATER",d:"💧"}
+];
+const EN_THINGS = [
+  {v:"SUN",d:"☀️"},{v:"MOON",d:"🌙"},{v:"STAR",d:"⭐"},{v:"BALL",d:"⚽"},{v:"BOOK",d:"📖"},
+  {v:"CAR",d:"🚗"},{v:"HOUSE",d:"🏠"},{v:"TREE",d:"🌳"},{v:"FLOWER",d:"🌸"},{v:"TRAIN",d:"🚂"},
+  {v:"BOAT",d:"⛵"},{v:"BIKE",d:"🚲"}
+];
+const EN_SPELL = [
+  {v:"CAT",d:"🐱"},{v:"DOG",d:"🐶"},{v:"SUN",d:"☀️"},{v:"BED",d:"🛏️"},{v:"HAT",d:"🎩"},
+  {v:"BEE",d:"🐝"},{v:"EGG",d:"🥚"},{v:"CAR",d:"🚗"},{v:"BUS",d:"🚌"},{v:"BALL",d:"⚽"},
+  {v:"BOOK",d:"📖"},{v:"FISH",d:"🐟"},{v:"STAR",d:"⭐"},{v:"MOON",d:"🌙"},{v:"CAKE",d:"🍰"},{v:"TREE",d:"🌳"}
+];
+const EN_NUMS = ["ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN"];
+const EN_MIC = ["CAT","DOG","SUN","BALL","BOOK","FISH","APPLE","BANANA","RED","BLUE","HOUSE","STAR","TWO","THREE","SEVEN","TEN"];
+const EN_ALL = EN_ANIMALS.concat(EN_FOOD, EN_THINGS);
+
+/* 📚 BASE COMPLETA (modo aprender): destrava quando a criança erra — muito mais
+   bichos, comidas, coisas, cores e números pra virar aprendizado de verdade */
+const EN_COLORS_X = EN_COLORS.concat([{v:"GRAY",d:"🩶"}]);
+const EN_ANIMALS_X = EN_ANIMALS.concat([
+  {v:"TIGER",d:"🐯"},{v:"SHEEP",d:"🐑"},{v:"GOAT",d:"🐐"},{v:"CHICKEN",d:"🐔"},{v:"MOUSE",d:"🐭"},
+  {v:"FOX",d:"🦊"},{v:"WOLF",d:"🐺"},{v:"ZEBRA",d:"🦓"},{v:"GIRAFFE",d:"🦒"},{v:"TURTLE",d:"🐢"},
+  {v:"SNAKE",d:"🐍"},{v:"BEE",d:"🐝"},{v:"BUTTERFLY",d:"🦋"},{v:"SHARK",d:"🦈"},{v:"WHALE",d:"🐳"},
+  {v:"PENGUIN",d:"🐧"},{v:"OWL",d:"🦉"}
+]);
+const EN_FOOD_X = EN_FOOD.concat([
+  {v:"GRAPES",d:"🍇"},{v:"STRAWBERRY",d:"🍓"},{v:"WATERMELON",d:"🍉"},{v:"CORN",d:"🌽"},{v:"CARROT",d:"🥕"},
+  {v:"TOMATO",d:"🍅"},{v:"CHEESE",d:"🧀"},{v:"HONEY",d:"🍯"},{v:"SOUP",d:"🍲"},{v:"RICE",d:"🍚"},
+  {v:"JUICE",d:"🧃"},{v:"LEMON",d:"🍋"},{v:"PEAR",d:"🍐"},{v:"POPCORN",d:"🍿"},{v:"HOT DOG",d:"🌭"}
+]);
+const EN_THINGS_X = EN_THINGS.concat([
+  {v:"CHAIR",d:"🪑"},{v:"BED",d:"🛏️"},{v:"DOOR",d:"🚪"},{v:"KEY",d:"🔑"},{v:"CLOCK",d:"⏰"},
+  {v:"PHONE",d:"📱"},{v:"PLANE",d:"✈️"},{v:"BUS",d:"🚌"},{v:"ROBOT",d:"🤖"},{v:"KITE",d:"🪁"},
+  {v:"DRUM",d:"🥁"},{v:"GUITAR",d:"🎸"},{v:"UMBRELLA",d:"☂️"},{v:"GIFT",d:"🎁"},{v:"ROCKET",d:"🚀"},{v:"RAINBOW",d:"🌈"}
+]);
+const EN_SPELL_X = EN_SPELL.concat([
+  {v:"FOX",d:"🦊"},{v:"KEY",d:"🔑"},{v:"PIG",d:"🐷"},{v:"COW",d:"🐮"},{v:"OWL",d:"🦉"},
+  {v:"DUCK",d:"🦆"},{v:"FROG",d:"🐸"},{v:"SHIP",d:"🚢"},{v:"KITE",d:"🪁"},{v:"MILK",d:"🥛"}
+]);
+const EN_NUMS_X = EN_NUMS.concat(["ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN","SEVENTEEN","EIGHTEEN","NINETEEN","TWENTY"]);
+const EN_MIC_X = EN_MIC.concat(["GREEN","YELLOW","LION","BEAR","HORSE","PIZZA","MILK","EGG","TREE","CAR","MOON","FIVE","NINE"]);
+const EN_ALL_X = EN_ANIMALS_X.concat(EN_FOOD_X, EN_THINGS_X);
+
+/* ---- ALEMÃO ---- */
+const DE_COLORS = [
+  {v:"ROT",d:"🔴"},{v:"BLAU",d:"🔵"},{v:"GRÜN",d:"🟢"},{v:"GELB",d:"🟡"},{v:"ORANGE",d:"🟠"},
+  {v:"LILA",d:"🟣"},{v:"SCHWARZ",d:"⚫"},{v:"WEISS",d:"⚪"},{v:"ROSA",d:"🩷"},{v:"BRAUN",d:"🟤"}
+];
+const DE_ANIMALS = [
+  {v:"KATZE",d:"🐱"},{v:"HUND",d:"🐶"},{v:"FISCH",d:"🐟"},{v:"VOGEL",d:"🐦"},{v:"LÖWE",d:"🦁"},
+  {v:"BÄR",d:"🐻"},{v:"AFFE",d:"🐵"},{v:"SCHWEIN",d:"🐷"},{v:"KUH",d:"🐮"},{v:"ENTE",d:"🦆"},
+  {v:"PFERD",d:"🐴"},{v:"HASE",d:"🐰"},{v:"FROSCH",d:"🐸"},{v:"ELEFANT",d:"🐘"}
+];
+const DE_FOOD = [
+  {v:"APFEL",d:"🍎"},{v:"BANANE",d:"🍌"},{v:"EI",d:"🥚"},{v:"MILCH",d:"🥛"},{v:"BROT",d:"🍞"},
+  {v:"KUCHEN",d:"🍰"},{v:"EIS",d:"🍦"},{v:"PIZZA",d:"🍕"},{v:"KEKS",d:"🍪"},{v:"BONBON",d:"🍬"},
+  {v:"WASSER",d:"💧"},{v:"KÄSE",d:"🧀"}
+];
+const DE_THINGS = [
+  {v:"SONNE",d:"☀️"},{v:"MOND",d:"🌙"},{v:"STERN",d:"⭐"},{v:"BALL",d:"⚽"},{v:"BUCH",d:"📖"},
+  {v:"AUTO",d:"🚗"},{v:"HAUS",d:"🏠"},{v:"BAUM",d:"🌳"},{v:"BLUME",d:"🌸"},{v:"ZUG",d:"🚂"},
+  {v:"BOOT",d:"⛵"},{v:"RAD",d:"🚲"}
+];
+/* só palavras A-Z (o teclado ABC não tem Ä Ö Ü ß) */
+const DE_SPELL = [
+  {v:"HUND",d:"🐶"},{v:"BALL",d:"⚽"},{v:"AUTO",d:"🚗"},{v:"HAUS",d:"🏠"},{v:"EI",d:"🥚"},
+  {v:"EIS",d:"🍦"},{v:"BROT",d:"🍞"},{v:"MOND",d:"🌙"},{v:"BUCH",d:"📖"},{v:"ZUG",d:"🚂"},
+  {v:"BOOT",d:"⛵"},{v:"ROT",d:"🔴"},{v:"BLAU",d:"🔵"},{v:"KUH",d:"🐮"},{v:"HASE",d:"🐰"},{v:"STERN",d:"⭐"}
+];
+const DE_MIC = ["KATZE","HUND","BALL","BUCH","AUTO","HAUS","ROT","BLAU","APFEL","BANANE","SONNE","STERN","ZWEI","DREI","SIEBEN","ZEHN"];
+const DE_ALL = DE_ANIMALS.concat(DE_FOOD, DE_THINGS);
+const DE_NUMS = ["EINS","ZWEI","DREI","VIER","FÜNF","SECHS","SIEBEN","ACHT","NEUN","ZEHN"];
+/* 📚 BASE COMPLETA alemã (modo aprender) */
+const DE_COLORS_X = DE_COLORS.concat([{v:"GRAU",d:"🩶"}]);
+const DE_ANIMALS_X = DE_ANIMALS.concat([
+  {v:"TIGER",d:"🐯"},{v:"SCHAF",d:"🐑"},{v:"ZIEGE",d:"🐐"},{v:"HUHN",d:"🐔"},{v:"MAUS",d:"🐭"},
+  {v:"FUCHS",d:"🦊"},{v:"WOLF",d:"🐺"},{v:"ZEBRA",d:"🦓"},{v:"GIRAFFE",d:"🦒"},{v:"SCHILDKRÖTE",d:"🐢"},
+  {v:"SCHLANGE",d:"🐍"},{v:"BIENE",d:"🐝"},{v:"SCHMETTERLING",d:"🦋"},{v:"HAI",d:"🦈"},{v:"WAL",d:"🐳"},
+  {v:"PINGUIN",d:"🐧"},{v:"EULE",d:"🦉"}
+]);
+const DE_FOOD_X = DE_FOOD.concat([
+  {v:"TRAUBEN",d:"🍇"},{v:"ERDBEERE",d:"🍓"},{v:"MELONE",d:"🍉"},{v:"MAIS",d:"🌽"},{v:"KAROTTE",d:"🥕"},
+  {v:"TOMATE",d:"🍅"},{v:"HONIG",d:"🍯"},{v:"SUPPE",d:"🍲"},{v:"REIS",d:"🍚"},{v:"SAFT",d:"🧃"},
+  {v:"ZITRONE",d:"🍋"},{v:"BIRNE",d:"🍐"},{v:"POPCORN",d:"🍿"},{v:"WURST",d:"🌭"}
+]);
+const DE_THINGS_X = DE_THINGS.concat([
+  {v:"STUHL",d:"🪑"},{v:"BETT",d:"🛏️"},{v:"TÜR",d:"🚪"},{v:"SCHLÜSSEL",d:"🔑"},{v:"UHR",d:"⏰"},
+  {v:"HANDY",d:"📱"},{v:"FLUGZEUG",d:"✈️"},{v:"BUS",d:"🚌"},{v:"ROBOTER",d:"🤖"},{v:"DRACHEN",d:"🪁"},
+  {v:"TROMMEL",d:"🥁"},{v:"GITARRE",d:"🎸"},{v:"SCHIRM",d:"☂️"},{v:"GESCHENK",d:"🎁"},{v:"RAKETE",d:"🚀"},
+  {v:"REGENBOGEN",d:"🌈"}
+]);
+const DE_SPELL_X = DE_SPELL.concat([
+  {v:"WOLF",d:"🐺"},{v:"MAUS",d:"🐭"},{v:"BUS",d:"🚌"},{v:"UHR",d:"⏰"},{v:"REIS",d:"🍚"},
+  {v:"SAFT",d:"🧃"},{v:"BETT",d:"🛏️"},{v:"MAIS",d:"🌽"},{v:"WAL",d:"🐳"},{v:"HAI",d:"🦈"}
+]);
+const DE_NUMS_X = DE_NUMS.concat(["ELF","ZWÖLF","DREIZEHN","VIERZEHN","FÜNFZEHN","SECHZEHN","SIEBZEHN","ACHTZEHN","NEUNZEHN","ZWANZIG"]);
+const DE_MIC_X = DE_MIC.concat(["GRÜN","GELB","LÖWE","BÄR","PFERD","PIZZA","MILCH","EI","BAUM","MOND","FÜNF","NEUN"]);
+const DE_ALL_X = DE_ANIMALS_X.concat(DE_FOOD_X, DE_THINGS_X);
+
+/* ---- FIGURINHAS (loja) ---- */
+const RARITIES = {
+  comum:    { label:"Comum",    price:100 },
+  raro:     { label:"Raro",     price:300 },
+  epico:    { label:"Épico",    price:800 },
+  lendario: { label:"Lendário", price:2000 }
+};
+const STICKERS = [
+  ["🐶","Cachorrinho","comum"],["🐱","Gatinho","comum"],["🐰","Coelhinho","comum"],["🐸","Sapinho","comum"],
+  ["🐤","Pintinho","comum"],["🍎","Maçã Feliz","comum"],["⚽","Bola Craque","comum"],["🚗","Carrinho","comum"],
+  ["🌻","Girassol","comum"],["🍦","Sorvetão","comum"],["🎈","Balão Festa","comum"],["🐠","Peixinho","comum"],
+  ["🦊","Raposa Esperta","raro"],["🐼","Panda Fofo","raro"],["🦁","Rei Leão","raro"],["🐬","Golfinho Saltador","raro"],
+  ["🚀","Foguete Turbo","raro"],["🌈","Arco-íris Mágico","raro"],["🦉","Coruja Sábia","raro"],["🍩","Rosquinha Doce","raro"],
+  ["🎸","Guitarra do Rock","raro"],["🏆","Troféu Campeão","raro"],["🦋","Borboleta Azul","raro"],["⚡","Super Raio","raro"],
+  ["🦄","Unicórnio","epico"],["🐉","Dragão de Fogo","epico"],["🛸","Disco Voador","epico"],["🧙","Mago Poderoso","epico"],
+  ["🦸","Super-Herói","epico"],["👑","Coroa Real","epico"],["🌋","Vulcão Gigante","epico"],["🏴‍☠️","Navio Pirata","epico"],
+  ["🤖","Robô do Futuro","epico"],["🧜‍♀️","Sereia Encantada","epico"],
+  ["💎","Diamante Supremo","lendario"],["🌠","Estrela Cadente","lendario"],["🧞","Gênio da Lâmpada","lendario"],["🦖","Rex Dourado","lendario"],
+  ["🗿","Gigante de Pedra","lendario"],["🔱","Tridente Mágico","lendario"],["🥇","Medalha Suprema","lendario"],["🪐","Planeta Anel","lendario"]
+];
+
+/* ---- GRAUS DE PALAVRAS (domínio Kumon: repete a MESMA palavra até aprender) ---- */
+const MASTERY = 3; /* 3 encontros: ouvir+ler → ler sozinho → montar */
+const WG1 = [ /* curtinhas */
+  { w:"UVA", e:"🍇", syl:["U","VA"] }, { w:"LUA", e:"🌙", syl:["LU","A"] },
+  { w:"SOL", e:"☀️", syl:["SOL"] },    { w:"MEL", e:"🍯", syl:["MEL"] },
+  { w:"OVO", e:"🥚", syl:["O","VO"] }, { w:"BOI", e:"🐂", syl:["BOI"] },
+  { w:"REI", e:"🤴", syl:["REI"] },    { w:"ASA", e:"🪽", syl:["A","SA"] }
+];
+const WG2 = WORDS.filter(x=>["GATO","BOLA","CASA","PATO","VACA","SAPO","RATO","LOBO","DADO","PIPA","MOTO","MALA"].includes(x.w));
+const WG3 = WORDS_BIG;
+const WG4 = DIGRAPH_WORDS;
+const WG5 = [ /* encontros consonantais */
+  { w:"TREM", e:"🚂", syl:["TREM"] },      { w:"PRATO", e:"🍽️", syl:["PRA","TO"] },
+  { w:"FLOR", e:"🌸", syl:["FLOR"] },      { w:"GLOBO", e:"🌍", syl:["GLO","BO"] },
+  { w:"PLANTA", e:"🪴", syl:["PLAN","TA"] },{ w:"ZEBRA", e:"🦓", syl:["ZE","BRA"] },
+  { w:"LIVRO", e:"📖", syl:["LI","VRO"] }, { w:"TIGRE", e:"🐯", syl:["TI","GRE"] },
+  { w:"PEDRA", e:"🪨", syl:["PE","DRA"] }, { w:"GRILO", e:"🦗", syl:["GRI","LO"] }
+];
+const WG6 = [ /* gigantes */
+  { w:"BORBOLETA", e:"🦋", syl:["BOR","BO","LE","TA"] }, { w:"CHOCOLATE", e:"🍫", syl:["CHO","CO","LA","TE"] },
+  { w:"BICICLETA", e:"🚲", syl:["BI","CI","CLE","TA"] }, { w:"ELEFANTE", e:"🐘", syl:["E","LE","FAN","TE"] },
+  { w:"TARTARUGA", e:"🐢", syl:["TAR","TA","RU","GA"] }, { w:"MELANCIA", e:"🍉", syl:["ME","LAN","CI","A"] },
+  { w:"FOGUETE", e:"🚀", syl:["FO","GUE","TE"] },        { w:"PIRULITO", e:"🍭", syl:["PI","RU","LI","TO"] },
+  { w:"CACHORRO", e:"🐶", syl:["CA","CHOR","RO"] },      { w:"ESTRELA", e:"⭐", syl:["ES","TRE","LA"] }
+];
+const WORD_GRADES = [WG1, WG2, WG3, WG4, WG5, WG6];
+
+/* ---- HISTORINHAS (etapa C do Kumon: ler e compreender) ---- */
+const STORIES = [
+  { t:["O GATO SUBIU NO MURO.","ELE VIU UM PASSARINHO."], q:"Quem o gato viu?", a:"🐦", opts:["🐦","🐟","🌸"] },
+  { t:["A MENINA COMEU UMA UVA.","A UVA ESTAVA DOCE."], q:"O que a menina comeu?", a:"🍇", opts:["🍇","🍰","🍕"] },
+  { t:["O SAPO PULOU NA LAGOA.","A AGUA ESTAVA FRIA."], q:"Onde o sapo pulou?", a:"🌊", opts:["🌊","🛏️","🚗"] },
+  { t:["O MENINO GANHOU UMA BOLA.","ELE JOGOU COM O PAI."], q:"O que o menino ganhou?", a:"⚽", opts:["⚽","📖","🎈"] },
+  { t:["A VACA COME CAPIM.","O CAPIM É VERDE."], q:"O que a vaca come?", a:"🌿", opts:["🌿","🍦","🍪"] },
+  { t:["O CACHORRO ACHOU UM OSSO.","ELE FICOU MUITO FELIZ."], q:"O que o cachorro achou?", a:"🦴", opts:["🦴","🧸","🍎"] },
+  { t:["A ABELHA FAZ MEL.","O MEL É BEM DOCE."], q:"O que a abelha faz?", a:"🍯", opts:["🍯","🧀","🥚"] },
+  { t:["O TREM ANDA NO TRILHO.","ELE APITA BEM ALTO."], q:"Quem apita bem alto?", a:"🚂", opts:["🚂","🚲","⛵"] }
+];
+
+/* =============== TRILHAS E NÍVEIS (etapas do método Kumon, do começo ao fim) =============== */
+const GOAL = 5;
+/* 📚 Modo aprender: quando a criança erra num nível (a partir do DEEP_MIN),
+   aquele nível vira o "nível real" dela — daí pra cima a base completa destrava,
+   a meta sobe pra GOAL_DEEP e só acerto limpo (sem errar na pergunta) conta. */
+const DEEP_MIN = 3, GOAL_DEEP = 10;
+const PT_LEVELS = [
+  "7A · Ouvir e achar","7A · Ouvir e achar PRO",
+  "6A · Vogais","6A · Mais vogais","6A · Letras amigas","6A · Todas as letras","6A · Letras parecidas",
+  "5A · Família do M","5A · Famílias M, P e B","5A · Todas as sílabas","5A · Primeira letra","5A · Primeira letra PRO","5A · Segunda letra","5A · Primeira sílaba",
+  "4A · Palavras curtinhas 🏅","4A · Ler palavras","4A · Ler palavras PRO","4A · Minhas palavras 🏅",
+  "3A · Palavras parecidas","3A · Montar com sílabas","3A · Montar com letras","3A · Palavras de 3 pedaços 🏅",
+  "2A · Escrever palavras","2A · Ditado 🎧","2A · Ler em voz alta 🎤","2A · Ler palavras grandes","2A · Montar palavras grandes",
+  "A · CH, LH e NH","A · Palavras especiais 🏅","A · TR, BR e FL","A · Palavras com R e L 🏅",
+  "B · Ler frases","B · Palavras gigantes 🏅","B · Ditado difícil 🎧",
+  "C · Pequenas histórias 📖","Mestre da Leitura 👑"
+];
+/* nível novo → grau de palavras (modo domínio) */
+const PT_MASTERY = { 15:0, 18:1, 22:2, 29:3, 31:4, 33:5 };
+/* nível novo → gerador antigo */
+const PT_OLD = { 3:1,4:2,5:3,6:4,7:5,8:6,9:7,10:8,11:9,12:10,13:11,14:12,16:13,17:14,19:15,20:16,21:17,23:18,24:19,25:20,26:21,27:22,28:23,30:24,32:25 };
+/* migração: numeração antiga (26 níveis) → nova (36) */
+const PT_REMAP = { 1:3,2:4,3:5,4:6,5:7,6:8,7:9,8:10,9:11,10:12,11:13,12:14,13:16,14:17,15:19,16:20,17:21,18:23,19:24,20:25,21:26,22:27,23:28,24:30,25:32,26:36 };
+const MATH_LEVELS = [
+  "7A · Contar até 3","7A · Contar até 5","6A · Contar até 10","6A · Achar o número","5A · Vem depois",
+  "5A · Vem antes","4A · Maior ou menor","3A · Somar até 5","3A · Somar até 10","3A · Somar de cabeça",
+  "2A · Ditado de números 🎧","2A · Digitar a soma","2A · Números até 20","2A · Somar até 20","2A · Ditado até 30 🎧",
+  "2A · Somar 3 números","A · Tirar até 5","A · Subtração até 10","A · Digitar soma até 20","A · Digitar a subtração",
+  "A · Dezenas","A · Somar dezenas","A · Contas grandes","A · Subtração até 20","A · O dobro",
+  "B · A metade","B · Dezena + unidade","B · Somar até 50","B · Subtrair até 50","B · Tabuada do 2",
+  "B · Tabuada do 5","B · Tabuada do 10","C · Dividir entre amigos","C · Ditado até 100 🎧","C · Probleminhas 📖",
+  "Mestre da Matemática 👑"
+];
+const EN_LEVELS = [
+  "Colors","More colors","Numbers 1-5","Numbers 1-10","Animals",
+  "More animals","Food","More food","My world","How many?",
+  "Ler: animais","Ler: tudo","First letter","Montar palavras","Escrever palavras",
+  "Dictation 🎧","Say it! 🎤","Cor + coisa","Frases","English Master 👑"
+];
+const DE_LEVELS = [
+  "Farben (cores)","Mehr Farben","Zahlen 1-5","Zahlen 1-10","Tiere (bichos)",
+  "Mehr Tiere","Essen (comida)","Mehr Essen","Meine Welt","Wie viele?",
+  "Ler: Tiere","Ler: tudo","Primeira letra","Montar palavras","Escrever palavras",
+  "Diktat 🎧","Sprich! 🎤","Cor + bicho","Frases","Deutsch-Meister 👑"
+];
+const TRACKS = {
+  pt:   { icon:"📚", name:"Português",  levels:PT_LEVELS },
+  math: { icon:"🔢", name:"Matemática", levels:MATH_LEVELS },
+  en:   { icon:"🌎", name:"Inglês",     levels:EN_LEVELS },
+  de:   { icon:"🥨", name:"Alemão",     levels:DE_LEVELS }
+};
+const TRACK_KEYS = Object.keys(TRACKS);
+const maxOf = t => TRACKS[t].levels.length;
+/* moedas: quanto mais alto o nível, mais moedas */
+const coinFor = (lv,kind) => { const b = 8 + 2*lv; return kind==="opts" ? b : Math.round(b*1.5); };
+const levelUpBonus = lv => 25 + 5*lv;
+const PRACTICE_BONUS = 15, STREAK_BONUS = 20;
+
+/* =============== UTILIDADES =============== */
+const $ = s => document.querySelector(s);
+const rand = n => Math.floor(Math.random()*n);
+const pick = a => a[rand(a.length)];
+const shuffle = a => { const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=rand(i+1); [b[i],b[j]]=[b[j],b[i]]; } return b; };
+const norm = s => (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("#"+id).classList.add("active");
+}
+function showOverlay(html){ $("#overlay-card").innerHTML = html; $("#overlay").classList.add("show"); }
+function hideOverlay(){ $("#overlay").classList.remove("show"); }
+
+const CONF_COLORS = ["#ff5f6d","#ffc371","#38ef7d","#40c9ff","#a044ff","#ffd200","#ee2a7b"];
+function confetti(n){
+  for(let i=0;i<n;i++){
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.left = rand(100)+"%";
+    c.style.background = pick(CONF_COLORS);
+    c.style.borderRadius = rand(2)? "50%":"3px";
+    c.style.animationDuration = (1.6+Math.random()*1.6)+"s";
+    c.style.animationDelay = (Math.random()*.5)+"s";
+    $("#app").appendChild(c);
+    setTimeout(()=>c.remove(), 3800);
+  }
+}
+
+/* =============== SONS =============== */
+let audioCtx = null;
+function tone(freq, dur, delay, type, vol){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type||"sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, audioCtx.currentTime+delay);
+    g.gain.linearRampToValueAtTime(vol||.18, audioCtx.currentTime+delay+.02);
+    g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime+delay+dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(audioCtx.currentTime+delay); o.stop(audioCtx.currentTime+delay+dur+.05);
+  }catch(e){}
+}
+const sndCorrect = () => { tone(523,.15,0); tone(659,.15,.1); tone(784,.25,.2); };
+const sndWrong   = () => { tone(220,.25,0,"triangle",.12); };
+const sndLevelUp = () => { [523,587,659,784,880,1047].forEach((f,i)=>tone(f,.18,i*.09)); };
+const sndCoin    = () => { tone(988,.09,0,"square",.08); tone(1319,.16,.08,"square",.08); };
+const sndTap     = () => { tone(700,.06,0,"sine",.08); };
+
+/* =============== VOZ (pt-BR + en-US + de-DE) =============== */
+let voices = [], ptVoice = null, enVoice = null, deVoice = null;
+function loadVoices(){
+  voices = speechSynthesis.getVoices();
+  ptVoice = voices.find(v=>v.lang==="pt-BR" && /google/i.test(v.name))
+         || voices.find(v=>v.lang==="pt-BR")
+         || voices.find(v=>v.lang.startsWith("pt")) || null;
+  enVoice = voices.find(v=>v.lang==="en-US" && /google/i.test(v.name))
+         || voices.find(v=>v.lang==="en-US")
+         || voices.find(v=>v.lang.startsWith("en")) || null;
+  deVoice = voices.find(v=>v.lang==="de-DE" && /google/i.test(v.name))
+         || voices.find(v=>v.lang==="de-DE")
+         || voices.find(v=>v.lang.startsWith("de")) || null;
+}
+if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+
+/* speak("texto") ou speak([{t:"Encontre",lang:"pt-BR"},{t:"RED!",lang:"en-US"}], cb) */
+function speak(parts, cb){
+  if(typeof parts === "string") parts = [{t:parts, lang:"pt-BR"}];
+  const list = (parts||[]).filter(p=>p && p.t);
+  let called = false;
+  const fire = ()=>{ if(!called){ called = true; if(cb) cb(); } };
+  if(!("speechSynthesis" in window) || !list.length){ fire(); return; }
+  speechSynthesis.cancel();
+  list.forEach((p,i)=>{
+    const u = new SpeechSynthesisUtterance(p.t);
+    u.lang = p.lang || "pt-BR";
+    if(u.lang.startsWith("en")){ if(enVoice) u.voice = enVoice; u.rate = .85; }
+    else if(u.lang.startsWith("de")){ if(deVoice) u.voice = deVoice; u.rate = .82; }
+    else { if(ptVoice) u.voice = ptVoice; u.rate = .92; }
+    u.pitch = 1.15;
+    if(i===list.length-1){ u.onend = fire; u.onerror = fire; }
+    speechSynthesis.speak(u);
+  });
+  /* segurança: se a voz travar, o jogo continua mesmo assim */
+  if(cb){
+    const est = list.reduce((s,p)=>s+Math.max(1300, p.t.length*95), 600);
+    setTimeout(fire, Math.min(est, 9000));
+  }
+}
+const ptT = t => ({t, lang:"pt-BR"});
+const enT = t => ({t, lang:"en-US"});
+const deT = t => ({t, lang:"de-DE"});
+
+/* =============== SALVAR / PERFIS =============== */
+const SAVE_KEY = "aventura-abc123-v2";
+let db = { activeIdx:-1, profiles:[] };
+
+function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1}, prog:{pt:0,math:0,en:0,de:0},
+  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0} } }; }
+
+function newProfile(name, avatar){
+  const t = freshTrackState();
+  return { name, avatar, coins:0, stickers:[], lv:t.lv, prog:t.prog, stats:t.stats, mast:{}, pv:3, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0} };
+}
+
+function migrateProfile(p){
+  if(p.lv && p.prog && p.stats) {
+    if(!p.stats.en) p.stats.en = {a:0,e:0};
+    if(!p.lv.en) p.lv.en = 1;
+    if(p.prog.en==null) p.prog.en = 0;
+    if(!p.stats.de) p.stats.de = {a:0,e:0};
+    if(!p.lv.de) p.lv.de = 1;
+    if(p.prog.de==null) p.prog.de = 0;
+    if(p.pv !== 3){
+      /* renumerar nível PT da versão de 26 níveis para a trilha Kumon de 36 */
+      p.lv.pt = p.lv.pt > 26 ? maxOf("pt") : (PT_REMAP[p.lv.pt] || p.lv.pt);
+      p.pv = 3;
+    }
+    if(!p.mast) p.mast = {};
+    if(!p.rq) p.rq = {pt:[],math:[],en:[]};
+    if(!p.rq.de) p.rq.de = [];
+    /* itens antigos da fila ganham a fase de fundamento */
+    TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
+    if(!p.deep) p.deep = {pt:0,math:0,en:0,de:0};
+    TRACK_KEYS.forEach(t=>{ if(p.deep[t]==null) p.deep[t] = 0; });
+    delete p.redo;
+    return p;
+  }
+  /* formato antigo: {name,avatar,stars,mathLevel,readLevel,stickers} */
+  const np = newProfile(p.name||"Jogador", p.avatar||"🦊");
+  np.lv.pt   = ({1:3,2:11,3:16})[p.readLevel] || 3;
+  np.lv.math = Math.min(Math.max(p.mathLevel||1,1), maxOf("math"));
+  np.coins = p.coins||0;
+  np.stickers = [];
+  return np;
+}
+
+function load(){
+  try{
+    /* lê o save principal; se estiver corrompido/vazio, recupera da cópia de segurança */
+    let d = null;
+    try{ d = JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){}
+    if(!d || !Array.isArray(d.profiles) || !d.profiles.length){
+      try{
+        const bk = JSON.parse(localStorage.getItem(SAVE_KEY+"-bk"));
+        if(bk && Array.isArray(bk.profiles) && bk.profiles.length) d = bk;
+      }catch(e){}
+    }
+    if(d){
+      db.activeIdx = (d.activeIdx!=null)? d.activeIdx : -1;
+      db.profiles = (d.profiles||[]).map(migrateProfile);
+    } else {
+      /* migrar save v1 (perfil único) se existir */
+      const old = localStorage.getItem("aventura-abc123-v1");
+      if(old){
+        const o = JSON.parse(old);
+        const np = newProfile(o.name||"Campeão", "🦁");
+        np.lv.pt   = ({1:3,2:11,3:16})[o.readLevel] || 3;
+        np.lv.math = Math.min(Math.max(o.mathLevel||1,1), maxOf("math"));
+        db.profiles = [np];
+      }
+    }
+  }catch(e){ db = { activeIdx:-1, profiles:[] }; }
+  if(db.activeIdx >= db.profiles.length) db.activeIdx = -1;
+}
+function save(){ try{
+  const data = JSON.stringify(db);
+  localStorage.setItem(SAVE_KEY, data);
+  localStorage.setItem(SAVE_KEY+"-bk", data); /* cópia de segurança: nunca perder progresso */
+}catch(e){} }
+
+function exportSave(){
+  const blob = new Blob([JSON.stringify(db)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "aventura-abc123-progresso-"+new Date().toISOString().slice(0,10)+".json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+}
+function importSave(file){
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const d = JSON.parse(r.result);
+      if(!d || !Array.isArray(d.profiles) || !d.profiles.length) throw new Error("vazio");
+      db = { activeIdx:-1, profiles: d.profiles.map(migrateProfile) };
+      save(); hideOverlay(); goProfiles();
+      speak("Progresso recuperado! Está tudo salvo de novo!");
+    }catch(e){ speak("Esse arquivo não é um progresso do jogo!"); alert("Arquivo inválido 😢"); }
+  };
+  r.readAsText(file);
+}
+const P = () => db.profiles[db.activeIdx];
+
+function updateHUD(){
+  const p = P();
+  const chip = $("#profile-chip");
+  if(p){
+    chip.style.visibility = "visible";
+    chip.querySelector(".av").textContent = p.avatar;
+    chip.querySelector(".pn").textContent = p.name;
+    $("#coin-count").textContent = p.coins;
+    $("#coin-pill").style.visibility = "visible";
+  } else {
+    chip.style.visibility = "hidden";
+    $("#coin-pill").style.visibility = "hidden";
+  }
+}
+function coinBump(){
+  const pill = $("#coin-pill");
+  pill.classList.remove("bump"); void pill.offsetWidth; pill.classList.add("bump");
+  sndCoin();
+}
+
+/* ---- tela de perfis ---- */
+function renderProfiles(){
+  const grid = $("#profiles-list");
+  grid.innerHTML = "";
+  db.profiles.forEach((p,i)=>{
+    const c = document.createElement("button");
+    c.className = "profile-card";
+    c.style.animationDelay = (i*.08)+"s";
+    c.innerHTML = `<span class="av">${p.avatar}</span><span class="nm">${p.name}</span>
+      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")}<br>🪙 ${p.coins} · 🏆 ${p.stickers.length}/${STICKERS.length}</span>`;
+    c.onclick = ()=>{ sndTap(); db.activeIdx = i; save(); goHome();
+      speak(`Oi ${p.name}! Que bom te ver! Vamos jogar?`); };
+    grid.appendChild(c);
+  });
+  if(db.profiles.length < 6){
+    const add = document.createElement("button");
+    add.className = "profile-card add";
+    add.style.animationDelay = (db.profiles.length*.08)+"s";
+    add.innerHTML = `<span class="av">➕</span><span class="nm">Novo jogador</span><span class="lv">Criar aventura</span>`;
+    add.onclick = ()=>{ sndTap(); openCreateProfile(); };
+    grid.appendChild(add);
+  }
+}
+
+function openCreateProfile(){
+  let selAvatar = pick(AVATARS);
+  const avBtns = AVATARS.map(a=>`<button data-av="${a}" class="${a===selAvatar?'sel':''}">${a}</button>`).join("");
+  showOverlay(`
+    <span class="big">🎨</span>
+    <h2>Novo jogador!</h2>
+    <p>Escolha seu bichinho e escreva seu nome:</p>
+    <div class="avatar-pick">${avBtns}</div>
+    <input id="name-input" maxlength="12" placeholder="Seu nome" autocomplete="off">
+    <div style="margin-top:14px;">
+      <button class="ov-btn" id="create-ok">Criar! 🎉</button>
+      <button class="ov-btn alt" id="create-cancel">Voltar</button>
+    </div>`);
+  speak("Escolha seu bichinho e escreva seu nome!");
+  document.querySelectorAll(".avatar-pick button").forEach(b=>{
+    b.onclick = ()=>{ sndTap();
+      document.querySelectorAll(".avatar-pick button").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel"); selAvatar = b.dataset.av; };
+  });
+  $("#create-cancel").onclick = ()=>{ sndTap(); hideOverlay(); };
+  $("#create-ok").onclick = ()=>{
+    const name = ($("#name-input").value||"").trim();
+    if(!name){ $("#name-input").style.borderColor = "#ff5e62"; speak("Escreva seu nome, por favor!"); return; }
+    db.profiles.push(newProfile(name.charAt(0).toUpperCase()+name.slice(1), selAvatar));
+    db.activeIdx = db.profiles.length-1;
+    save(); hideOverlay(); confetti(30); sndLevelUp();
+    goHome();
+    speak(`Bem-vindo, ${name}! Sua aventura começou!`);
+  };
+}
+
+function goProfiles(){
+  db.activeIdx = -1; save();
+  updateHUD(); renderProfiles(); showScreen("screen-profiles");
+}
+
+function goHome(){
+  const p = P();
+  if(!p){ goProfiles(); return; }
+  updateHUD();
+  $("#home-greet").textContent = `Oi, ${p.name}! Toque na raposinha para ela falar!`;
+  TRACK_KEYS.forEach(t=>{
+    const el = $("#"+t+"-sub");
+    const lv = p.lv[t], mx = maxOf(t);
+    el.textContent = (lv>mx? "Trilha completa! 👑 Modo mestre" : `Nível ${lv} de ${mx} · ${TRACKS[t].levels[Math.min(lv,mx)-1]}`);
+  });
+  $("#album-sub").textContent = `${p.stickers.length} de ${STICKERS.length} figurinhas`;
+  showScreen("screen-home");
+}
+
+/* =============== MOTOR DO JOGO =============== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+let state = { track:"pt", practice:false, practiceLv:0, q:null, lock:false, reinf:null, lastReinf:false,
+              qWrong:0, levelErrors:0, reviewSuggested:false, streak:0, typed:"", micFails:0, rec:null };
+
+/* fila de reforço (Kumon): errou UMA vez → a MESMA questão volta misturada nas
+   próximas perguntas (mesmo nível ou seguinte) até acertar 3 vezes; errou de novo, volta pra 3.
+   Depois dos 3 acertos, vem a fase de FUNDAMENTO: 2 questões novas da MESMA lição de origem,
+   pra provar que entendeu a lógica (não decorou). Só então a lição sai da fila. */
+const REINF_HITS = 3, FUND_HITS = 2;
+function reinfQ(t){ const p=P(); if(!p.rq) p.rq={pt:[],math:[],en:[],de:[]}; if(!p.rq[t]) p.rq[t]=[]; return p.rq[t]; }
+const qKey = q => (q.prompt||"") + "|" + (q.answer || (q.pieces||[]).join("") || (((q.options||[]).find(o=>o.correct))||{}).label || "");
+
+function curLevel(){ const p=P(); return state.practice ? state.practiceLv : Math.min(p.lv[state.track], maxOf(state.track)); }
+/* níveis de domínio: meta é dominar 3 palavras (não 5 acertos) */
+function deepFrom(t){ const p=P(); return (p && p.deep && p.deep[t]) || 0; }
+function isDeep(t, lv){ const d = deepFrom(t); return d > 0 && lv >= d; }
+const goalFor = (t,lv) => (t==="pt" && PT_MASTERY[lv]!=null) ? (isDeep(t,lv)?4:3) : (isDeep(t,lv)? GOAL_DEEP : GOAL);
+
+function startGame(track){
+  const p = P();
+  state.track = track; state.practice = false; state.reinf = null; state.lastReinf = false;
+  state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.recent = [];
+  if(!p.prog[track]) p.prog[track] = 0;
+  showScreen("screen-game");
+  updateGameHUD();
+  const lv = curLevel();
+  speak(`${TRACKS[track].name}! Nível ${lv}: ${TRACKS[track].levels[lv-1].replace(/[🎧🎤👑🏅📖·]/g,"")}. Vamos lá!`, ()=>nextQuestion());
+  setTimeout(()=>{ if(!state.q) nextQuestion(); }, 3500);
+}
+
+function startPractice(track, lv){
+  state.track = track; state.practice = true; state.practiceLv = lv; state.reinf = null; state.lastReinf = false;
+  state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.practiceProg = 0; state.recent = [];
+  showScreen("screen-game");
+  updateGameHUD();
+  const g = goalFor(track, lv);
+  speak(g===3 ? `Treino do nível ${lv}! Domine ${g} palavras para ganhar moedas extras!`
+              : `Treino do nível ${lv}! Acerte ${g} para ganhar moedas extras!`, ()=>nextQuestion());
+  setTimeout(()=>{ if(!state.q) nextQuestion(); }, 3500);
+}
+
+function updateGameHUD(){
+  const p = P(), t = state.track, lv = curLevel();
+  const name = TRACKS[t].levels[lv-1] || "Mestre";
+  const badge = $("#level-badge");
+  badge.textContent = `${TRACKS[t].icon} ${state.practice?"Treino ":""}Nível ${lv} · ${name}${isDeep(t,lv)?" 📚":""}`;
+  badge.classList.toggle("practice", state.practice);
+  const prog = state.practice ? (state.practiceProg||0) : p.prog[t];
+  const goal = goalFor(t, lv);
+  const pend = state.practice? 0 : reinfQ(t).length;
+  $("#progress-fill").style.width = Math.min(prog/goal*100,100)+"%";
+  $("#progress-label").textContent = ((t==="pt" && PT_MASTERY[lv]!=null && !state.practice)
+    ? `${prog} de ${goal} palavras dominadas 🏅`
+    : `${prog} de ${goal} para ${state.practice?"o bônus":"subir de nível"} ⭐`)
+    + (pend? ` · ${pend} reforço${pend>1?"s":""} 🔁` : "");
+  updateHUD();
+}
+
+function nextQuestion(){
+  state.lock = false; state.qWrong = 0; state.typed = ""; state.micFails = 0; state.q = null; state.reinf = null;
+  stopMic();
+  $("#feedback").textContent = ""; $("#feedback").className = "";
+  let q;
+  const queue = state.practice? null : reinfQ(state.track);
+  /* alterna: 1 questão de reforço, 1 nova — assim a lição errada volta logo, misturada */
+  if(queue && queue.length && !state.lastReinf){
+    state.reinf = queue[0];
+    if(state.reinf.left > 0){ /* fase 1: a MESMA questão */
+      q = JSON.parse(JSON.stringify(state.reinf.q));
+      if(q.options) q.options = shuffle(q.options);
+      q.prompt = "🔁 " + (q.prompt||"");
+      q.speech = [ptT("Olha essa de novo!"), ...(q.speech||[])];
+    } else { /* fase 2: fundamento — questão nova da MESMA lição de origem */
+      q = genFor(state.track, state.reinf.q.flv || curLevel());
+      q.prompt = "🔁💡 " + (q.prompt||"");
+      q.speech = [ptT("Agora uma parecida! Vamos ver se você pegou o fundamento!"), ...(q.speech||[])];
+    }
+    state.lastReinf = true;
+  } else {
+    q = genFor(state.track, curLevel());
+    /* 📚 anti-repetição: no modo aprender a base é grande — evita repetir as últimas questões */
+    state.recent = state.recent || [];
+    let tries = 0;
+    while(state.recent.includes(qKey(q)) && tries++ < 8) q = genFor(state.track, curLevel());
+    state.lastReinf = false;
+  }
+  state.recent = state.recent || [];
+  state.recent.push(qKey(q));
+  if(state.recent.length > 6) state.recent.shift();
+  state.q = q;
+  renderQ(q);
+  updateGameHUD();
+  speak(q.speech);
+}
+
+function renderQ(q){
+  const va = $("#visual-area"), ans = $("#answers");
+  $("#prompt-text").textContent = q.prompt || "";
+  va.innerHTML = ""; ans.innerHTML = "";
+
+  /* --- visual --- */
+  if(q.visual) va.innerHTML = q.visual;
+
+  /* --- respostas --- */
+  if(q.kind === "opts"){
+    const row = document.createElement("div");
+    row.className = "opts-row";
+    if(q.stacked) row.style.flexDirection = "column", row.style.alignItems = "center";
+    q.options.forEach((op,i)=>{
+      const b = document.createElement("button");
+      b.className = `ans-btn ans-c${i%5}` + (q.optClass? " "+q.optClass:"");
+      b.style.animationDelay = (i*.07)+"s";
+      b.innerHTML = op.label;
+      b.onclick = ()=>answerOpt(b, op);
+      row.appendChild(b);
+    });
+    ans.appendChild(row);
+  }
+  else if(q.kind === "keypad" || q.kind === "abc"){
+    const disp = document.createElement("div");
+    disp.id = "typed-display"; disp.textContent = "";
+    ans.appendChild(disp);
+    if(q.kind === "abc"){
+      const hint = document.createElement("div");
+      hint.className = "hint-text";
+      hint.id = "letters-hint";
+      hint.textContent = "_ ".repeat(q.answer.length).trim();
+      ans.appendChild(hint);
+    }
+    const pad = document.createElement("div");
+    pad.className = q.kind === "keypad" ? "keypad" : "abcpad";
+    const keys = q.kind === "keypad"
+      ? ["1","2","3","4","5","6","7","8","9","⌫","0","✔"]
+      : "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["⌫","✔"]);
+    keys.forEach(k=>{
+      const b = document.createElement("button");
+      b.className = "key-btn" + (k==="✔"?" key-ok":k==="⌫"?" key-del":"");
+      b.textContent = k;
+      b.onclick = ()=>{
+        if(state.lock) return;
+        sndTap();
+        if(k==="⌫") state.typed = state.typed.slice(0,-1);
+        else if(k==="✔"){ checkTyped(); return; }
+        else if(state.typed.length < (q.maxLen||8)){
+          state.typed += k;
+          if(q.kind==="abc") speak([{t:LETTER_SOUND[k]||k, lang:"pt-BR"}]);
+        }
+        $("#typed-display").textContent = state.typed;
+      };
+      pad.appendChild(b);
+    });
+    ans.appendChild(pad);
+  }
+  else if(q.kind === "tiles"){
+    const slots = document.createElement("div"); slots.className = "slots";
+    q.pieces.forEach(()=>{ const s=document.createElement("div"); s.className="slot"; slots.appendChild(s); });
+    const tiles = document.createElement("div"); tiles.className = "tiles";
+    state.tileIdx = 0;
+    shuffle(q.pieces.concat(q.decoys||[])).forEach((piece,i)=>{
+      const t = document.createElement("button");
+      t.className = "tile"; t.textContent = piece;
+      t.style.animationDelay = (i*.06)+"s";
+      t.onclick = ()=>{
+        if(state.lock || t.classList.contains("used")) return;
+        const need = q.pieces[state.tileIdx];
+        if(piece === need){
+          sndTap();
+          if(q.sayPieces) speak([{t:piece.toLowerCase(), lang: q.de?"de-DE":q.en?"en-US":"pt-BR"}]);
+          t.classList.add("used");
+          const slot = slots.children[state.tileIdx];
+          slot.textContent = piece; slot.classList.add("filled");
+          state.tileIdx++;
+          if(state.tileIdx >= q.pieces.length) onCorrect();
+        } else {
+          t.classList.add("shake");
+          setTimeout(()=>t.classList.remove("shake"), 450);
+          onWrong();
+          if(state.qWrong >= 2){
+            tiles.querySelectorAll(".tile").forEach(x=>x.classList.remove("hint"));
+            const good = [...tiles.children].find(x=>!x.classList.contains("used") && x.textContent===q.pieces[state.tileIdx]);
+            if(good) good.classList.add("hint");
+          }
+        }
+      };
+      tiles.appendChild(t);
+    });
+    ans.appendChild(slots); ans.appendChild(tiles);
+  }
+  else if(q.kind === "mic"){
+    const mb = document.createElement("button");
+    mb.id = "mic-btn"; mb.textContent = "🎤";
+    const heard = document.createElement("div");
+    heard.id = "mic-heard"; heard.textContent = "Toque no microfone e fale!";
+    ans.appendChild(mb); ans.appendChild(heard);
+    mb.onclick = ()=>startMic(q, mb, heard);
+  }
+
+  $("#speak-again").style.display = q.speech ? "" : "none";
+}
+
+/* ---- microfone ---- */
+function stopMic(){ if(state.rec){ try{ state.rec.abort(); }catch(e){} state.rec = null; } }
+
+function showMicSkip(label){
+  if($("#mic-skip")) return;
+  const sk = document.createElement("button");
+  sk.id = "mic-skip"; sk.className = "skip-btn";
+  sk.textContent = label || "😅 Está difícil? Pular esta palavra";
+  sk.onclick = ()=>{ sndTap(); speak("Tudo bem! Vamos tentar outra!", ()=>nextQuestion()); };
+  $("#answers").appendChild(sk);
+}
+
+/* pede a permissão do microfone ANTES do reconhecimento — senão o prompt de
+   "Permitir" cancela a escuta e parece que o botão não funciona */
+let micReady = false, micBlock = "";
+function ensureMicPermission(){
+  if(micReady) return Promise.resolve(true);
+  /* aberto por duplo clique (file://) o Chrome/Edge NEGA o microfone sem nem
+     mostrar o pedido de permissão — só funciona via http (usar o JOGAR.bat) */
+  if(location.protocol === "file:"){ micBlock = "file"; return Promise.resolve(false); }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ micReady = true; return Promise.resolve(true); }
+  return navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    stream.getTracks().forEach(tr=>tr.stop());
+    micReady = true; micBlock = ""; return true;
+  }).catch(()=>{ micBlock = "denied"; return false; });
+}
+function micBlockMsg(){
+  return micBlock === "file"
+    ? "Peça a um adulto pra abrir o jogo pelo JOGAR.bat — aí o microfone funciona! 🎤"
+    : "O microfone está bloqueado 😢 Peça a um adulto: cadeado 🔒 na barra do navegador → Microfone → Permitir!";
+}
+
+/* teste de microfone de 1 clique (painel dos pais) — mostra exatamente onde trava */
+function micTest(){
+  const out = $("#mic-test-out");
+  const show = html => { if(out) out.innerHTML = html; };
+  if(location.protocol === "file:"){
+    show("❌ O jogo está aberto por <b>duplo clique</b> (endereço file://) — o navegador nega o microfone <b>sem nem perguntar</b>.<br>👉 Feche esta janela e abra o jogo pelo <b>JOGAR.bat</b> que está na pasta do jogo.");
+    return;
+  }
+  if(!SR){
+    show("❌ Este navegador não tem reconhecimento de voz. Use <b>Chrome</b> ou <b>Edge</b>.");
+    return;
+  }
+  show("⏳ Pedindo permissão… Se aparecer a janelinha do navegador, clique em <b>Permitir</b>!");
+  ensureMicPermission().then(ok=>{
+    if(!ok){
+      show("❌ Permissão negada. Clique no <b>cadeado 🔒</b> (ou no ícone 🎤) na barra de endereço → Microfone → <b>Permitir</b> → recarregue a página e teste de novo.");
+      return;
+    }
+    show("🎙️ Permissão OK! Agora <b>fale qualquer coisa</b>… (estou ouvindo)");
+    try{
+      const rec = new SR();
+      rec.lang = "pt-BR"; rec.interimResults = false; rec.maxAlternatives = 3;
+      let done = false;
+      const finish = msg => { if(done) return; done = true; try{ rec.stop(); }catch(e){} show(msg); };
+      rec.onresult = ev => finish(`✅ <b>Microfone funcionando!</b> Eu ouvi: “${ev.results[0][0].transcript}” 🎉<br>Os níveis 🎤 do jogo vão funcionar.`);
+      rec.onerror = ev => finish(
+        ev.error==="not-allowed" ? "❌ O navegador bloqueou. Cadeado 🔒 → Microfone → <b>Permitir</b> → recarregue a página."
+        : ev.error==="network" ? "❌ O serviço de voz não respondeu — o reconhecimento precisa de <b>internet</b>. Verifique a conexão."
+        : ev.error==="no-speech" ? "⚠️ Não ouvi nada. Fale mais perto do microfone e toque em Testar de novo."
+        : ev.error==="audio-capture" ? "❌ Nenhum microfone encontrado. Conecte/ative um microfone no Windows (Configurações → Sistema → Som)."
+        : "❌ Erro: "+ev.error);
+      rec.onend = ()=> finish("⚠️ Não ouvi nada. Verifique se o microfone certo está escolhido no Windows (Configurações → Sistema → Som → Entrada) e teste de novo.");
+      rec.start();
+      setTimeout(()=>finish("⚠️ Tempo esgotado sem ouvir nada. Verifique o microfone do Windows e teste de novo."), 8000);
+    }catch(e){ show("❌ Erro ao iniciar o reconhecimento: "+e.message); }
+  });
+}
+
+/* compara o que foi ouvido com a resposta (e alternativas aceitas, ex.: "7" pra SEVEN) */
+function micMatch(alts, q){
+  const targets = [q.answer].concat(q.accept||[]).map(norm);
+  return alts.some(a => targets.some(t => a===t || a.includes(t) || t.includes(a.replace(/\s/g,""))));
+}
+
+function startMic(q, mb, heard){
+  if(state.lock) return;
+  stopMic();
+  heard.textContent = "Preparando o microfone...";
+  ensureMicPermission().then(allowed=>{
+    if(state.lock) return;
+    if(!allowed){
+      mb.classList.remove("listening");
+      heard.textContent = micBlockMsg();
+      showMicSkip("👉 Pular esta palavra");
+      return;
+    }
+    const rec = new SR();
+    state.rec = rec;
+    rec.lang = q.de ? "de-DE" : q.en ? "en-US" : "pt-BR";
+    rec.interimResults = false; rec.maxAlternatives = 5;
+    mb.classList.add("listening");
+    heard.textContent = "Estou ouvindo... fale agora!";
+    speechSynthesis.cancel();
+    let got = false;
+    rec.onresult = ev=>{
+      got = true;
+      const alts = [...ev.results[0]].map(r=>norm(r.transcript));
+      heard.textContent = `Ouvi: "${ev.results[0][0].transcript}"`;
+      const ok = micMatch(alts, q);
+      if(ok){ mb.classList.remove("listening"); onCorrect(); }
+      else {
+        mb.classList.remove("listening");
+        state.micFails++;
+        onWrong();
+        if(state.micFails >= 2) showMicSkip();
+      }
+    };
+    rec.onerror = ev=>{
+      mb.classList.remove("listening");
+      if(got) return;
+      const err = ev && ev.error;
+      if(err==="not-allowed" || err==="service-not-allowed"){
+        micReady = false; if(!micBlock) micBlock = "denied";
+        heard.textContent = micBlockMsg();
+        showMicSkip("👉 Pular esta palavra");
+      } else if(err==="network"){
+        heard.textContent = "O microfone precisa de internet 😢 Pule esta palavra!";
+        showMicSkip("👉 Pular esta palavra");
+      } else if(err==="no-speech"){
+        heard.textContent = "Não ouvi nada... toque no microfone e fale bem alto!";
+      } else {
+        heard.textContent = "Não deu certo... toque e tente de novo!";
+        state.micFails++;
+        if(state.micFails >= 2) showMicSkip();
+      }
+    };
+    rec.onend = ()=>{ mb.classList.remove("listening"); if(!got && heard.textContent.startsWith("Estou")) heard.textContent = "Não ouvi... toque e tente de novo!"; };
+    try{ rec.start(); }catch(e){ heard.textContent = "Microfone indisponível 😢"; showMicSkip("👉 Pular esta palavra"); }
+  });
+}
+
+/* ---- responder ---- */
+function answerOpt(btn, op){
+  if(state.lock) return;
+  if(op.correct){
+    btn.classList.add("correct");
+    onCorrect();
+  } else {
+    btn.classList.add("wrong");
+    btn.disabled = true;
+    onWrong();
+    if(op.say){ /* fala o nome do que a criança tocou — ela aprende também com o erro */
+      const parts = [ptT("Ops! Essa é"), {t: op.say.t + "!", lang: op.say.lang}];
+      if(state.qWrong >= 2 && state.q.hintSpeech) parts.push(ptT("Agora procure:"), state.q.hintSpeech);
+      else parts.push(ptT("Tente de novo!"));
+      speak(parts);
+    }
+    if(state.qWrong >= 2){
+      [...document.querySelectorAll(".ans-btn")].forEach((b,i)=>{
+        b.classList.toggle("hint", !!(state.q.options[i] && state.q.options[i].correct));
+      });
+    }
+  }
+}
+
+function checkTyped(){
+  if(state.lock) return;
+  const q = state.q;
+  if(!state.typed) return;
+  if(norm(state.typed) === norm(q.answer)){
+    onCorrect();
+  } else {
+    const d = $("#typed-display");
+    d.classList.add("shake");
+    setTimeout(()=>{ d.classList.remove("shake"); }, 550);
+    state.typed = ""; d.textContent = "";
+    onWrong();
+    if(state.qWrong >= 2 && q.kind === "abc"){
+      $("#letters-hint").textContent = q.answer.split("").map((ch,i)=> i===0? ch : "_").join(" ");
+      speak([{t:`Começa com a letra ${LETTER_SOUND[q.answer[0]]||q.answer[0]}!`, lang:"pt-BR"}]);
+    }
+    if(state.qWrong >= 3 && q.kind === "keypad"){
+      $("#letters-hint")?.remove();
+      speak(q.speech);
+    }
+  }
+}
+
+/* ---- acerto / erro ---- */
+function onCorrect(){
+  state.lock = true;
+  stopMic();
+  const p = P(), t = state.track, lv = curLevel(), q = state.q;
+  sndCorrect(); confetti(14);
+  let coins = coinFor(lv, q.kind);
+  if(state.qWrong > 0) coins = Math.max(2, Math.round(coins/2));
+  let extra = 0;
+  if(state.qWrong === 0){
+    state.streak++;
+    if(state.streak % 5 === 0){ extra = STREAK_BONUS; confetti(20); }
+  } else state.streak = 0;
+  /* questão de reforço: não conta no progresso do nível.
+     Fase 1 (left): repetir a MESMA questão 3x. Fase 2 (fleft): 2 questões novas do
+     mesmo fundamento. Errou → a fase atual recomeça. Só sai da fila com as duas completas. */
+  let reinfGone = false, fundNow = false;
+  if(state.reinf){
+    const queue = reinfQ(t), it = state.reinf;
+    const inFund = it.left <= 0;
+    if(state.qWrong > 0){
+      if(inFund) it.fleft = FUND_HITS;           /* errou o fundamento → recomeça a fase 2 */
+      else it.left = REINF_HITS;                 /* errou de novo → mais 3 vezes */
+    } else if(inFund) it.fleft--;
+    else { it.left--; if(it.left === 0) fundNow = true; }
+    const ix = queue.indexOf(it);
+    if(ix > -1) queue.splice(ix, 1);
+    if(it.left > 0 || it.fleft > 0) queue.push(it); /* volta pro fim da fila, misturada */
+    else { reinfGone = true; extra += 15; confetti(24); }
+  }
+  /* domínio de palavra (Kumon): a mesma palavra repete até ser dominada */
+  let masteredNow = false, step = !state.reinf;
+  const deepDirty = !state.reinf && state.qWrong > 0 && isDeep(t, lv);
+  if(deepDirty) step = false; /* modo aprender: só acerto limpo conta pro progresso */
+  if(q.mword && !state.reinf){
+    const m = (p.mast[q.mword]||0) + 1;
+    p.mast[q.mword] = Math.min(m, MASTERY);
+    masteredNow = m >= MASTERY;
+    step = masteredNow;
+    if(masteredNow){ extra += 10; confetti(24); }
+  }
+  p.coins += coins + extra;
+  p.stats[t].a++;
+  const fb = $("#feedback");
+  fb.className = "good";
+  fb.textContent = reinfGone
+    ? `🔁✨ Pegou de vez! Lição e fundamento! +${coins+extra} moedas!`
+    : fundNow
+    ? `🔁💡 Agora vem o fundamento! +${coins+extra} moedas!`
+    : masteredNow
+    ? `🏅 Palavra dominada! +${coins+extra} moedas!`
+    : deepDirty
+    ? `💛 +${coins+extra} moedas! Essa volta pra contar de novo!`
+    : `${pick(["🎉","⭐","🌈","💪","🏅"])} +${coins+extra} moedas!` + (extra?` (${state.streak} seguidas! 🔥)`:"");
+  coinBump(); updateHUD();
+
+  const goal = goalFor(t, lv);
+  let done = false;
+  if(state.practice){
+    if(step) state.practiceProg = (state.practiceProg||0)+1;
+    if(state.practiceProg >= goal) done = "practice";
+  } else if(step){
+    p.prog[t]++;
+    if(p.prog[t] >= goal) done = "levelup";
+  }
+  save(); updateGameHUD();
+
+  const praise = reinfGone ? "Agora você pegou essa lição de vez! Entendeu o fundamento! Muito bem!"
+               : fundNow ? "Boa! Agora vamos ver umas parecidas, pra ter certeza que você entendeu o porquê!"
+               : masteredNow ? `Você dominou a palavra ${q.mword}! Incrível!` : pick(PRAISE);
+  const okSpeech = q.okSpeech || null;
+  const after = ()=>{
+    if(done === "levelup") levelUp();
+    else if(done === "practice") practiceDone();
+    else setTimeout(()=>nextQuestion(), 350);
+  };
+  if(okSpeech) speak([...(Array.isArray(okSpeech)?okSpeech:[ptT(okSpeech)]), ptT(praise)], after);
+  else speak(praise, after);
+}
+
+function onWrong(){
+  const p = P(), t = state.track;
+  state.qWrong++; state.levelErrors++; state.streak = 0;
+  p.stats[t].e++;
+  /* errou 1 vez → a MESMA questão entra na fila de reforço (3 acertos + 2 de fundamento pra sair) */
+  if(state.qWrong === 1 && !state.practice && !state.reinf){
+    const queue = reinfQ(t), k = qKey(state.q);
+    const ex = queue.find(it=>it.k===k);
+    if(ex){ ex.left = REINF_HITS; ex.fleft = FUND_HITS; }
+    else queue.push({ k, left: REINF_HITS, fleft: FUND_HITS, q: JSON.parse(JSON.stringify(state.q)) });
+  }
+  /* 📚 primeiro erro na questão marca o nível REAL da criança (a partir do nível 3):
+     daí pra cima destrava a base completa — modo aprender de verdade */
+  if(!state.practice && state.qWrong === 1){
+    const lvSrc = state.q.flv || curLevel();
+    if(lvSrc >= DEEP_MIN && (!p.deep[t] || lvSrc < p.deep[t])){
+      const first = !p.deep[t];
+      p.deep[t] = lvSrc;
+      if(first) setTimeout(()=>speak("Opa! Agora eu descobri o que você vai aprender! Daqui pra frente vamos conhecer TUDO: mais bichos, mais cores, mais números! Vamos nessa!"), 2500);
+    }
+  }
+  save();
+  sndWrong();
+  const fb = $("#feedback");
+  fb.className = "bad";
+  fb.textContent = "Ops! Tente de novo! 💛";
+  const enc = pick(ENCOURAGE);
+  if(state.qWrong >= 2) speak([ptT(enc), ...(state.q.hintSpeech? [state.q.hintSpeech]:[])]);
+  else speak(enc);
+  /* muitos erros no nível → sugerir revisão (avaliação do erro) */
+  if(!state.practice && state.levelErrors >= 6 && !state.reviewSuggested && curLevel() > 1){
+    state.reviewSuggested = true;
+    setTimeout(()=>suggestReview(), 1200);
+  }
+}
+
+function suggestReview(){
+  const t = state.track, lv = curLevel();
+  showOverlay(`
+    <span class="big">🦊</span>
+    <h2>Vamos treinar um pouquinho?</h2>
+    <p>Este nível está difícil! Que tal treinar o nível anterior para ficar craque? Você ainda ganha moedas! 🪙</p>
+    <button class="ov-btn" id="rev-yes">Treinar nível ${lv-1} 💪</button>
+    <button class="ov-btn alt" id="rev-no">Continuar aqui</button>`);
+  speak("Este nível está difícil, né? Que tal treinar o nível anterior pra ficar craque? Você escolhe!");
+  $("#rev-yes").onclick = ()=>{ sndTap(); hideOverlay(); startPractice(t, lv-1); };
+  $("#rev-no").onclick = ()=>{ sndTap(); hideOverlay(); speak("Boa! Você é corajoso! Vamos lá!"); };
+}
+
+/* ---- subir de nível ---- */
+function levelUp(){
+  const p = P(), t = state.track;
+  const lv = p.lv[t];
+  const bonus = levelUpBonus(lv);
+  p.coins += bonus;
+  p.lv[t] = lv+1;
+  p.prog[t] = 0;
+  /* sempre passa de nível — as lições erradas seguem misturadas na fila de reforço */
+  const pendR = reinfQ(t).length;
+  state.levelErrors = 0; state.reviewSuggested = false;
+  save();
+  sndLevelUp(); confetti(60); coinBump(); updateHUD();
+  const mx = maxOf(t);
+  if(lv >= mx){
+    showOverlay(`
+      <span class="big">👑</span>
+      <h2>${TRACKS[t].name}: COMPLETO!</h2>
+      <p>Você terminou TODOS os ${mx} níveis! Agora o modo Mestre mistura tudo — e dá muitas moedas! +${bonus} 🪙</p>
+      <button class="ov-btn" id="lvl-go">Modo Mestre! 👑</button>
+      <button class="ov-btn alt" id="lvl-home">Menu</button>`);
+    speak(`Parabéns! Você completou toda a trilha de ${TRACKS[t].name}! Você é incrível! Agora vem o modo mestre!`);
+  } else {
+    const nname = TRACKS[t].levels[p.lv[t]-1].replace(/[🎧🎤👑🏅📖·]/g,"");
+    showOverlay(`
+      <span class="big">🚀</span>
+      <h2>NÍVEL ${p.lv[t]}!</h2>
+      <p>Você subiu de nível e ganhou <b>+${bonus} moedas</b> de bônus! 🪙<br>Agora vem: <b>${TRACKS[t].levels[p.lv[t]-1]}</b></p>
+      ${pendR? `<p style="color:#e67e22;">🔁 ${pendR===1? "Uma lição de reforço vai junto — ela volta misturada" : `<b>${pendR} lições de reforço</b> vão junto — elas voltam misturadas`} até você pegar de vez!</p>` : ""}
+      <button class="ov-btn" id="lvl-go">Continuar! 🚀</button>
+      <button class="ov-btn alt" id="lvl-home">Menu</button>`);
+    speak(`Uau! Você subiu para o nível ${p.lv[t]}! Ganhou ${bonus} moedas de bônus! Agora vamos aprender: ${nname}!`);
+  }
+  $("#lvl-go").onclick = ()=>{ sndTap(); hideOverlay(); updateGameHUD(); nextQuestion(); };
+  $("#lvl-home").onclick = ()=>{ sndTap(); hideOverlay(); goHome(); };
+}
+
+function practiceDone(){
+  const p = P();
+  p.coins += PRACTICE_BONUS;
+  save(); coinBump(); updateHUD(); confetti(35); sndLevelUp();
+  showOverlay(`
+    <span class="big">💪</span>
+    <h2>Treino completo!</h2>
+    <p>Você ganhou <b>+${PRACTICE_BONUS} moedas</b> de bônus do treino! 🪙</p>
+    <button class="ov-btn" id="pr-again">Treinar de novo 🔁</button>
+    <button class="ov-btn alt" id="pr-back">Jornada 🗺️</button>`);
+  speak(`Treino completo! Mais ${PRACTICE_BONUS} moedas pra você! Quanto mais treina, mais craque fica!`);
+  $("#pr-again").onclick = ()=>{ sndTap(); hideOverlay(); startPractice(state.track, state.practiceLv); };
+  $("#pr-back").onclick = ()=>{ sndTap(); hideOverlay(); openJourney(state.track); };
+}
+
+/* =============== GERADORES DE PERGUNTAS =============== */
+function genFor(track, lv){
+  let q;
+  if(track==="pt") q = genPt(lv);
+  else if(track==="math") q = genMath(lv);
+  else if(track==="de") q = genDe(lv);
+  else q = genEn(lv);
+  q.flv = lv; /* lição de origem = fundamento (cada nível Kumon ensina UMA coisa) */
+  return q;
+}
+
+/* opções: alvo + distratores do mesmo grupo */
+function makeOpts(correct, pool, n, labelFn){
+  const others = shuffle(pool.filter(x=>x!==correct)).slice(0, n-1);
+  return shuffle([correct, ...others]).map(x=>({ label: labelFn? labelFn(x): x, correct: x===correct }));
+}
+
+function letterQ(letters, nOpts){
+  const L = pick(letters);
+  return {
+    kind:"opts", prompt:"Qual é a letra?",
+    visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🔤</span>`,
+    speech:[ptT(`Encontre a letra ${LETTER_SOUND[L]||L}!`)],
+    hintSpeech: ptT(`Procure a letra ${LETTER_SOUND[L]||L}.`),
+    okSpeech:`${LETTER_SOUND[L]||L}!`,
+    options: makeOpts(L, letters, nOpts)
+  };
+}
+
+/* 7A do Kumon: ouvir a palavra e apontar a figura (antes de ler) */
+function genListenWord(n){
+  const pool = n===3 ? WORDS : WORDS.concat(WORDS_BIG);
+  const w = pick(pool);
+  return {
+    kind:"opts", prompt:"Escute e toque na figura!",
+    visual:`<span class="big-emoji">👂</span>`,
+    speech:[ptT(`Encontre: ${w.w}!`)],
+    hintSpeech: ptT(`${w.w}! ${w.w}!`),
+    okSpeech:`${w.w}!`,
+    optClass:"emoji-opt",
+    options: makeOpts(w, pool, n, x=>x.e)
+  };
+}
+
+/* Domínio Kumon: a MESMA palavra repete 3 vezes, cada vez mais difícil */
+function genMastery(gi){
+  const list = WORD_GRADES[gi];
+  const focus = list.find(x=>(P().mast[x.w]||0) < MASTERY);
+  if(!focus){ /* todas dominadas → revisão: ler e achar a figura */
+    const w = pick(list);
+    return {
+      kind:"opts", prompt:"Revisão! Leia e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${w.w}</div>`,
+      speech:[ptT("Você já dominou todas! Leia e toque na figura!")],
+      hintSpeech: ptT(`${(w.syl||[w.w]).join("... ")}...`),
+      okSpeech:`${w.w}!`,
+      optClass:"emoji-opt",
+      options: makeOpts(w, list, Math.min(5,list.length), x=>x.e)
+    };
+  }
+  const rep = P().mast[focus.w]||0;
+  const syl = focus.syl || [focus.w];
+  if(rep===0){ /* 1º encontro: ouvir + ver a palavra */
+    return {
+      kind:"opts", prompt:"Palavra nova! Escute e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
+      speech:[ptT(`Palavra nova: ${focus.w}! ${syl.join("... ")}... ${focus.w}! Ache a figura!`)],
+      hintSpeech: ptT(`${focus.w}! ${syl.join("... ")}!`),
+      okSpeech:`${focus.w}!`,
+      optClass:"emoji-opt", mword:focus.w,
+      options: makeOpts(focus, list, Math.min(3,list.length), x=>x.e)
+    };
+  }
+  if(rep===1){ /* 2º encontro: ler sozinho, sem ajuda de voz */
+    return {
+      kind:"opts", prompt:"Ela voltou! Agora leia sozinho!",
+      visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
+      speech:[ptT("Essa palavra voltou! Agora leia sozinho e ache a figura!")],
+      hintSpeech: ptT(`${syl.join("... ")}...`),
+      okSpeech:`${focus.w}!`,
+      optClass:"emoji-opt", mword:focus.w,
+      options: makeOpts(focus, list, Math.min(5,list.length), x=>x.e)
+    };
+  }
+  /* 3º encontro: montar a palavra → dominada! */
+  const pieces = syl.length>=2 ? syl : focus.w.split("");
+  const decoys = syl.length>=2
+    ? shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>!pieces.includes(s))).slice(0,2)
+    : shuffle(AZ.filter(l=>!focus.w.includes(l))).slice(0,2);
+  return {
+    kind:"tiles", prompt:"Última vez! Monte a palavra e domine ela!",
+    visual:`<span class="big-emoji">${focus.e}</span>`,
+    speech:[ptT(`Monte a palavra ${focus.w}! ${pieces.join("... ")}!`)],
+    hintSpeech: ptT(`${pieces.join("... ")}!`),
+    okSpeech:`${focus.w}!`,
+    pieces, decoys, sayPieces:true, answer:focus.w, mword:focus.w
+  };
+}
+
+/* Etapa C do Kumon: ler uma historinha e responder */
+function genStory(){
+  const s = pick(STORIES);
+  return {
+    kind:"opts", prompt: s.q,
+    visual:`<div class="read-sentence" style="font-size:clamp(17px,4.4vw,24px);">${s.t[0]}<br>${s.t[1]}</div>`,
+    speech:[ptT(`Leia a historinha com atenção! Depois responda: ${s.q}`)],
+    okSpeech:`Isso mesmo!`,
+    optClass:"emoji-opt",
+    options: shuffle(s.opts).map(e=>({label:e, correct:e===s.a}))
+  };
+}
+
+/* despachante da trilha Kumon completa (7A → C) */
+function genPt(lv){
+  if(lv===1 || lv===2) return genListenWord(lv===1?3:5);
+  if(PT_MASTERY[lv]!=null) return genMastery(PT_MASTERY[lv]);
+  if(lv===34){ /* ditado difícil */
+    const w = pick(DITADO_HARD);
+    return {
+      kind:"abc", prompt:"Ditado difícil! Escreva o que ouvir!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT(`Ditado! Escreva a palavra: ${w}! ${w}!`)],
+      okSpeech:`${w}!`,
+      answer:w, maxLen:w.length
+    };
+  }
+  if(lv===35) return genStory();
+  if(PT_OLD[lv]) return genPtCore(PT_OLD[lv]);
+  /* 36+: MESTRE — mistura os desafios da trilha inteira */
+  return genPt(pick([16,20,21,24,25,26,27,28,30,32,34,35]));
+}
+
+function genPtCore(lv){
+  if(lv===1) return letterQ(VOWELS, 3);
+  if(lv===2) return letterQ(VOWELS, 5);
+  if(lv===3) return letterQ(EASY_CONS, 3);
+  if(lv===4) return letterQ(AZ, 5);
+  if(lv===5){ /* letras parecidas */
+    const g = pick(CONFUSABLE), L = pick(g);
+    const q = letterQ(g, Math.min(4,g.length));
+    q.prompt = "Cuidado! São parecidas!";
+    q.speech = [ptT(`Atenção! Encontre a letra ${LETTER_SOUND[L]||L}!`)];
+    q.okSpeech = `${LETTER_SOUND[L]||L}!`;
+    q.options = makeOpts(L, g, Math.min(4,g.length));
+    q.hintSpeech = ptT(`Olhe bem! É a letra ${LETTER_SOUND[L]||L}.`);
+    return q;
+  }
+  if(lv===6 || lv===7 || lv===8){ /* sílabas */
+    const fams = lv===6? ["M"] : lv===7? ["M","P","B"] : Object.keys(SYL_FAMILIES);
+    const f = pick(fams);
+    const syl = pick(SYL_FAMILIES[f]);
+    const pool = lv===6? SYL_FAMILIES[f] : shuffle(fams.flatMap(k=>SYL_FAMILIES[k]));
+    return {
+      kind:"opts", prompt:"Qual é a sílaba?",
+      visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🧩</span>`,
+      speech:[ptT(`Encontre a sílaba ${syl}!`)],
+      hintSpeech: ptT(`${syl}! ${syl}!`),
+      okSpeech:`${syl}!`,
+      options: makeOpts(syl, pool, 5)
+    };
+  }
+  if(lv===9 || lv===10){ /* primeira letra: 3 → 5 opções (pedido do papai!) */
+    const w = pick(WORDS);
+    const first = w.w[0];
+    const pool = shuffle(AZ.filter(l=>l!==first)).slice(0, lv===9? 2:4).concat(first);
+    return {
+      kind:"opts", prompt:`Com que letra começa?`,
+      visual:`<span class="big-emoji">${w.e}</span>`,
+      speech:[ptT(`Com que letra começa a palavra ${w.w}?`)],
+      hintSpeech: ptT(`${w.w}... ${w.w[0]}${w.w[1]}... começa com ${LETTER_SOUND[first]||first}!`),
+      okSpeech:`${w.w} começa com ${LETTER_SOUND[first]||first}!`,
+      options: makeOpts(first, pool, lv===9? 3:5)
+    };
+  }
+  if(lv===11){ /* SEGUNDA letra: todas começam igual (pedido do papai!) */
+    const set = pick(SECOND_SETS);
+    const target = pick(set.words);
+    return {
+      kind:"opts", prompt:"Todas começam igual! Leia a 2ª letra!",
+      visual:`<span class="big-emoji">${target.e}</span>`,
+      speech:[ptT(`Atenção! Todas as palavras começam com a mesma letra! Encontre a palavra ${target.w}. Leia a segunda letra!`)],
+      hintSpeech: ptT(`${target.w}! A segunda letra é ${LETTER_SOUND[target.w[1]]||target.w[1]}!`),
+      okSpeech:`${target.w}!`,
+      optClass:"mid-text",
+      options: makeOpts(target, set.words, Math.min(4,set.words.length), x=>x.w)
+    };
+  }
+  if(lv===12){ /* primeira sílaba */
+    const w = pick(WORDS.filter(x=>x.syl.length>=2));
+    const first = w.syl[0];
+    const pool = shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>s!==first)).slice(0,3).concat(first);
+    return {
+      kind:"opts", prompt:"Qual é a primeira sílaba?",
+      visual:`<span class="big-emoji">${w.e}</span>`,
+      speech:[ptT(`${w.w}! Qual é o primeiro pedacinho de ${w.w}?`)],
+      hintSpeech: ptT(`${w.syl.join("... ")}... ${w.w}!`),
+      okSpeech:`${first}! ${w.w}!`,
+      options: makeOpts(first, pool, 4)
+    };
+  }
+  if(lv===13 || lv===14){ /* LER palavra → achar figura (não fala a palavra!) */
+    const w = pick(WORDS);
+    return {
+      kind:"opts", prompt:"Leia a palavra e ache a figura!",
+      visual:`<div class="read-word">${w.w}</div>`,
+      speech:[ptT("Leia a palavra e toque na figura certa! Você consegue!")],
+      hintSpeech: ptT(`${w.syl.join("... ")}...`),
+      okSpeech:`${w.w}!`,
+      optClass:"emoji-opt",
+      options: makeOpts(w, WORDS, lv===13? 3:5, x=>x.e)
+    };
+  }
+  if(lv===15){ /* palavras parecidas */
+    const set = pick(SIM_SETS);
+    const target = pick(set.fam);
+    return {
+      kind:"opts", prompt:"Cuidado! São parecidas! Leia com atenção!",
+      visual:`<span class="big-emoji">${set.emo[target]}</span>`,
+      speech:[ptT(`Atenção, são palavras parecidas! Encontre a palavra ${target}!`)],
+      hintSpeech: ptT(`${target}! Começa com ${LETTER_SOUND[target[0]]||target[0]}!`),
+      okSpeech:`${target}!`,
+      optClass:"mid-text",
+      options: makeOpts(target, set.fam, Math.min(4,set.fam.length))
+    };
+  }
+  if(lv===16){ /* montar com sílabas */
+    const w = pick(WORDS.filter(x=>x.syl.length>=2));
+    const decoys = shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>!w.syl.includes(s))).slice(0,2);
+    return {
+      kind:"tiles", prompt:"Monte a palavra com as sílabas!",
+      visual:`<span class="big-emoji">${w.e}</span>`,
+      speech:[ptT(`Monte a palavra ${w.w}! ${w.syl.join("... ")}!`)],
+      hintSpeech: ptT(`${w.syl.join("... ")}!`),
+      okSpeech:`${w.w}!`,
+      pieces: w.syl, decoys, sayPieces:true, answer:w.w
+    };
+  }
+  if(lv===17){ /* montar com letras */
+    const w = pick(WORDS.filter(x=>x.w.length<=4));
+    const decoys = shuffle(AZ.filter(l=>!w.w.includes(l))).slice(0,2);
+    return {
+      kind:"tiles", prompt:"Monte a palavra com as letras!",
+      visual:`<span class="big-emoji">${w.e}</span>`,
+      speech:[ptT(`Monte a palavra ${w.w}, letra por letra!`)],
+      hintSpeech: ptT(`${w.w.split("").map(l=>LETTER_SOUND[l]||l).join("... ")}!`),
+      okSpeech:`${w.w}!`,
+      pieces: w.w.split(""), decoys, sayPieces:true, answer:w.w
+    };
+  }
+  if(lv===18){ /* escrever palavra (com figura) */
+    const w = pick(WORDS.filter(x=>x.w.length<=5));
+    return {
+      kind:"abc", prompt:"Escreva a palavra!",
+      visual:`<span class="big-emoji">${w.e}</span>`,
+      speech:[ptT(`Escreva a palavra ${w.w}! ${w.syl.join("... ")}!`)],
+      okSpeech:`${w.w}!`,
+      answer:w.w, maxLen:w.w.length
+    };
+  }
+  if(lv===19){ /* DITADO: só voz! */
+    const w = pick(DITADO_EASY);
+    return {
+      kind:"abc", prompt:"Ditado! Escreva o que você ouvir!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT(`Ditado! Escreva a palavra: ${w}!`)],
+      okSpeech:`${w}!`,
+      answer:w, maxLen:w.length
+    };
+  }
+  if(lv===20){ /* ler em voz alta 🎤 */
+    if(!SR) return genPtCore(18);
+    const w = pick(MIC_WORDS_PT);
+    const emoji = (WORDS.concat(WORDS_BIG).find(x=>x.w===w)||{}).e || "🗣️";
+    return {
+      kind:"mic", prompt:"Leia a palavra em voz alta!",
+      visual:`<div class="read-word">${w}</div><span class="duo-emoji">${emoji}</span>`,
+      speech:[ptT("Leia a palavra bem alto no microfone!")],
+      okSpeech:`${w}! Você leu!`,
+      answer:w
+    };
+  }
+  if(lv===21){ /* palavras grandes */
+    const w = pick(WORDS_BIG);
+    return {
+      kind:"opts", prompt:"Leia a palavra GRANDE e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(28px,7vw,42px);">${w.w}</div>`,
+      speech:[ptT("Palavra grande! Leia pedacinho por pedacinho e ache a figura!")],
+      hintSpeech: ptT(`${w.syl.join("... ")}...`),
+      okSpeech:`${w.w}!`,
+      optClass:"emoji-opt",
+      options: makeOpts(w, WORDS_BIG, 5, x=>x.e)
+    };
+  }
+  if(lv===22){ /* montar palavras grandes */
+    const w = pick(WORDS_BIG);
+    const decoys = shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>!w.syl.includes(s))).slice(0,2);
+    return {
+      kind:"tiles", prompt:"Monte a palavra grande!",
+      visual:`<span class="big-emoji">${w.e}</span>`,
+      speech:[ptT(`Monte a palavra ${w.w}! ${w.syl.join("... ")}!`)],
+      hintSpeech: ptT(`${w.syl.join("... ")}!`),
+      okSpeech:`${w.w}!`,
+      pieces:w.syl, decoys, sayPieces:true, answer:w.w
+    };
+  }
+  if(lv===23){ /* CH LH NH RR SS */
+    const w = pick(DIGRAPH_WORDS);
+    return {
+      kind:"opts", prompt:"Sons especiais! Leia e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(28px,7vw,42px);">${w.w}</div>`,
+      speech:[ptT("Essa palavra tem um som especial! Leia e toque na figura certa!")],
+      hintSpeech: ptT(`${w.syl.join("... ")}...`),
+      okSpeech:`${w.w}!`,
+      optClass:"emoji-opt",
+      options: makeOpts(w, DIGRAPH_WORDS, 4, x=>x.e)
+    };
+  }
+  if(lv===24){ /* TR BR FL */
+    const w = pick(CLUSTER_WORDS);
+    return {
+      kind:"opts", prompt:"Duas letras juntas! Leia e ache!",
+      visual:`<div class="read-word" style="font-size:clamp(28px,7vw,42px);">${w.w}</div>`,
+      speech:[ptT("Essa palavra tem duas letras juntinhas! Leia com calma e ache a figura!")],
+      okSpeech:`${w.w}!`,
+      optClass:"emoji-opt",
+      options: makeOpts(w, CLUSTER_WORDS, 4, x=>x.e)
+    };
+  }
+  if(lv===25){ /* frases */
+    const s = pick(SENTENCES);
+    return {
+      kind:"opts", prompt:"Leia a frase e ache as figuras!",
+      visual:`<div class="read-sentence">${s.t}</div>`,
+      speech:[ptT("Uau, uma frase inteira! Leia e toque nas figuras certas!")],
+      okSpeech:s.t,
+      optClass:"emoji-opt",
+      options: makeOpts(s, SENTENCES, 3, x=>x.e)
+    };
+  }
+  /* 26+: MESTRE — mistura os níveis difíceis */
+  return genPtCore(pick([13,15,16,17,19,21,23,24,25]));
+}
+
+/* ---- matemática ---- */
+function emojiGroup(n, emoji, gone){
+  const g = gone||0;
+  let h = `<div class="emoji-group">`;
+  for(let i=0;i<n;i++) h += `<span class="emoji-item${i>=n-g?" gone":""}" style="animation-delay:${i*.06}s">${emoji}</span>`;
+  return h+`</div>`;
+}
+function numOpts(correct, min, max, n){
+  const set = new Set([correct]);
+  let guard = 0;
+  while(set.size<n && guard++<200){
+    const v = min + rand(max-min+1);
+    set.add(v);
+  }
+  return shuffle([...set]).map(v=>({label:String(v), correct:v===correct}));
+}
+
+function genMath(lv){
+  if(lv<=3){ /* contar 3 / 5 / 10 */
+    const max = lv===1?3 : lv===2?5 : 10;
+    const n = 1+rand(max), e = pick(COUNT_EMOJIS);
+    return {
+      kind:"opts", prompt:"Quantos são? Conte com o dedinho!",
+      visual: emojiGroup(n,e),
+      speech:[ptT("Conte quantos tem e toque no número certo!")],
+      hintSpeech: ptT(`Conte de novo, um por um!`),
+      okSpeech:`São ${n}!`,
+      options: numOpts(n, Math.max(1,n-3), Math.min(max,n+3), lv===1?3:lv===2?4:5)
+    };
+  }
+  if(lv===4){ /* achar número falado */
+    const n = 1+rand(10);
+    return {
+      kind:"opts", prompt:"Ache o número!",
+      visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🔍</span>`,
+      speech:[ptT(`Encontre o número ${n}!`)],
+      okSpeech:`${n}!`,
+      options: numOpts(n, Math.max(1,n-4), Math.min(10,n+4), 5)
+    };
+  }
+  if(lv===5 || lv===6){ /* sucessor / antecessor */
+    const after = lv===5;
+    const n = after? 1+rand(8) : 2+rand(8);
+    const correct = after? n+1 : n-1;
+    return {
+      kind:"opts", prompt: after? `Que número vem DEPOIS do ${n}?` : `Que número vem ANTES do ${n}?`,
+      visual:`<span class="num-big">${after? n+" → ?" : "? ← "+n}</span>`,
+      speech:[ptT(after? `Que número vem depois do ${n}?` : `Que número vem antes do ${n}?`)],
+      hintSpeech: ptT(after? `Conte: ${n}, e depois?` : `Conte: e antes do ${n}?`),
+      okSpeech:`${correct}!`,
+      options: numOpts(correct, Math.max(0,correct-3), correct+3, 3)
+    };
+  }
+  if(lv===7){ /* maior ou menor */
+    let a = 1+rand(10), b = 1+rand(10);
+    while(b===a) b = 1+rand(10);
+    const bigger = rand(2)===0;
+    const correct = bigger? Math.max(a,b) : Math.min(a,b);
+    return {
+      kind:"opts", prompt: bigger? "Qual é o número MAIOR?" : "Qual é o número MENOR?",
+      visual:`<span class="num-big">${a} ou ${b}?</span>`,
+      speech:[ptT(bigger? `Qual é maior: ${a} ou ${b}?` : `Qual é menor: ${a} ou ${b}?`)],
+      okSpeech:`${correct}!`,
+      options: shuffle([a,b]).map(v=>({label:String(v), correct:v===correct}))
+    };
+  }
+  if(lv===8 || lv===9){ /* soma visual */
+    const max = lv===8?5:10;
+    const a = 1+rand(max-1), b = 1+rand(max-a);
+    const e = pick(COUNT_EMOJIS);
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
+      visual: emojiGroup(a,e)+`<span class="op-sign">+</span>`+emojiGroup(b,e),
+      speech:[ptT(`Quanto é ${a} mais ${b}? Conte todos juntos!`)],
+      hintSpeech: ptT(`Conte tudo: os ${a} primeiro e mais ${b}!`),
+      okSpeech:`${a} mais ${b} é ${a+b}!`,
+      options: numOpts(a+b, Math.max(1,a+b-3), Math.min(max+2,a+b+3), lv===8?3:5)
+    };
+  }
+  if(lv===10){ /* soma de cabeça */
+    const a = 1+rand(8), b = 1+rand(Math.min(9,10-a));
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`De cabeça! Quanto é ${a} mais ${b}?`)],
+      okSpeech:`${a+b}!`,
+      options: numOpts(a+b, Math.max(1,a+b-3), a+b+3, 5)
+    };
+  }
+  if(lv===11){ /* ditado de números 1-10 */
+    const n = 1+rand(10);
+    return {
+      kind:"keypad", prompt:"Ditado! Digite o número que você ouvir!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT(`Digite o número ${n}!`)],
+      okSpeech:`${n}!`,
+      answer:String(n), maxLen:2
+    };
+  }
+  if(lv===12){ /* digitar a soma */
+    const a = 1+rand(8), b = 1+rand(Math.min(9,10-a));
+    return {
+      kind:"keypad", prompt:`Digite: ${a} + ${b} = ?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`Quanto é ${a} mais ${b}? Digite a resposta!`)],
+      okSpeech:`${a+b}!`,
+      answer:String(a+b), maxLen:2
+    };
+  }
+  if(lv===13){ /* números 11-20 */
+    const n = 11+rand(10), e = pick(COUNT_EMOJIS);
+    return {
+      kind:"opts", prompt:"Quantos são? Números grandes!",
+      visual: emojiGroup(n,e),
+      speech:[ptT("Conte com calma! São muitos!")],
+      okSpeech:`São ${n}!`,
+      options: numOpts(n, Math.max(11,n-3), Math.min(20,n+3), 5)
+    };
+  }
+  if(lv===14){ /* soma até 20 */
+    const a = 5+rand(10), b = 1+rand(Math.min(9,20-a));
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`Quanto é ${a} mais ${b}?`)],
+      hintSpeech: ptT(`Comece no ${a} e conte mais ${b}!`),
+      okSpeech:`${a+b}!`,
+      options: numOpts(a+b, a+b-3, a+b+3, 5)
+    };
+  }
+  if(lv===15){ /* ditado até 30 */
+    const n = 1+rand(30);
+    return {
+      kind:"keypad", prompt:"Ditado! Digite o número!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT(`Digite o número ${n}!`)],
+      okSpeech:`${n}!`,
+      answer:String(n), maxLen:2
+    };
+  }
+  if(lv===16){ /* somar 3 números */
+    const a = 1+rand(4), b = 1+rand(4), c = 1+rand(4);
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${b} + ${c}?`,
+      visual:`<span class="num-big">${a} + ${b} + ${c} = ?</span>`,
+      speech:[ptT(`Três números! Quanto é ${a} mais ${b} mais ${c}?`)],
+      hintSpeech: ptT(`Primeiro ${a} mais ${b}, depois soma ${c}!`),
+      okSpeech:`${a+b+c}!`,
+      options: numOpts(a+b+c, Math.max(3,a+b+c-3), a+b+c+3, 5)
+    };
+  }
+  if(lv===17){ /* subtração visual até 5 */
+    const a = 2+rand(4), b = 1+rand(a-1);
+    const e = pick(COUNT_EMOJIS);
+    return {
+      kind:"opts", prompt:`Tinha ${a}, foram embora ${b}. Sobrou?`,
+      visual: emojiGroup(a,e,b),
+      speech:[ptT(`Tinha ${a}, e ${b} foram embora! Quantos sobraram?`)],
+      hintSpeech: ptT(`Conte só os que ficaram coloridos!`),
+      okSpeech:`Sobraram ${a-b}!`,
+      options: numOpts(a-b, 0, Math.min(5,a), 3)
+    };
+  }
+  if(lv===18){ /* subtração até 10 */
+    const a = 3+rand(8), b = 1+rand(a-1);
+    return {
+      kind:"opts", prompt:`Quanto é ${a} − ${b}?`,
+      visual:`<span class="num-big">${a} − ${b} = ?</span>`,
+      speech:[ptT(`Quanto é ${a} menos ${b}?`)],
+      hintSpeech: ptT(`Comece no ${a} e volte ${b}!`),
+      okSpeech:`${a-b}!`,
+      options: numOpts(a-b, Math.max(0,a-b-3), a-b+3, 5)
+    };
+  }
+  if(lv===19){ /* digitar soma até 20 */
+    const a = 5+rand(10), b = 1+rand(Math.min(9,20-a));
+    return {
+      kind:"keypad", prompt:`Digite: ${a} + ${b} = ?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`Digite quanto é ${a} mais ${b}!`)],
+      okSpeech:`${a+b}!`,
+      answer:String(a+b), maxLen:2
+    };
+  }
+  if(lv===20){ /* digitar subtração */
+    const a = 3+rand(8), b = 1+rand(a-1);
+    return {
+      kind:"keypad", prompt:`Digite: ${a} − ${b} = ?`,
+      visual:`<span class="num-big">${a} − ${b} = ?</span>`,
+      speech:[ptT(`Digite quanto é ${a} menos ${b}!`)],
+      okSpeech:`${a-b}!`,
+      answer:String(a-b), maxLen:2
+    };
+  }
+  if(lv===21){ /* dezenas */
+    const n = (1+rand(10))*10;
+    return {
+      kind:"keypad", prompt:"Ditado de dezenas! Digite o número!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT(`Digite o número ${n}!`)],
+      okSpeech:`${n}!`,
+      answer:String(n), maxLen:3
+    };
+  }
+  if(lv===22){ /* somar dezenas */
+    const a = (1+rand(4))*10, b = (1+rand(4))*10;
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`Dezenas! Quanto é ${a} mais ${b}?`)],
+      hintSpeech: ptT(`É como ${a/10} mais ${b/10}, só que com zero!`),
+      okSpeech:`${a+b}!`,
+      options: shuffle([a+b, a+b-10, a+b+10, a+b-20, a+b+20].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,4).concat(a+b).filter((v,i,arr)=>arr.indexOf(v)===i).slice(0,5).map(v=>({label:String(v),correct:v===a+b}))
+    };
+  }
+  if(lv===23){ /* contas grandes sem "vai um" */
+    const a = 10*(1+rand(2)) + (1+rand(4));
+    const b = 10*(1+rand(2)) + (1+rand(4));
+    return {
+      kind:"keypad", prompt:`Conta grande! ${a} + ${b} = ?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`Conta de gente grande! Quanto é ${a} mais ${b}? Digite!`)],
+      okSpeech:`${a+b}!`,
+      answer:String(a+b), maxLen:2
+    };
+  }
+  if(lv===24){ /* subtração até 20 */
+    const a = 11+rand(9), b = 1+rand(9);
+    return {
+      kind:"opts", prompt:`Quanto é ${a} − ${b}?`,
+      visual:`<span class="num-big">${a} − ${b} = ?</span>`,
+      speech:[ptT(`Quanto é ${a} menos ${b}?`)],
+      okSpeech:`${a-b}!`,
+      options: numOpts(a-b, Math.max(0,a-b-3), a-b+3, 5)
+    };
+  }
+  if(lv===25){ /* o dobro */
+    const n = 1+rand(10);
+    return {
+      kind:"opts", prompt:`Qual é o DOBRO de ${n}?`,
+      visual:`<span class="num-big">${n} + ${n} = ?</span>`,
+      speech:[ptT(`Qual é o dobro de ${n}? É ${n} mais ${n}!`)],
+      okSpeech:`O dobro de ${n} é ${n*2}!`,
+      options: numOpts(n*2, Math.max(2,n*2-4), n*2+4, 5)
+    };
+  }
+  if(lv===26){ /* a metade */
+    const h = 1+rand(10), n = h*2;
+    return {
+      kind:"opts", prompt:`Qual é a METADE de ${n}?`,
+      visual:`<span class="num-big">? + ? = ${n}</span>`,
+      speech:[ptT(`Qual é a metade de ${n}? É o número que somado com ele mesmo dá ${n}!`)],
+      hintSpeech: ptT(`Pense: que número mais ele mesmo dá ${n}?`),
+      okSpeech:`A metade de ${n} é ${h}!`,
+      options: numOpts(h, Math.max(1,h-3), h+3, 5)
+    };
+  }
+  if(lv===27){ /* dezena + unidade */
+    const d = (1+rand(8))*10, u = 1+rand(9);
+    return {
+      kind:"keypad", prompt:`Digite: ${d} + ${u} = ?`,
+      visual:`<span class="num-big">${d} + ${u} = ?</span>`,
+      speech:[ptT(`Junte a dezena com a unidade! Quanto é ${d} mais ${u}?`)],
+      hintSpeech: ptT(`${d} mais ${u}: é só juntar o ${u} no lugar do zero!`),
+      okSpeech:`${d+u}!`,
+      answer:String(d+u), maxLen:2
+    };
+  }
+  if(lv===28){ /* somar até 50 sem vai-um */
+    const a = 10*(1+rand(3)) + (1+rand(5)), b = 1+rand(9-(a%10));
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
+      visual:`<span class="num-big">${a} + ${b} = ?</span>`,
+      speech:[ptT(`Quanto é ${a} mais ${b}?`)],
+      hintSpeech: ptT(`Comece no ${a} e conte mais ${b}!`),
+      okSpeech:`${a+b}!`,
+      options: numOpts(a+b, a+b-3, a+b+3, 5)
+    };
+  }
+  if(lv===29){ /* subtrair até 50 sem empréstimo */
+    const a = 10*(2+rand(3)) + (2+rand(7)), b = 1+rand(a%10);
+    return {
+      kind:"opts", prompt:`Quanto é ${a} − ${b}?`,
+      visual:`<span class="num-big">${a} − ${b} = ?</span>`,
+      speech:[ptT(`Quanto é ${a} menos ${b}?`)],
+      hintSpeech: ptT(`Comece no ${a} e volte ${b}!`),
+      okSpeech:`${a-b}!`,
+      options: numOpts(a-b, Math.max(0,a-b-3), a-b+3, 5)
+    };
+  }
+  if(lv===30 || lv===31){ /* tabuada do 2 e do 5 */
+    const m = lv===30? 2 : 5, n = 1+rand(10), r = m*n;
+    return {
+      kind:"opts", prompt:`Quanto é ${m} × ${n}?`,
+      visual:`<span class="num-big">${m} × ${n} = ?</span>`,
+      speech:[ptT(`Tabuada do ${m}! Quanto é ${m} vezes ${n}?`)],
+      hintSpeech: ptT(m===2? `É o dobro de ${n}!` : `Conte de 5 em 5, ${n} vezes!`),
+      okSpeech:`${m} vezes ${n} é ${r}!`,
+      options: shuffle([r, r-m, r+m, r+2*m, r-2*m].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,5).map(v=>({label:String(v),correct:v===r}))
+    };
+  }
+  if(lv===32){ /* tabuada do 10 */
+    const n = 1+rand(10), r = 10*n;
+    return {
+      kind:"opts", prompt:`Quanto é 10 × ${n}?`,
+      visual:`<span class="num-big">10 × ${n} = ?</span>`,
+      speech:[ptT(`Tabuada do dez! Quanto é dez vezes ${n}?`)],
+      hintSpeech: ptT(`É o ${n} com um zero do lado!`),
+      okSpeech:`Dez vezes ${n} é ${r}!`,
+      options: shuffle([r, r-10, r+10, r+20, r-20].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,5).map(v=>({label:String(v),correct:v===r}))
+    };
+  }
+  if(lv===33){ /* dividir entre amigos */
+    const k = pick([2,3,4]), per = 1+rand(4), n = k*per;
+    const e = pick(COUNT_EMOJIS);
+    return {
+      kind:"opts", prompt:`${n} para ${k} amigos. Quantos pra cada um?`,
+      visual: emojiGroup(n,e)+`<div style="font-size:clamp(22px,6vw,34px);margin-top:6px;">${"🧒".repeat(k)}</div>`,
+      speech:[ptT(`Divida! São ${n} para ${k} amigos, em partes iguais. Quantos cada amigo ganha?`)],
+      hintSpeech: ptT(`Vá dando um pra cada amigo até acabar!`),
+      okSpeech:`Cada um ganha ${per}!`,
+      options: numOpts(per, 1, per+3, 4)
+    };
+  }
+  if(lv===34){ /* ditado até 100 */
+    const n = 1+rand(100);
+    return {
+      kind:"keypad", prompt:"Ditado! Digite o número!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT(`Digite o número ${n}!`)],
+      okSpeech:`${n}!`,
+      answer:String(n), maxLen:3
+    };
+  }
+  if(lv===35){ /* probleminhas */
+    const a = 3+rand(10), b = 1+rand(5);
+    const plus = rand(2)===0;
+    const s = plus
+      ? pick([`Ana tinha ${a} figurinhas e ganhou mais ${b}.`, `O ônibus tinha ${a} pessoas e subiram ${b}.`, `Leo tinha ${a} bolinhas e achou mais ${b}.`])
+      : pick([`Ana tinha ${a} doces e comeu ${b}.`, `O ônibus tinha ${a} pessoas e desceram ${b}.`, `Leo tinha ${a} balões e ${b} estouraram.`]);
+    const r = plus? a+b : a-b;
+    return {
+      kind:"opts", prompt: plus? "Quantos ficaram no total?" : "Quantos sobraram?",
+      visual:`<div class="read-sentence" style="font-size:clamp(17px,4.4vw,24px);">${s}</div>`,
+      speech:[ptT(`Probleminha! ${s} ${plus?"Quantos ficaram no total?":"Quantos sobraram?"}`)],
+      hintSpeech: ptT(plus? `É ${a} mais ${b}!` : `É ${a} menos ${b}!`),
+      okSpeech:`${r}!`,
+      options: numOpts(r, Math.max(0,r-3), r+3, 5)
+    };
+  }
+  return genMath(pick([14,16,18,19,20,22,23,24,25,26,27,28,29,30,31,32,33,34,35]));
+}
+
+/* ---- inglês ---- */
+function enListenQ(pool, nOpts, instr){
+  const item = pick(pool);
+  return {
+    kind:"opts", prompt:"Ouça e toque na figura!",
+    visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">👂</span>`,
+    speech:[ptT(instr||"Encontre:"), enT(item.v+"!")],
+    hintSpeech: enT(item.v+"! "+item.v+"!"),
+    okSpeech:[enT(item.v+"!")],
+    optClass:"emoji-opt",
+    options: withSay(makeOpts(item, pool, nOpts, x=>x.d), pool, "en-US")
+  };
+}
+
+/* dá voz às opções: errou → o jogo fala o nome do que a criança tocou */
+function withSay(opts, pool, lang){
+  opts.forEach(o=>{
+    const src = pool.find(p=>p.d===o.label);
+    if(src) o.say = {t:src.v, lang};
+  });
+  return opts;
+}
+
+function genEn(lv){
+  const deep = isDeep("en", lv); /* 📚 modo aprender: base completa */
+  if(lv===1) return enListenQ(deep?EN_COLORS_X:EN_COLORS, 3, "Em inglês! Encontre a cor:");
+  if(lv===2) return enListenQ(deep?EN_COLORS_X:EN_COLORS, 5, "Encontre a cor:");
+  if(lv===3 || lv===4){ /* números em inglês */
+    const max = lv===3?(deep?10:5):(deep?20:10);
+    const NUMS = deep?EN_NUMS_X:EN_NUMS;
+    const n = 1+rand(max), e = pick(COUNT_EMOJIS);
+    return {
+      kind:"opts", prompt:"Ouça o número em inglês!",
+      visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">👂</span>`,
+      speech:[ptT("Em inglês! Encontre o número:"), enT(NUMS[n-1]+"!")],
+      hintSpeech: enT(NUMS[n-1]+"!"),
+      okSpeech:[enT(NUMS[n-1]+"!"), ptT(`${NUMS[n-1]} é ${n}!`)],
+      options: numOpts(n, Math.max(1,n-3), Math.min(max,n+3), lv===3?3:5)
+        .map(o=>Object.assign(o, {say:{t:NUMS[+o.label-1], lang:"en-US"}}))
+    };
+  }
+  if(lv===5) return enListenQ(deep?EN_ANIMALS_X:EN_ANIMALS.slice(0,8), 3, "Encontre o animal:");
+  if(lv===6) return enListenQ(deep?EN_ANIMALS_X:EN_ANIMALS, 5, "Encontre o animal:");
+  if(lv===7) return enListenQ(deep?EN_FOOD_X:EN_FOOD.slice(0,8), 3, "Encontre a comida:");
+  if(lv===8) return enListenQ(deep?EN_FOOD_X:EN_FOOD, 5, "Encontre a comida:");
+  if(lv===9) return enListenQ(deep?EN_THINGS_X:EN_THINGS, 5, "Encontre:");
+  if(lv===10){ /* how many — conta E FALA em inglês (senão vira questão de matemática!) */
+    const top = deep?15:10, NUMS = deep?EN_NUMS_X:EN_NUMS;
+    const n = 1+rand(top), e = pick(COUNT_EMOJIS);
+    if(SR && rand(2)===0){
+      return {
+        kind:"mic", prompt:"HOW MANY? Conte e fale em inglês! 🎤",
+        visual: emojiGroup(n,e),
+        speech:[enT("How many?"), ptT("Conte as figurinhas e fale o número em inglês!")],
+        okSpeech:[enT("Yes! "+NUMS[n-1]+"!")],
+        en:true, answer:NUMS[n-1], accept:[String(n)]
+      };
+    }
+    return {
+      kind:"opts", prompt:"HOW MANY? Quantos são?",
+      visual: emojiGroup(n,e),
+      speech:[enT("How many?"), ptT("Conte e responda em inglês!")],
+      hintSpeech: enT(NUMS[n-1]+"!"),
+      okSpeech:[enT(NUMS[n-1]+"!")],
+      options: numOpts(n, Math.max(1,n-3), Math.min(top,n+3), 3)
+        .map(o=>{ const w = NUMS[+o.label-1]; return Object.assign(o, {label:o.label+" · "+w, say:{t:w, lang:"en-US"}}); })
+    };
+  }
+  if(lv===11 || lv===12){ /* LER palavra inglês → figura (não fala!) */
+    const pool = lv===11? (deep?EN_ANIMALS_X:EN_ANIMALS) : (deep?EN_ALL_X:EN_ALL);
+    const item = pick(pool);
+    return {
+      kind:"opts", prompt:"Leia a palavra em inglês e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(30px,8vw,46px);">${item.v}</div>`,
+      speech:[ptT("Leia a palavra em inglês e toque na figura!")],
+      hintSpeech: enT(item.v+"!"),
+      okSpeech:[enT(item.v+"!")],
+      optClass:"emoji-opt",
+      options: withSay(makeOpts(item, pool, lv===11?3:5, x=>x.d), pool, "en-US")
+    };
+  }
+  if(lv===13){ /* first letter */
+    const item = pick(deep?EN_SPELL_X:EN_SPELL);
+    const first = item.v[0];
+    const pool = shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").filter(l=>l!==first)).slice(0,2).concat(first);
+    return {
+      kind:"opts", prompt:"What's the first letter?",
+      visual:`<span class="big-emoji">${item.d}</span>`,
+      speech:[enT(item.v+"!"), ptT(`Com que letra começa ${item.v}?`)],
+      okSpeech:[enT(`${item.v}! Letter ${first}!`)],
+      options: makeOpts(first, pool, 3)
+    };
+  }
+  if(lv===14){ /* montar palavras EN */
+    const item = pick((deep?EN_SPELL_X:EN_SPELL).filter(x=>x.v.length<=4 && !x.v.includes(" ")));
+    const decoys = shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").filter(l=>!item.v.includes(l))).slice(0,2);
+    return {
+      kind:"tiles", prompt:"Monte a palavra em inglês!",
+      visual:`<span class="big-emoji">${item.d}</span>`,
+      speech:[ptT("Monte a palavra:"), enT(item.v+"!")],
+      hintSpeech: enT(item.v.split("").join("... ")),
+      okSpeech:[enT(item.v+"!")],
+      pieces:item.v.split(""), decoys, sayPieces:true, en:true, answer:item.v
+    };
+  }
+  if(lv===15){ /* escrever EN com figura */
+    const item = pick((deep?EN_SPELL_X:EN_SPELL).filter(x=>x.v.length<=4 && !x.v.includes(" ")));
+    return {
+      kind:"abc", prompt:"Escreva em inglês!",
+      visual:`<span class="big-emoji">${item.d}</span>`,
+      speech:[ptT("Escreva a palavra:"), enT(item.v+"!"), enT(item.v.split("").join(", "))],
+      okSpeech:[enT(item.v+"!")],
+      answer:item.v, maxLen:item.v.length
+    };
+  }
+  if(lv===16){ /* dictation EN */
+    const item = pick((deep?EN_SPELL_X:EN_SPELL).filter(x=>x.v.length<=4 && !x.v.includes(" ")));
+    return {
+      kind:"abc", prompt:"Dictation! Escreva o que ouvir!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT("Escreva em inglês:"), enT(item.v+"!"), enT(item.v.split("").join(", "))],
+      okSpeech:[enT(item.v+"!")],
+      answer:item.v, maxLen:item.v.length
+    };
+  }
+  if(lv===17){ /* say it! mic EN */
+    if(!SR) return genEn(15);
+    const w = pick(deep?EN_MIC_X:EN_MIC);
+    const item = EN_ALL_X.concat(EN_COLORS_X).find(x=>x.v===w) || {d:"🗣️"};
+    const nIx = EN_NUMS_X.indexOf(w); /* números: aceitar também o dígito ("seven" vira "7") */
+    return {
+      kind:"mic", prompt:"Say it! Fale em inglês!",
+      visual:`<div class="read-word" style="font-size:clamp(30px,8vw,46px);">${w}</div><span class="duo-emoji">${nIx>-1? "🔢" : item.d}</span>`,
+      speech:[ptT("Fale essa palavra em inglês no microfone!"), enT(w+"!")],
+      okSpeech:[enT("Great! "+w+"!")],
+      en:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined
+    };
+  }
+  if(lv===18){ /* cor + coisa: RED CAT */
+    const cPool = deep? EN_COLORS : EN_COLORS.slice(0,6);
+    const aPool = deep? EN_ANIMALS : EN_ANIMALS.slice(0,8);
+    const color = pick(cPool);
+    const animal = pick(aPool);
+    const makePair = (c,a)=>({v:`${c.v} ${a.v}`, d:`${c.d}${a.d}`, c, a});
+    const correct = makePair(color, animal);
+    const opts = [correct];
+    let guard = 0;
+    while(opts.length<4 && guard++<50){
+      const oc = pick(cPool), oa = pick(aPool);
+      if(!opts.some(o=>o.c===oc && o.a===oa)) opts.push(makePair(oc,oa));
+    }
+    return {
+      kind:"opts", prompt:"Leia as DUAS palavras!",
+      visual:`<div class="read-word" style="font-size:clamp(24px,6vw,38px);">${correct.v}</div>`,
+      speech:[ptT("Leia a cor e o animal, e toque no par certo!")],
+      hintSpeech: enT(correct.v+"!"),
+      okSpeech:[enT(correct.v+"!")],
+      optClass:"emoji-opt",
+      options: shuffle(opts).map(o=>({label:o.d, correct:o===correct, say:{t:o.v, lang:"en-US"}}))
+    };
+  }
+  if(lv===19){ /* frases EN */
+    const cPool = deep? EN_COLORS : EN_COLORS.slice(0,6);
+    const aPool = deep? EN_ANIMALS : EN_ANIMALS.slice(0,8);
+    const color = pick(cPool);
+    const animal = pick(aPool);
+    const correct = {d:`${animal.d}${color.d}`, v:`The ${animal.v} is ${color.v}`};
+    const opts = [correct];
+    let guard = 0;
+    while(opts.length<3 && guard++<50){
+      const oc = pick(cPool), oa = pick(aPool);
+      if(oc===color && oa===animal) continue;
+      const o = {d:`${oa.d}${oc.d}`, v:`The ${oa.v} is ${oc.v}`};
+      if(!opts.some(x=>x.d===o.d)) opts.push(o);
+    }
+    return {
+      kind:"opts", prompt:"Leia a frase em inglês!",
+      visual:`<div class="read-sentence" style="font-size:clamp(20px,5vw,30px);">THE ${animal.v} IS ${color.v}</div>`,
+      speech:[ptT("Leia a frase e ache as figuras!")],
+      hintSpeech: enT(`The ${animal.v} is ${color.v}!`),
+      okSpeech:[enT(`The ${animal.v} is ${color.v}!`)],
+      optClass:"emoji-opt",
+      options: shuffle(opts).map(o=>({label:o.d, correct:o===correct, say:{t:o.v, lang:"en-US"}}))
+    };
+  }
+  return genEn(pick([11,12,13,14,16,18,19]));
+}
+
+/* ---- alemão ---- */
+function deListenQ(pool, nOpts, instr){
+  const item = pick(pool);
+  return {
+    kind:"opts", prompt:"Ouça e toque na figura!",
+    visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">👂</span>`,
+    speech:[ptT(instr||"Em alemão! Encontre:"), deT(item.v+"!")],
+    hintSpeech: deT(item.v+"! "+item.v+"!"),
+    okSpeech:[deT(item.v+"!")],
+    optClass:"emoji-opt",
+    options: withSay(makeOpts(item, pool, nOpts, x=>x.d), pool, "de-DE")
+  };
+}
+
+function genDe(lv){
+  const deep = isDeep("de", lv); /* 📚 modo aprender: base completa */
+  if(lv===1) return deListenQ(deep?DE_COLORS_X:DE_COLORS, 3, "Em alemão! Encontre a cor:");
+  if(lv===2) return deListenQ(deep?DE_COLORS_X:DE_COLORS, 5, "Encontre a cor:");
+  if(lv===3 || lv===4){ /* números em alemão */
+    const max = lv===3?(deep?10:5):(deep?20:10);
+    const NUMS = deep?DE_NUMS_X:DE_NUMS;
+    const n = 1+rand(max);
+    return {
+      kind:"opts", prompt:"Ouça o número em alemão!",
+      visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">👂</span>`,
+      speech:[ptT("Em alemão! Encontre o número:"), deT(NUMS[n-1]+"!")],
+      hintSpeech: deT(NUMS[n-1]+"!"),
+      okSpeech:[deT(NUMS[n-1]+"!"), ptT(`${NUMS[n-1]} é ${n}!`)],
+      options: numOpts(n, Math.max(1,n-3), Math.min(max,n+3), lv===3?3:5)
+        .map(o=>Object.assign(o, {say:{t:NUMS[+o.label-1], lang:"de-DE"}}))
+    };
+  }
+  if(lv===5) return deListenQ(deep?DE_ANIMALS_X:DE_ANIMALS.slice(0,8), 3, "Encontre o animal:");
+  if(lv===6) return deListenQ(deep?DE_ANIMALS_X:DE_ANIMALS, 5, "Encontre o animal:");
+  if(lv===7) return deListenQ(deep?DE_FOOD_X:DE_FOOD.slice(0,8), 3, "Encontre a comida:");
+  if(lv===8) return deListenQ(deep?DE_FOOD_X:DE_FOOD, 5, "Encontre a comida:");
+  if(lv===9) return deListenQ(deep?DE_THINGS_X:DE_THINGS, 5, "Encontre:");
+  if(lv===10){ /* wie viele — conta E FALA em alemão (senão vira questão de matemática!) */
+    const top = deep?15:10, NUMS = deep?DE_NUMS_X:DE_NUMS;
+    const n = 1+rand(top), e = pick(COUNT_EMOJIS);
+    if(SR && rand(2)===0){
+      return {
+        kind:"mic", prompt:"WIE VIELE? Conte e fale em alemão! 🎤",
+        visual: emojiGroup(n,e),
+        speech:[deT("Wie viele?"), ptT("Conte as figurinhas e fale o número em alemão!")],
+        okSpeech:[deT("Ja! "+NUMS[n-1]+"!")],
+        de:true, answer:NUMS[n-1], accept:[String(n)]
+      };
+    }
+    return {
+      kind:"opts", prompt:"WIE VIELE? Quantos são?",
+      visual: emojiGroup(n,e),
+      speech:[deT("Wie viele?"), ptT("Conte e responda em alemão!")],
+      hintSpeech: deT(NUMS[n-1]+"!"),
+      okSpeech:[deT(NUMS[n-1]+"!")],
+      options: numOpts(n, Math.max(1,n-3), Math.min(top,n+3), 3)
+        .map(o=>{ const w = NUMS[+o.label-1]; return Object.assign(o, {label:o.label+" · "+w, say:{t:w, lang:"de-DE"}}); })
+    };
+  }
+  if(lv===11 || lv===12){ /* LER palavra alemã → figura (não fala!) */
+    const pool = lv===11? (deep?DE_ANIMALS_X:DE_ANIMALS) : (deep?DE_ALL_X:DE_ALL);
+    const item = pick(pool);
+    return {
+      kind:"opts", prompt:"Leia a palavra em alemão e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(26px,7vw,42px);">${item.v}</div>`,
+      speech:[ptT("Leia a palavra em alemão e toque na figura!")],
+      hintSpeech: deT(item.v+"!"),
+      okSpeech:[deT(item.v+"!")],
+      optClass:"emoji-opt",
+      options: withSay(makeOpts(item, pool, lv===11?3:5, x=>x.d), pool, "de-DE")
+    };
+  }
+  if(lv===13){ /* primeira letra */
+    const item = pick(deep?DE_SPELL_X:DE_SPELL);
+    const first = item.v[0];
+    const pool = shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").filter(l=>l!==first)).slice(0,2).concat(first);
+    return {
+      kind:"opts", prompt:"Com que letra começa?",
+      visual:`<span class="big-emoji">${item.d}</span>`,
+      speech:[deT(item.v+"!"), ptT(`Com que letra começa ${item.v}?`)],
+      okSpeech:[deT(item.v+"!")],
+      options: makeOpts(first, pool, 3)
+    };
+  }
+  if(lv===14){ /* montar palavras DE */
+    const item = pick((deep?DE_SPELL_X:DE_SPELL).filter(x=>x.v.length<=4));
+    const decoys = shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").filter(l=>!item.v.includes(l))).slice(0,2);
+    return {
+      kind:"tiles", prompt:"Monte a palavra em alemão!",
+      visual:`<span class="big-emoji">${item.d}</span>`,
+      speech:[ptT("Monte a palavra:"), deT(item.v+"!")],
+      hintSpeech: deT(item.v.split("").join("... ")),
+      okSpeech:[deT(item.v+"!")],
+      pieces:item.v.split(""), decoys, sayPieces:true, de:true, answer:item.v
+    };
+  }
+  if(lv===15){ /* escrever DE com figura */
+    const item = pick((deep?DE_SPELL_X:DE_SPELL).filter(x=>x.v.length<=4));
+    return {
+      kind:"abc", prompt:"Escreva em alemão!",
+      visual:`<span class="big-emoji">${item.d}</span>`,
+      speech:[ptT("Escreva a palavra:"), deT(item.v+"!"), deT(item.v.split("").join(", "))],
+      okSpeech:[deT(item.v+"!")],
+      answer:item.v, maxLen:item.v.length
+    };
+  }
+  if(lv===16){ /* Diktat */
+    const item = pick((deep?DE_SPELL_X:DE_SPELL).filter(x=>x.v.length<=4));
+    return {
+      kind:"abc", prompt:"Diktat! Escreva o que ouvir!",
+      visual:`<span class="big-emoji">🎧</span>`,
+      speech:[ptT("Escreva em alemão:"), deT(item.v+"!"), deT(item.v.split("").join(", "))],
+      okSpeech:[deT(item.v+"!")],
+      answer:item.v, maxLen:item.v.length
+    };
+  }
+  if(lv===17){ /* Sprich! mic DE */
+    if(!SR) return genDe(15);
+    const w = pick(deep?DE_MIC_X:DE_MIC);
+    const item = DE_ALL_X.concat(DE_COLORS_X).find(x=>x.v===w) || {d:"🗣️"};
+    const nIx = DE_NUMS_X.indexOf(w); /* números: aceitar também o dígito ("sieben" vira "7") */
+    return {
+      kind:"mic", prompt:"Sprich! Fale em alemão!",
+      visual:`<div class="read-word" style="font-size:clamp(26px,7vw,42px);">${w}</div><span class="duo-emoji">${nIx>-1? "🔢" : item.d}</span>`,
+      speech:[ptT("Fale essa palavra em alemão no microfone!"), deT(w+"!")],
+      okSpeech:[deT("Super! "+w+"!")],
+      de:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined
+    };
+  }
+  if(lv===18){ /* cor + bicho: ROTE KATZE */
+    const cPool = deep? DE_COLORS : DE_COLORS.slice(0,6);
+    const aPool = deep? DE_ANIMALS : DE_ANIMALS.slice(0,8);
+    const color = pick(cPool);
+    const animal = pick(aPool);
+    const makePair = (c,a)=>({v:`${c.v} ${a.v}`, d:`${c.d}${a.d}`, c, a});
+    const correct = makePair(color, animal);
+    const opts = [correct];
+    let guard = 0;
+    while(opts.length<4 && guard++<50){
+      const oc = pick(cPool), oa = pick(aPool);
+      if(!opts.some(o=>o.c===oc && o.a===oa)) opts.push(makePair(oc,oa));
+    }
+    return {
+      kind:"opts", prompt:"Leia as DUAS palavras!",
+      visual:`<div class="read-word" style="font-size:clamp(22px,5.5vw,36px);">${correct.v}</div>`,
+      speech:[ptT("Leia a cor e o animal, e toque no par certo!")],
+      hintSpeech: deT(correct.v+"!"),
+      okSpeech:[deT(correct.v+"!")],
+      optClass:"emoji-opt",
+      options: shuffle(opts).map(o=>({label:o.d, correct:o===correct, say:{t:o.v, lang:"de-DE"}}))
+    };
+  }
+  if(lv===19){ /* frases DE */
+    const cPool = deep? DE_COLORS : DE_COLORS.slice(0,6);
+    const aPool = deep? DE_ANIMALS : DE_ANIMALS.slice(0,8);
+    const color = pick(cPool);
+    const animal = pick(aPool);
+    const correct = {d:`${animal.d}${color.d}`, v:`Das ${animal.v} ist ${color.v}`};
+    const opts = [correct];
+    let guard = 0;
+    while(opts.length<3 && guard++<50){
+      const oc = pick(cPool), oa = pick(aPool);
+      if(oc===color && oa===animal) continue;
+      const o = {d:`${oa.d}${oc.d}`, v:`Das ${oa.v} ist ${oc.v}`};
+      if(!opts.some(x=>x.d===o.d)) opts.push(o);
+    }
+    return {
+      kind:"opts", prompt:"Leia a frase em alemão!",
+      visual:`<div class="read-sentence" style="font-size:clamp(18px,4.6vw,28px);">DAS ${animal.v} IST ${color.v}</div>`,
+      speech:[ptT("Leia a frase e ache as figuras!")],
+      hintSpeech: deT(`Das ${animal.v} ist ${color.v}!`),
+      okSpeech:[deT(`Das ${animal.v} ist ${color.v}!`)],
+      optClass:"emoji-opt",
+      options: shuffle(opts).map(o=>({label:o.d, correct:o===correct, say:{t:o.v, lang:"de-DE"}}))
+    };
+  }
+  return genDe(pick([11,12,13,14,16,18,19]));
+}
+
+/* =============== LOJA =============== */
+const RAR_ORDER = ["comum","raro","epico","lendario"];
+function renderShop(){
+  const p = P(), grid = $("#shop-grid");
+  grid.innerHTML = "";
+  const sorted = STICKERS.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  sorted.forEach(([emo,nm,rar],i)=>{
+    const owned = p.stickers.includes(nm);
+    const price = RARITIES[rar].price;
+    const card = document.createElement("div");
+    card.className = `shop-card r-${rar}` + (owned?"":" locked-card");
+    card.style.animationDelay = (Math.min(i,14)*.04)+"s";
+    card.innerHTML = `${rar==="lendario"?'<div class="shine"></div>':""}
+      <span class="emo">${emo}</span>
+      <span class="nm">${nm}</span>
+      <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
+      ${owned? `<span class="owned-tag">✔ Sua!</span>`
+             : `<button class="buy-btn" ${p.coins<price?"disabled":""}>🪙 ${price}</button>`}`;
+    if(!owned){
+      const btn = card.querySelector(".buy-btn");
+      btn.onclick = ()=>{
+        if(p.coins < price) return;
+        p.coins -= price;
+        p.stickers.push(nm);
+        save(); updateHUD(); coinBump(); confetti(40); sndLevelUp();
+        speak(`Uau! Você comprou ${nm}! Que figurinha ${rar==="lendario"?"lendária":rar==="epico"?"épica":rar==="raro"?"rara":"linda"}!`);
+        renderShop();
+      };
+    }
+    grid.appendChild(card);
+  });
+}
+
+/* =============== ÁLBUM =============== */
+function renderAlbum(){
+  const p = P(), grid = $("#album-grid");
+  $("#album-count").textContent = `${p.stickers.length} de ${STICKERS.length} figurinhas · 🪙 ${p.coins} moedas`;
+  grid.innerHTML = "";
+  const sorted = STICKERS.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  sorted.forEach(([emo,nm,rar],i)=>{
+    const owned = p.stickers.includes(nm);
+    const card = document.createElement("div");
+    card.className = `shop-card r-${rar}` + (owned?"":" locked-card");
+    card.style.animationDelay = (Math.min(i,14)*.04)+"s";
+    card.innerHTML = `${owned&&rar==="lendario"?'<div class="shine"></div>':""}
+      <span class="emo">${owned?emo:"❓"}</span>
+      <span class="nm">${owned?nm:"???"}</span>
+      <span class="rar rar-${rar}">${RARITIES[rar].label}</span>`;
+    if(owned) card.onclick = ()=>{ sndTap(); confetti(10); speak(nm+"!"); };
+    grid.appendChild(card);
+  });
+}
+
+/* =============== JORNADA =============== */
+let journeyTrack = "pt";
+function openJourney(track){
+  if(track) journeyTrack = track;
+  document.querySelectorAll(".jtab").forEach(b=>b.classList.toggle("sel", b.dataset.track===journeyTrack));
+  renderJourney();
+  showScreen("screen-journey");
+}
+function renderJourney(){
+  const p = P(), t = journeyTrack, list = $("#journey-list");
+  list.innerHTML = "";
+  const cur = p.lv[t], mx = maxOf(t);
+  TRACKS[t].levels.forEach((name,i)=>{
+    const lv = i+1;
+    const st = lv<cur? "done" : lv===Math.min(cur,mx)? "now" : "lock";
+    const item = document.createElement("button");
+    item.className = "j-item "+st;
+    item.innerHTML = `<span class="jn">${st==="done"?"✔":lv}</span>
+      <span class="jt">${name}</span>
+      <span class="js">${st==="done"?"Treinar 🪙":st==="now"?"Jogar ▶":"🔒"}</span>`;
+    item.onclick = ()=>{
+      sndTap();
+      if(st==="done"){ startPractice(t, lv); }
+      else if(st==="now"){ startGame(t); }
+      else speak("Esse nível ainda está trancado! Continue jogando pra chegar lá!");
+    };
+    list.appendChild(item);
+  });
+  if(cur > mx){
+    const item = document.createElement("button");
+    item.className = "j-item now";
+    item.innerHTML = `<span class="jn">👑</span><span class="jt">Modo Mestre — mistura tudo!</span><span class="js">Jogar ▶</span>`;
+    item.onclick = ()=>{ sndTap(); startGame(t); };
+    list.appendChild(item);
+  }
+}
+
+/* =============== RANKING =============== */
+function openRanking(){
+  const total = TRACK_KEYS.reduce((s,t)=>s+maxOf(t),0);
+  const rows = db.profiles.map(p=>{
+    const lvls  = TRACK_KEYS.reduce((s,t)=>s+Math.min((p.lv[t]||1)-1, maxOf(t)),0);
+    const hits  = TRACK_KEYS.reduce((s,t)=>s+((p.stats[t]||{}).a||0),0);
+    const words = Object.values(p.mast||{}).filter(v=>v>=MASTERY).length;
+    return {p, lvls, hits, words};
+  }).sort((a,b)=> b.lvls-a.lvls || b.hits-a.hits);
+  const medal = i => ["🥇","🥈","🥉"][i] || "🏅";
+  const trs = rows.map((r,i)=>`<tr${i===0?' style="background:#fff8e1;font-weight:800;"':''}>
+    <td>${medal(i)} ${r.p.avatar} ${r.p.name}</td>
+    <td>${r.lvls}/${total}</td><td>${r.hits}</td><td>${r.words}</td><td>${r.p.stickers.length}</td></tr>`).join("");
+  showOverlay(`<div id="parents-card">
+    <h2 style="text-align:center;color:#454a75;">🏆 Ranking</h2>
+    <table><tr><th>Jogador</th><th>Níveis</th><th>Acertos</th><th>Palavras 🏅</th><th>Figurinhas</th></tr>${trs}</table>
+    <p style="text-align:center;">Quem completa mais níveis lidera. A dedicação (acertos) desempata! 💪</p>
+    <div style="text-align:center;margin-top:10px;"><button class="ov-btn" id="rank-close">Fechar</button></div>
+  </div>`);
+  if(rows.length >= 2) speak(`${rows[0].p.name} está em primeiro lugar, com ${rows[0].lvls} níveis completados! Quem vai alcançar?`);
+  else if(rows.length) speak(`${rows[0].p.name}, você já completou ${rows[0].lvls} níveis! Continue assim!`);
+  $("#rank-close").onclick = ()=>{ sndTap(); hideOverlay(); };
+}
+
+/* =============== PAINEL DOS PAIS =============== */
+function openParents(){
+  const p = P();
+  let report = "";
+  if(p){
+    const rows = TRACK_KEYS.map(t=>{
+      const s = p.stats[t], tot = s.a+s.e;
+      const pct = tot? Math.round(s.a/tot*100) : "—";
+      return `<tr><td>${TRACKS[t].icon} ${TRACKS[t].name}</td><td>${Math.min(p.lv[t],maxOf(t))}${p.lv[t]>maxOf(t)?" 👑":""}/${maxOf(t)}</td><td>${s.a}</td><td>${s.e}</td><td>${pct}${tot?"%":""}</td></tr>`;
+    }).join("");
+    report = `<h3>📊 Relatório de ${p.avatar} ${p.name}</h3>
+      <table><tr><th>Trilha</th><th>Nível</th><th>Acertos</th><th>Erros</th><th>Aproveitamento</th></tr>${rows}</table>
+      <p>🪙 ${p.coins} moedas · 🏆 ${p.stickers.length}/${STICKERS.length} figurinhas</p>`;
+  }
+  showOverlay(`<div id="parents-card">
+    <h2 style="text-align:center;color:#454a75;">ℹ️ Para os pais</h2>
+    ${report}
+    <h3>🎌 Método Kumon</h3>
+    <p>Micro-passos: cada nível ensina UMA coisinha nova. A criança precisa de ${GOAL} acertos para avançar (domínio antes de progresso). Errar não pune — o jogo dá dicas e sugere revisar o nível anterior quando percebe dificuldade.</p>
+    <p>A trilha de Português segue as <b>etapas oficiais do Kumon</b>: <b>7A</b> ouvir e apontar → <b>6A</b> letras → <b>5A</b> sílabas → <b>4A/3A/2A</b> palavras → <b>A</b> sons especiais → <b>B</b> frases → <b>C</b> pequenas histórias. Nos níveis 🏅 (domínio de palavras) a MESMA palavra repete 3 vezes — ouvir, ler sozinho e montar — até ser dominada, exatamente como a repetição do Kumon.</p>
+    <h3>🔁 Reforço automático + fundamento</h3>
+    <p>Errou uma questão? Ela entra na fila de reforço e <b>volta misturada</b> nas próximas perguntas (no mesmo nível e nos seguintes) até a criança acertar <b>3 vezes</b>. Depois vêm <b>2 questões novas da mesma lição</b> (🔁💡 fundamento) — para provar que entendeu a <i>lógica</i>, não só decorou aquela pergunta. Errou em qualquer fase? A contagem daquela fase recomeça. A criança sempre passa de nível normalmente — o reforço vai junto, sem frustração. O contador 🔁 na barra mostra quantas lições estão na fila.</p>
+    <h3>🥨 Trilha de Alemão</h3>
+    <p>Mesma progressão do Inglês: ouvir → ler → montar → escrever → ditado → falar 🎤 → frases. As palavras de escrita usam só letras A-Z (o teclado não tem Ä, Ö, Ü). A Matemática também ganhou a <b>continuação B e C</b>: metade, somas até 50, tabuadas do 2, 5 e 10, divisão e probleminhas.</p>
+    <h3>🎤 Microfone não funciona?</h3>
+    <p>Se o jogo foi aberto com <b>duplo clique</b> (endereço começa com <b>file://</b>), o navegador <b>nega o microfone sem nem perguntar</b> — é uma regra do Chrome/Edge. Solução: abra o jogo pelo <b>JOGAR.bat</b> que está na pasta do jogo (ele abre em http://127.0.0.1:8123 e aí o pedido de permissão aparece — clique em <b>Permitir</b>). <b>Atenção:</b> o progresso não passa sozinho do jeito antigo pro novo endereço — no jogo antigo use "💾 Salvar em arquivo" e no novo "📂 Recuperar de arquivo" (uma vez só). Se ainda bloquear: cadeado 🔒 na barra → Microfone → Permitir; e em Configurações do Windows → Privacidade e segurança → Microfone, ligue o acesso para aplicativos. O reconhecimento de voz precisa de internet.</p>
+    <p style="text-align:center;"><button class="ov-btn alt" id="parents-mictest">🎤 Testar microfone agora</button></p>
+    <div id="mic-test-out" style="text-align:center;font-weight:600;min-height:1.4em;"></div>
+    <h3>📚 Nivelamento → Aprender de verdade</h3>
+    <p>Até o primeiro erro, o jogo funciona como <b>teste de nivelamento</b>: base pequena, 5 acertos por nível — a criança avança rápido pelo que já sabe. Quando ela erra (do nível 3 em diante), aquele nível vira o <b>nível real</b> dela: dali pra cima destrava a <b>base completa</b> (todas as cores, muito mais bichos, comidas, coisas e números até 20), a meta sobe pra <b>10 acertos</b> (níveis de domínio 🏅: 4 palavras) e <b>só acerto limpo conta</b> — se errou na pergunta, ela volta pra fila. O 📚 no topo mostra que o modo aprender está ativo naquele nível.</p>
+    <h3>🔤 Método fônico</h3>
+    <p>Letra + som + imagem sempre juntos. A voz fala tudo, então a criança joga sozinha mesmo sem saber ler.</p>
+    <h3>🪙 Economia de moedas</h3>
+    <p>Acertos valem moedas (níveis altos valem mais; escrever/falar vale 50% a mais). Figurinhas lendárias custam 2000 moedas — incentivo para treinar níveis antigos na Jornada (repetição espaçada, como no Kumon).</p>
+    <h3>💡 Dicas</h3>
+    <ul>
+      <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
+      <li>Os níveis de microfone 🎤 precisam de internet e permissão de microfone.</li>
+      <li>Toque no nome da criança (canto superior) para trocar de jogador.</li>
+    </ul>
+    <h3>💾 Progresso protegido</h3>
+    <p>O jogo salva sozinho (com cópia de segurança) a cada acerto. Para garantir de vez, salve um arquivo de vez em quando — dá pra recuperar tudo em qualquer computador.</p>
+    <div style="text-align:center;">
+      <button class="ov-btn alt" id="parents-export">💾 Salvar em arquivo</button>
+      <button class="ov-btn alt" id="parents-import">📂 Recuperar de arquivo</button>
+      <input type="file" id="import-file" accept=".json,application/json" style="display:none;">
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="ov-btn alt" id="parents-ranking">🏆 Ranking</button>
+      <button class="ov-btn alt" id="parents-switch">👥 Trocar jogador</button>
+      <button class="ov-btn" id="parents-close">Fechar</button>
+    </div>
+  </div>`);
+  $("#parents-close").onclick = ()=>{ sndTap(); hideOverlay(); };
+  $("#parents-switch").onclick = ()=>{ sndTap(); hideOverlay(); goProfiles(); };
+  $("#parents-ranking").onclick = ()=>{ sndTap(); hideOverlay(); openRanking(); };
+  $("#parents-mictest").onclick = ()=>{ sndTap(); micTest(); };
+  $("#parents-export").onclick = ()=>{ sndTap(); exportSave(); };
+  $("#parents-import").onclick = ()=>{ sndTap(); $("#import-file").click(); };
+  $("#import-file").onchange = ev=>{ const f = ev.target.files[0]; if(f) importSave(f); };
+}
+
+/* =============== FUNDO ANIMADO =============== */
+function makeBackground(){
+  for(let i=0;i<14;i++){
+    const b = document.createElement("div");
+    b.className = "bubble";
+    const s = 18+rand(70);
+    b.style.width = b.style.height = s+"px";
+    b.style.left = rand(100)+"%";
+    b.style.animationDuration = (9+Math.random()*16)+"s";
+    b.style.animationDelay = (-Math.random()*16)+"s";
+    document.body.appendChild(b);
+  }
+  ["⭐","🌈","🎈","☁️","🦋","🌟"].forEach((e,i)=>{
+    const f = document.createElement("div");
+    f.className = "floatmoji";
+    f.textContent = e;
+    f.style.left = (5+i*16)+"%";
+    f.style.top = (8+rand(80))+"%";
+    f.style.animationDuration = (3+Math.random()*3)+"s";
+    document.body.appendChild(f);
+  });
+}
+
+/* =============== INIT =============== */
+function init(){
+  makeBackground();
+  load();
+
+  $("#btn-pt").onclick   = ()=>{ sndTap(); startGame("pt"); };
+  $("#btn-math").onclick = ()=>{ sndTap(); startGame("math"); };
+  $("#btn-en").onclick   = ()=>{ sndTap(); startGame("en"); };
+  $("#btn-de").onclick   = ()=>{ sndTap(); startGame("de"); };
+  $("#btn-shop").onclick = ()=>{ sndTap(); renderShop(); showScreen("screen-shop");
+    speak("Bem-vindo à loja! Compre figurinhas com suas moedas!"); };
+  $("#btn-album").onclick = ()=>{ sndTap(); renderAlbum(); showScreen("screen-album"); };
+  $("#btn-journey").onclick = ()=>{ sndTap(); openJourney(); };
+  $("#btn-ranking").onclick = ()=>{ sndTap(); openRanking(); };
+  $("#btn-ranking-prof").onclick = ()=>{ sndTap(); openRanking(); };
+
+  $("#btn-back").onclick = ()=>{ sndTap(); stopMic(); speechSynthesis.cancel();
+    if(state.practice) openJourney(state.track); else goHome(); };
+  $("#btn-back-shop").onclick = ()=>{ sndTap(); goHome(); };
+  $("#btn-back-album").onclick = ()=>{ sndTap(); goHome(); };
+  $("#btn-back-journey").onclick = ()=>{ sndTap(); goHome(); };
+
+  document.querySelectorAll(".jtab").forEach(b=>{
+    b.onclick = ()=>{ sndTap(); openJourney(b.dataset.track); };
+  });
+
+  $("#profile-chip").onclick = ()=>{ sndTap(); goProfiles(); };
+  $("#coin-pill").onclick = ()=>{ if(P()){ sndTap(); renderShop(); showScreen("screen-shop"); } };
+  $("#btn-parents").onclick = ()=>{ sndTap(); openParents(); };
+  $("#speak-again").onclick = ()=>{ if(state.q) speak(state.q.speech); };
+
+  document.querySelectorAll("#mascot,.mascot").forEach(m=>{
+    m.onclick = ()=>{ confetti(10);
+      const p = P();
+      speak(p? pick([`Oi ${p.name}! Vamos aprender brincando?`,`${p.name}, você é demais!`,`Vamos ganhar moedas, ${p.name}?`])
+             : "Oi! Escolha seu jogador pra começar!"); };
+  });
+
+  updateHUD();
+  if(db.activeIdx >= 0 && P()) goHome();
+  else { renderProfiles(); showScreen("screen-profiles"); }
+}
+
+init();
+</script>
+</body>
+</html>
