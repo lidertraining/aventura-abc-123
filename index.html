@@ -505,6 +505,10 @@ const SYL_FAMILIES = {
   F:["FA","FE","FI","FO","FU"], R:["RA","RE","RI","RO","RU"], J:["JA","JE","JI","JO","JU"],
   C:["CA","CO","CU"], G:["GA","GO","GU"]
 };
+/* fala de sílabas: E/O finais átonos viram "i"/"u" no TTS pt-BR ("ME" soa "mi").
+   Circunflexo força a vogal clara SÓ na fala; a escrita na tela fica normal. */
+const sylSay = s => /[ÁÉÍÓÚÂÊÔÃÕ]/.test(s) ? s : s.replace(/E$/,"Ê").replace(/O$/,"Ô");
+const sylJoinSay = (arr,sep="... ") => arr.map(sylSay).join(sep);
 
 const WORDS = [
   { w:"GATO", e:"🐱", syl:["GA","TO"] },  { w:"BOLA", e:"⚽", syl:["BO","LA"] },
@@ -1277,7 +1281,12 @@ function renderQ(q){
         const need = q.pieces[state.tileIdx];
         if(piece === need){
           sndTap();
-          if(q.sayPieces) speak([{t:piece.toLowerCase(), lang: q.de?"de-DE":q.en?"en-US":"pt-BR"}]);
+          if(q.sayPieces){
+            const lang = q.de?"de-DE":q.en?"en-US":"pt-BR";
+            /* pt: sílaba com vogal clara (MÊ, TÔ) e letra pelo nome (eme, tê) */
+            const t = lang==="pt-BR" ? (piece.length>1 ? sylSay(piece) : (LETTER_SOUND[piece]||piece)) : piece;
+            speak([{t:t.toLowerCase(), lang}]);
+          }
           t.classList.add("used");
           const slot = slots.children[state.tileIdx];
           slot.textContent = piece; slot.classList.add("filled");
@@ -1759,13 +1768,13 @@ function ptLesson(lv){
       sc(lsTiles(["M","N","U","V"]), "Parecidas, mas diferentes!", "O M tem três perninhas, o N tem duas! O U é redondinho embaixo, o V é pontudo! Olhe bem devagar antes de tocar!")];
     case 8: return [
       sc(lsMerge("M","A"), "M + A = MA!", "Agora a MÁGICA de ler! O M faz mmm, o A faz aaa. Cola os sons: mmmm... aaaa... MA! Fala devagar... agora rápido: MA!"),
-      sc(lsTiles(["MA","ME","MI","MO","MU"]), "A família do M!", "Olha a família do M! MA! ME! MI! MO! MU! Fala comigo, bem devagarinho... agora rapidinho!"),
+      sc(lsTiles(["MA","ME","MI","MO","MU"]), "A família do M!", "Olha a família do M! MA! MÊ! MI! MÔ! MU! Fala comigo, bem devagarinho... agora rapidinho!"),
       sc(lsWord("MALA","🧳"), "MA + LA = MALA!", "E juntando os pedacinhos nasce a palavra: MA e LA... MALA! Você já está lendo!")];
     case 9: return [
-      sc(lsTiles(["PA","PE","PI","PO","PU"]), "A família do P!", "O P também tem família! PA! PE! PI! PO! PU! É o som p colado com cada vogal!"),
+      sc(lsTiles(["PA","PE","PI","PO","PU"]), "A família do P!", "O P também tem família! PA! PÊ! PI! PÔ! PU! É o som p colado com cada vogal!"),
       sc(lsRow(lsTiles(["MA"])+lsTiles(["PA"],"gold")+lsTiles(["BA"])), "MA, PA e BA — escute a diferença!", "Escute a diferença: MA! PA! BA! O comecinho muda tudo! Preste atenção no primeiro sonzinho!")];
     case 10: return [
-      sc(lsTiles(["SA","SE","SI","SO","SU"]), "Toda letra tem sua família!", "Toda consoante tem a sua família! O S: SA SE SI SO SU! O T: TA TE TI TO TU!"),
+      sc(lsTiles(["SA","SE","SI","SO","SU"]), "Toda letra tem sua família!", "Toda consoante tem a sua família! O S: SA SÊ SI SÔ SU! O T: TA TÊ TI TÔ TU!"),
       sc(lsMerge("L","U"), "Cola o som da letra com a vogal!", "O truque é sempre o mesmo: cola o som da letra com a vogal! Llll mais uuu: LU! Você consegue com qualquer letra!")];
     case 11: return [
       sc(lsRow(lsHl("GATO",0,1)+lsE("🐱",.5)), "G-G-GATO começa com G!", "Escute o comecinho da palavra: G! G! GATO! Começa com G! O primeiro sonzinho conta qual é a letra!"),
@@ -1776,13 +1785,13 @@ function ptLesson(lv){
       sc(lsRow(lsHl("MALA",1,2)+lsHl("MOTO",1,2)), "Todas começam com M!", "Pegadinha! MALA e MOTO começam as duas com M! E agora?"),
       sc(lsTiles(["MA","MO"],"gold"), "A SEGUNDA letra desempata!", "Olhe a segunda letra! MA-LA tem A. MO-TO tem O. Quando o começo empata, a segunda letra desempata!")];
     case 14: return [
-      sc(lsTiles(["SA","PA","TO"],null,.5), "Bata palma: SA-PA-TO!", "Toda palavra é feita de pedacinhos! Bata uma palma pra cada pedaço: SA! PA! TO! Três palmas!"),
+      sc(lsTiles(["SA","PA","TO"],null,.5), "Bata palma: SA-PA-TO!", "Toda palavra é feita de pedacinhos! Bata uma palma pra cada pedaço: SA! PA! TÔ! Três palmas!"),
       sc(lsRow(lsTiles(["SA"],"gold")+lsB("...")), "O primeiro pedacinho!", "O primeiro pedacinho de SAPATO é SA! Fale a palavra com palmas e escute o primeiro pedaço!")];
     case 15: return [
       sc(lsRow(lsE("🏅")+lsE("✖️",.3)+lsB("3")), "Cada palavra, 3 vezes: aí ela é sua!", "Nível especial! Cada palavra nova você vai ver TRÊS vezes: ouvindo, lendo sozinho e montando! Aí ela fica sua pra sempre!"),
       sc(lsWord("UVA","🍇"), "U-VA... UVA!", "Vamos treinar com palavras curtinhas: U... VA... UVA! Leia pedacinho por pedacinho e depois emende!")];
     case 16: return [
-      sc(lsWord("GATO","🐱"), "GA... TO... GATO!", "Hora de ler de verdade! Leia pedacinho por pedacinho: GA... TO... agora emenda tudo: GATO!"),
+      sc(lsWord("GATO","🐱"), "GA... TO... GATO!", "Hora de ler de verdade! Leia pedacinho por pedacinho: GA... TÔ... agora emenda tudo: GATO!"),
       sc(lsRow(lsE("👆")+lsE("🖼️",.4)), "A figurinha confirma!", "Deslize o dedinho embaixo da palavra enquanto lê. Leu? Olhe a figura e confira: é um gato mesmo? Acertou!")];
     case 17: return [
       sc(lsWord("VACA","🐮"), "Leia primeiro, ache depois!", "Agora são mais palavras! Leia primeiro com calma, pedacinho por pedacinho, e só depois procure a figura certa!")];
@@ -1793,12 +1802,12 @@ function ptLesson(lv){
       sc(lsRow(lsE("🐱")+lsE("🦆",.3)+lsE("🐭",.6)), "Leia o comecinho com atenção!", "Uma letrinha muda o bicho inteiro! Leia o comecinho com muita atenção antes de escolher!")];
     case 20: return [
       sc(lsTiles(["TO","GA"],null,.4), "Os pedaços embaralharam!", "Os pedacinhos da palavra se embaralharam! Sua missão: colocar na ordem certa!"),
-      sc(lsTiles(["GA","TO"],"gold",.4), "Fale devagar: GA... TO!", "O truque: fale a palavra bem devagar: GA... TO! O pedaço que você fala PRIMEIRO vem primeiro! GA, depois TO!")];
+      sc(lsTiles(["GA","TO"],"gold",.4), "Fale devagar: GA... TO!", "O truque: fale a palavra bem devagar: GA... TÔ! O pedaço que você fala PRIMEIRO vem primeiro! GA, depois TÔ!")];
     case 21: return [
       sc(lsTiles(["G","A","T","O"],null,.35), "Agora letra por letra!", "Agora é letra por letra! Fale a palavra beeem devagar esticando cada som: G... A... T... O!"),
       sc(lsRow(lsE("🗣️")+lsE("🧩",.4)), "Cada som, uma letra!", "Cada sonzinho que sua boca faz é uma letra no lugar certo! Monte com calma, som por som!")];
     case 22: return [
-      sc(lsTiles(["MA","CA","CO"],null,.5), "Três palmas: MA-CA-CO!", "Palavras de três pedaços! Bata palma: MA! CA! CO! Três palmas, três pedaços: MACACO!"),
+      sc(lsTiles(["MA","CA","CO"],null,.5), "Três palmas: MA-CA-CO!", "Palavras de três pedaços! Bata palma: MA! CA! CÔ! Três palmas, três pedaços: MACACO!"),
       sc(lsWord("MACACO","🐒"), "Pedacinho por pedacinho!", "Palavra grande não assusta: é só ler um pedacinho de cada vez e emendar no final! MA-CA-CO... MACACO!")];
     case 23: return [
       sc(lsRow(lsB("G")+lsB("A")+lsE("✍️",.5)), "Escreva falando o som!", "Agora você escreve! O segredo: fale a palavra devagar e escreva o som que escutar: G... A... T... O!"),
@@ -1809,7 +1818,7 @@ function ptLesson(lv){
       sc(lsRow(lsE("🎤")+lsWord("LUA","🌙")), "Leia BEM ALTO no microfone!", "Agora é você que fala! Leia a palavra com o dedinho embaixo e fale BEM ALTO no microfone: LUUUA!"),
       sc(lsE("🗣️"), "Pode falar devagar e forte!", "Fale perto do celular, devagar e forte! Se não der certo, respire fundo e tente de novo com mais força!")];
     case 26: return [
-      sc(lsWord("SAPATO","👟"), "Palavras grandes, sem pressa!", "Palavras grandes! Sem pressa: SA... PA... TO! Quanto mais pedaços, mais palmas — e mais moedas!")];
+      sc(lsWord("SAPATO","👟"), "Palavras grandes, sem pressa!", "Palavras grandes! Sem pressa: SA... PA... TÔ! Quanto mais pedaços, mais palmas — e mais moedas!")];
     case 27: return [
       sc(lsTiles(["BA","NA","NA"],null,.5), "Monte os três pedaços na ordem!", "Montar palavra grande é igual: fale devagar, BA-NA-NA, e coloque os pedaços na ordem que a boca fala!")];
     case 28: return [
@@ -1829,7 +1838,7 @@ function ptLesson(lv){
     case 33: return [
       sc(lsRow(lsE("🏅")+lsWord("BORBOLETA","🦋")), "Palavras gigantes!", "Palavras GIGANTES! BOR-BO-LE-TA! Quatro palmas! Não tenha pressa: pedacinho por pedacinho você lê qualquer palavra do mundo!")];
     case 34: return [
-      sc(lsRow(lsE("🎧")+lsE("💪",.4)), "Ditado de gente grande!", "Ditado difícil! Palavra grande no ouvido? Repita ela baixinho e escreva um pedacinho de cada vez: MA... CA... CO!")];
+      sc(lsRow(lsE("🎧")+lsE("💪",.4)), "Ditado de gente grande!", "Ditado difícil! Palavra grande no ouvido? Repita ela baixinho e escreva um pedacinho de cada vez: MA... CA... CÔ!")];
     case 35: return [
       sc(lsRow(lsE("📖")+lsE("🔎",.4)), "Historinhas! A resposta está no texto!", "Agora você lê historinhas de verdade! Leia com calma. Depois vem uma pergunta — e a resposta está ESCONDIDA no texto!"),
       sc(lsE("🕵️"), "Vamos caçar a resposta!", "Se não souber a resposta, volte e leia de novo só o pedacinho que fala daquilo! É como caçar um tesouro no texto!")];
@@ -2082,7 +2091,7 @@ function genMastery(gi){
       kind:"opts", prompt:"Revisão! Leia e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${w.w}</div>`,
       speech:[ptT("Você já dominou todas! Leia e toque na figura!")],
-      hintSpeech: ptT(`${(w.syl||[w.w]).join("... ")}...`),
+      hintSpeech: ptT(`${sylJoinSay(w.syl||[w.w])}...`),
       okSpeech:`${w.w}!`,
       optClass:"emoji-opt",
       options: makeOpts(w, list, Math.min(5,list.length), x=>x.e)
@@ -2094,8 +2103,8 @@ function genMastery(gi){
     return {
       kind:"opts", prompt:"Palavra nova! Escute e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
-      speech:[ptT(`Palavra nova: ${focus.w}! ${syl.join("... ")}... ${focus.w}! Ache a figura!`)],
-      hintSpeech: ptT(`${focus.w}! ${syl.join("... ")}!`),
+      speech:[ptT(`Palavra nova: ${focus.w}! ${sylJoinSay(syl)}... ${focus.w}! Ache a figura!`)],
+      hintSpeech: ptT(`${focus.w}! ${sylJoinSay(syl)}!`),
       okSpeech:`${focus.w}!`,
       optClass:"emoji-opt", mword:focus.w,
       options: makeOpts(focus, list, Math.min(3,list.length), x=>x.e)
@@ -2106,7 +2115,7 @@ function genMastery(gi){
       kind:"opts", prompt:"Ela voltou! Agora leia sozinho!",
       visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
       speech:[ptT("Essa palavra voltou! Agora leia sozinho e ache a figura!")],
-      hintSpeech: ptT(`${syl.join("... ")}...`),
+      hintSpeech: ptT(`${sylJoinSay(syl)}...`),
       okSpeech:`${focus.w}!`,
       optClass:"emoji-opt", mword:focus.w,
       options: makeOpts(focus, list, Math.min(5,list.length), x=>x.e)
@@ -2117,11 +2126,12 @@ function genMastery(gi){
   const decoys = syl.length>=2
     ? shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>!pieces.includes(s))).slice(0,2)
     : shuffle(AZ.filter(l=>!focus.w.includes(l))).slice(0,2);
+  const piecesSay = syl.length>=2 ? sylJoinSay(pieces) : pieces.map(l=>LETTER_SOUND[l]||l).join("... ");
   return {
     kind:"tiles", prompt:"Última vez! Monte a palavra e domine ela!",
     visual:`<span class="big-emoji">${focus.e}</span>`,
-    speech:[ptT(`Monte a palavra ${focus.w}! ${pieces.join("... ")}!`)],
-    hintSpeech: ptT(`${pieces.join("... ")}!`),
+    speech:[ptT(`Monte a palavra ${focus.w}! ${piecesSay}!`)],
+    hintSpeech: ptT(`${piecesSay}!`),
     okSpeech:`${focus.w}!`,
     pieces, decoys, sayPieces:true, answer:focus.w, mword:focus.w
   };
@@ -2183,9 +2193,9 @@ function genPtCore(lv){
     return {
       kind:"opts", prompt:"Qual é a sílaba?",
       visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🧩</span>`,
-      speech:[ptT(`Encontre a sílaba ${syl}!`)],
-      hintSpeech: ptT(`${syl}! ${syl}!`),
-      okSpeech:`${syl}!`,
+      speech:[ptT(`Encontre a sílaba ${sylSay(syl)}!`)],
+      hintSpeech: ptT(`${sylSay(syl)}! ${sylSay(syl)}!`),
+      okSpeech:`${sylSay(syl)}!`,
       options: makeOpts(syl, pool, 5)
     };
   }
@@ -2223,8 +2233,8 @@ function genPtCore(lv){
       kind:"opts", prompt:"Qual é a primeira sílaba?",
       visual:`<span class="big-emoji">${w.e}</span>`,
       speech:[ptT(`${w.w}! Qual é o primeiro pedacinho de ${w.w}?`)],
-      hintSpeech: ptT(`${w.syl.join("... ")}... ${w.w}!`),
-      okSpeech:`${first}! ${w.w}!`,
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${w.w}!`),
+      okSpeech:`${sylSay(first)}! ${w.w}!`,
       options: makeOpts(first, pool, 4)
     };
   }
@@ -2234,7 +2244,7 @@ function genPtCore(lv){
       kind:"opts", prompt:"Leia a palavra e ache a figura!",
       visual:`<div class="read-word">${w.w}</div>`,
       speech:[ptT("Leia a palavra e toque na figura certa! Você consegue!")],
-      hintSpeech: ptT(`${w.syl.join("... ")}...`),
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}...`),
       okSpeech:`${w.w}!`,
       optClass:"emoji-opt",
       options: makeOpts(w, WORDS, lv===13? 3:5, x=>x.e)
@@ -2259,8 +2269,8 @@ function genPtCore(lv){
     return {
       kind:"tiles", prompt:"Monte a palavra com as sílabas!",
       visual:`<span class="big-emoji">${w.e}</span>`,
-      speech:[ptT(`Monte a palavra ${w.w}! ${w.syl.join("... ")}!`)],
-      hintSpeech: ptT(`${w.syl.join("... ")}!`),
+      speech:[ptT(`Monte a palavra ${w.w}! ${sylJoinSay(w.syl)}!`)],
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}!`),
       okSpeech:`${w.w}!`,
       pieces: w.syl, decoys, sayPieces:true, answer:w.w
     };
@@ -2282,7 +2292,7 @@ function genPtCore(lv){
     return {
       kind:"abc", prompt:"Escreva a palavra!",
       visual:`<span class="big-emoji">${w.e}</span>`,
-      speech:[ptT(`Escreva a palavra ${w.w}! ${w.syl.join("... ")}!`)],
+      speech:[ptT(`Escreva a palavra ${w.w}! ${sylJoinSay(w.syl)}!`)],
       okSpeech:`${w.w}!`,
       answer:w.w, maxLen:w.w.length
     };
@@ -2316,7 +2326,7 @@ function genPtCore(lv){
       kind:"opts", prompt:"Leia a palavra GRANDE e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(28px,7vw,42px);">${w.w}</div>`,
       speech:[ptT("Palavra grande! Leia pedacinho por pedacinho e ache a figura!")],
-      hintSpeech: ptT(`${w.syl.join("... ")}...`),
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}...`),
       okSpeech:`${w.w}!`,
       optClass:"emoji-opt",
       options: makeOpts(w, WORDS_BIG, 5, x=>x.e)
@@ -2328,8 +2338,8 @@ function genPtCore(lv){
     return {
       kind:"tiles", prompt:"Monte a palavra grande!",
       visual:`<span class="big-emoji">${w.e}</span>`,
-      speech:[ptT(`Monte a palavra ${w.w}! ${w.syl.join("... ")}!`)],
-      hintSpeech: ptT(`${w.syl.join("... ")}!`),
+      speech:[ptT(`Monte a palavra ${w.w}! ${sylJoinSay(w.syl)}!`)],
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}!`),
       okSpeech:`${w.w}!`,
       pieces:w.syl, decoys, sayPieces:true, answer:w.w
     };
@@ -2340,7 +2350,7 @@ function genPtCore(lv){
       kind:"opts", prompt:"Sons especiais! Leia e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(28px,7vw,42px);">${w.w}</div>`,
       speech:[ptT("Essa palavra tem um som especial! Leia e toque na figura certa!")],
-      hintSpeech: ptT(`${w.syl.join("... ")}...`),
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}...`),
       okSpeech:`${w.w}!`,
       optClass:"emoji-opt",
       options: makeOpts(w, DIGRAPH_WORDS, 4, x=>x.e)
