@@ -802,10 +802,18 @@ function speak(parts, cb){
     if(i===list.length-1){ u.onend = fire; u.onerror = fire; }
     speechSynthesis.speak(u);
   });
-  /* segurança: se a voz travar, o jogo continua mesmo assim */
+  /* segurança: se a voz travar, o jogo continua mesmo assim.
+     No celular a voz demora a começar e fala devagar — então NUNCA dispara o
+     callback enquanto ainda estiver falando (senão o próximo áudio corta este). */
   if(cb){
-    const est = list.reduce((s,p)=>s+Math.max(1300, p.t.length*95), 600);
-    setTimeout(fire, Math.min(est, 9000));
+    const est = Math.min(list.reduce((s,p)=>s+Math.max(1300, p.t.length*95), 600), 9000);
+    const t0 = Date.now();
+    const check = ()=>{
+      if(called) return;
+      if((speechSynthesis.speaking || speechSynthesis.pending) && Date.now()-t0 < est+15000) setTimeout(check, 300);
+      else fire();
+    };
+    setTimeout(check, est);
   }
 }
 const ptT = t => ({t, lang:"pt-BR"});
@@ -942,7 +950,7 @@ function renderProfiles(){
     c.className = "profile-card";
     c.style.animationDelay = (i*.08)+"s";
     c.innerHTML = `<span class="av">${p.avatar}</span><span class="nm">${p.name}</span>
-      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")}<br>🪙 ${p.coins} · 🏆 ${p.stickers.length}/${STICKERS.length}</span>`;
+      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")} · 🥨 ${p.lv.de}/${maxOf("de")}<br>🪙 ${p.coins} · 🏆 ${p.stickers.length}/${STICKERS.length}</span>`;
     c.onclick = ()=>{ sndTap(); db.activeIdx = i; save(); goHome();
       speak(`Oi ${p.name}! Que bom te ver! Vamos jogar?`); };
     grid.appendChild(c);
@@ -1273,10 +1281,35 @@ function micTest(){
   });
 }
 
-/* compara o que foi ouvido com a resposta (e alternativas aceitas, ex.: "7" pra SEVEN) */
+/* números falados: o reconhecedor às vezes devolve o dígito ("9") e às vezes a
+   palavra ("nine"/"nove"/"neun") — aceitamos os dois. Formas já sem acento (norm). */
+const NUM_SPOKEN = [
+  ["zero","null"],["um","uma","one","eins"],["dois","duas","two","zwei"],["tres","three","drei"],
+  ["quatro","four","vier"],["cinco","five","funf"],["seis","six","sechs"],["sete","seven","sieben"],
+  ["oito","eight","acht"],["nove","nine","neun"],["dez","ten","zehn"],["onze","eleven","elf"],
+  ["doze","twelve","zwolf"],["treze","thirteen","dreizehn"],["catorze","quatorze","fourteen","vierzehn"],
+  ["quinze","fifteen","funfzehn"],["dezesseis","sixteen","sechzehn"],["dezessete","seventeen","siebzehn"],
+  ["dezoito","eighteen","achtzehn"],["dezenove","nineteen","neunzehn"],["vinte","twenty","zwanzig"]
+];
+function numAlts(t){
+  const out = [t];
+  if(/^\d+$/.test(t)){ const r = NUM_SPOKEN[+t]; if(r) out.push(...r); }
+  else { const ix = NUM_SPOKEN.findIndex(r=>r.includes(t)); if(ix > -1) out.push(String(ix)); }
+  return out;
+}
+/* compara o que foi ouvido com a resposta (e alternativas aceitas, ex.: "7" pra SEVEN).
+   Compara palavra por palavra — "19" NÃO pode valer como "9"! */
 function micMatch(alts, q){
-  const targets = [q.answer].concat(q.accept||[]).map(norm);
-  return alts.some(a => targets.some(t => a===t || a.includes(t) || t.includes(a.replace(/\s/g,""))));
+  const targets = [q.answer].concat(q.accept||[]).map(norm).flatMap(numAlts);
+  return alts.some(raw=>{
+    const a = raw.replace(/[.,!?;:]/g," ").replace(/\s+/g," ").trim();
+    const toks = a.split(" ");
+    return targets.some(t =>
+      a === t || toks.includes(t) ||
+      (t.includes(" ") && a.includes(t)) ||  /* alvo de várias palavras dentro da frase: "red cat" */
+      t.replace(/\s/g,"") === a.replace(/\s/g,"") /* soletrado ou colado: "ga to"→"gato", "redcat"→"red cat" */
+    );
+  });
 }
 
 function startMic(q, mb, heard){
@@ -1301,7 +1334,7 @@ function startMic(q, mb, heard){
     let got = false;
     rec.onresult = ev=>{
       got = true;
-      const alts = [...ev.results[0]].map(r=>norm(r.transcript));
+      const alts = [...ev.results].flatMap(res=>[...res].map(r=>norm(r.transcript)));
       heard.textContent = `Ouvi: "${ev.results[0][0].transcript}"`;
       const ok = micMatch(alts, q);
       if(ok){ mb.classList.remove("listening"); onCorrect(); }
@@ -1853,6 +1886,7 @@ function genPtCore(lv){
       kind:"mic", prompt:"Leia a palavra em voz alta!",
       visual:`<div class="read-word">${w}</div><span class="duo-emoji">${emoji}</span>`,
       speech:[ptT("Leia a palavra bem alto no microfone!")],
+      hintSpeech: ptT(`${w}! Fale: ${w}!`),
       okSpeech:`${w}! Você leu!`,
       answer:w
     };
@@ -2326,6 +2360,7 @@ function genEn(lv){
         kind:"mic", prompt:"HOW MANY? Conte e fale em inglês! 🎤",
         visual: emojiGroup(n,e),
         speech:[enT("How many?"), ptT("Conte as figurinhas e fale o número em inglês!")],
+        hintSpeech: enT(NUMS[n-1]+"! "+NUMS[n-1]+"!"),
         okSpeech:[enT("Yes! "+NUMS[n-1]+"!")],
         en:true, answer:NUMS[n-1], accept:[String(n)]
       };
@@ -2406,6 +2441,7 @@ function genEn(lv){
       kind:"mic", prompt:"Say it! Fale em inglês!",
       visual:`<div class="read-word" style="font-size:clamp(30px,8vw,46px);">${w}</div><span class="duo-emoji">${nIx>-1? "🔢" : item.d}</span>`,
       speech:[ptT("Fale essa palavra em inglês no microfone!"), enT(w+"!")],
+      hintSpeech: enT(w+"! "+w+"!"),
       okSpeech:[enT("Great! "+w+"!")],
       en:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined
     };
@@ -2505,6 +2541,7 @@ function genDe(lv){
         kind:"mic", prompt:"WIE VIELE? Conte e fale em alemão! 🎤",
         visual: emojiGroup(n,e),
         speech:[deT("Wie viele?"), ptT("Conte as figurinhas e fale o número em alemão!")],
+        hintSpeech: deT(NUMS[n-1]+"! "+NUMS[n-1]+"!"),
         okSpeech:[deT("Ja! "+NUMS[n-1]+"!")],
         de:true, answer:NUMS[n-1], accept:[String(n)]
       };
@@ -2585,6 +2622,7 @@ function genDe(lv){
       kind:"mic", prompt:"Sprich! Fale em alemão!",
       visual:`<div class="read-word" style="font-size:clamp(26px,7vw,42px);">${w}</div><span class="duo-emoji">${nIx>-1? "🔢" : item.d}</span>`,
       speech:[ptT("Fale essa palavra em alemão no microfone!"), deT(w+"!")],
+      hintSpeech: deT(w+"! "+w+"!"),
       okSpeech:[deT("Super! "+w+"!")],
       de:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined
     };
