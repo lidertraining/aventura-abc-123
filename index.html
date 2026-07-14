@@ -401,6 +401,8 @@ const AVATARS = ["🦁","🐯","🦊","🐼","🐸","🦄","🐙","🐵","🐶",
 const COUNT_EMOJIS = ["🍎","🍌","🍓","🐶","🐱","⭐","🎈","🚗","🦆","🐟","🍪","⚽"];
 const PRAISE = ["Muito bem!","Você é demais!","Acertou! Parabéns!","Uau, que inteligente!","Isso aí, campeão!","Perfeito!","Você é um gênio!","Sensacional!"];
 const ENCOURAGE = ["Quase! Tente de novo!","Você consegue! Tenta mais uma vez!","Vamos tentar de novo!","Pensa mais um pouquinho!"];
+/* frases de quando erra e o jogo SEGUE pra outra pergunta (não repete — senão dá pra ir eliminando as opções) */
+const MOVE_ON = ["Vamos ver outra!","Tudo bem errar! Essa volta depois, fica esperto!","Essa vai voltar pra você pegar de vez!","Vamos pra frente! Depois ela aparece de novo!","Errar faz parte de aprender! Vamos em frente!","Anotei essa! Ela volta já, já!"];
 
 /* ---- PORTUGUÊS ---- */
 const VOWELS = ["A","E","I","O","U"];
@@ -945,7 +947,7 @@ function renderProfiles(){
       speak(`Oi ${p.name}! Que bom te ver! Vamos jogar?`); };
     grid.appendChild(c);
   });
-  if(db.profiles.length < 6){
+  if(db.profiles.length < 12){
     const add = document.createElement("button");
     add.className = "profile-card add";
     add.style.animationDelay = (db.profiles.length*.08)+"s";
@@ -1183,11 +1185,6 @@ function renderQ(q){
           t.classList.add("shake");
           setTimeout(()=>t.classList.remove("shake"), 450);
           onWrong();
-          if(state.qWrong >= 2){
-            tiles.querySelectorAll(".tile").forEach(x=>x.classList.remove("hint"));
-            const good = [...tiles.children].find(x=>!x.classList.contains("used") && x.textContent===q.pieces[state.tileIdx]);
-            if(good) good.classList.add("hint");
-          }
         }
       };
       tiles.appendChild(t);
@@ -1348,18 +1345,7 @@ function answerOpt(btn, op){
   } else {
     btn.classList.add("wrong");
     btn.disabled = true;
-    onWrong();
-    if(op.say){ /* fala o nome do que a criança tocou — ela aprende também com o erro */
-      const parts = [ptT("Ops! Essa é"), {t: op.say.t + "!", lang: op.say.lang}];
-      if(state.qWrong >= 2 && state.q.hintSpeech) parts.push(ptT("Agora procure:"), state.q.hintSpeech);
-      else parts.push(ptT("Tente de novo!"));
-      speak(parts);
-    }
-    if(state.qWrong >= 2){
-      [...document.querySelectorAll(".ans-btn")].forEach((b,i)=>{
-        b.classList.toggle("hint", !!(state.q.options[i] && state.q.options[i].correct));
-      });
-    }
+    onWrong(op.say);
   }
 }
 
@@ -1375,14 +1361,6 @@ function checkTyped(){
     setTimeout(()=>{ d.classList.remove("shake"); }, 550);
     state.typed = ""; d.textContent = "";
     onWrong();
-    if(state.qWrong >= 2 && q.kind === "abc"){
-      $("#letters-hint").textContent = q.answer.split("").map((ch,i)=> i===0? ch : "_").join(" ");
-      speak([{t:`Começa com a letra ${LETTER_SOUND[q.answer[0]]||q.answer[0]}!`, lang:"pt-BR"}]);
-    }
-    if(state.qWrong >= 3 && q.kind === "keypad"){
-      $("#letters-hint")?.remove();
-      speak(q.speech);
-    }
   }
 }
 
@@ -1466,21 +1444,28 @@ function onCorrect(){
   else speak(praise, after);
 }
 
-function onWrong(){
-  const p = P(), t = state.track;
+function onWrong(said){
+  const p = P(), t = state.track, q = state.q;
   state.qWrong++; state.levelErrors++; state.streak = 0;
   p.stats[t].e++;
   /* errou 1 vez → a MESMA questão entra na fila de reforço (3 acertos + 2 de fundamento pra sair) */
   if(state.qWrong === 1 && !state.practice && !state.reinf){
-    const queue = reinfQ(t), k = qKey(state.q);
+    const queue = reinfQ(t), k = qKey(q);
     const ex = queue.find(it=>it.k===k);
     if(ex){ ex.left = REINF_HITS; ex.fleft = FUND_HITS; }
-    else queue.push({ k, left: REINF_HITS, fleft: FUND_HITS, q: JSON.parse(JSON.stringify(state.q)) });
+    else queue.push({ k, left: REINF_HITS, fleft: FUND_HITS, q: JSON.parse(JSON.stringify(q)) });
+  }
+  /* errou uma questão de reforço → a fase atual recomeça e ela vai pro FIM da fila (volta misturada) */
+  if(state.reinf && state.qWrong === 1){
+    if(state.reinf.left <= 0) state.reinf.fleft = FUND_HITS;
+    else state.reinf.left = REINF_HITS;
+    const queue = reinfQ(t), ix = queue.indexOf(state.reinf);
+    if(ix > -1){ queue.splice(ix, 1); queue.push(state.reinf); }
   }
   /* 📚 primeiro erro na questão marca o nível REAL da criança (a partir do nível 3):
      daí pra cima destrava a base completa — modo aprender de verdade */
   if(!state.practice && state.qWrong === 1){
-    const lvSrc = state.q.flv || curLevel();
+    const lvSrc = q.flv || curLevel();
     if(lvSrc >= DEEP_MIN && (!p.deep[t] || lvSrc < p.deep[t])){
       const first = !p.deep[t];
       p.deep[t] = lvSrc;
@@ -1491,10 +1476,34 @@ function onWrong(){
   sndWrong();
   const fb = $("#feedback");
   fb.className = "bad";
-  fb.textContent = "Ops! Tente de novo! 💛";
-  const enc = pick(ENCOURAGE);
-  if(state.qWrong >= 2) speak([ptT(enc), ...(state.q.hintSpeech? [state.q.hintSpeech]:[])]);
-  else speak(enc);
+  if(q.kind === "mic"){
+    /* microfone pode ter ouvido errado — aqui vale tentar de novo (e tem botão pular) */
+    fb.textContent = "Ops! Tente de novo! 💛";
+    const enc = pick(ENCOURAGE);
+    if(state.qWrong >= 2) speak([ptT(enc), ...(q.hintSpeech? [q.hintSpeech]:[])]);
+    else speak(enc);
+  } else {
+    /* errou → NÃO fica na mesma pergunta (senão dá pra ir eliminando as opções!):
+       mostra e fala a resposta certa e SEGUE pra outra — a errada volta misturada na fila 🔁 */
+    state.lock = true;
+    fb.textContent = pick(["Ops! Essa volta depois! 💛","Quase! Vamos pra outra! 💛","Tudo bem errar! Ela volta já, já! 💛"]);
+    [...document.querySelectorAll(".ans-btn")].forEach((b,i)=>{
+      b.classList.toggle("hint", !!(q.options && q.options[i] && q.options[i].correct));
+    });
+    const parts = [];
+    if(said) parts.push(ptT("Ops! Essa é"), {t: said.t + "!", lang: said.lang});
+    const co = q.options && q.options.find(o=>o.correct);
+    if(co && co.say) parts.push(ptT("A certa era"), {t: co.say.t + "!", lang: co.say.lang});
+    else if(q.answer != null){
+      parts.push(ptT("A resposta certa era"), {t: String(q.answer), lang: q.de?"de-DE":q.en?"en-US":"pt-BR"});
+      const d = $("#typed-display"); if(d) d.textContent = String(q.answer);
+    }
+    else if(q.hintSpeech) parts.push(q.hintSpeech); /* sem resposta explícita: fala só a dica */
+    parts.push(ptT(pick(MOVE_ON)));
+    /* garante que a PRÓXIMA é uma pergunta nova — a errada só volta depois, misturada */
+    state.lastReinf = true;
+    speak(parts, ()=> setTimeout(nextQuestion, 700));
+  }
   /* muitos erros no nível → sugerir revisão (avaliação do erro) */
   if(!state.practice && state.levelErrors >= 6 && !state.reviewSuggested && curLevel() > 1){
     state.reviewSuggested = true;
