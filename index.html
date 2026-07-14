@@ -119,12 +119,14 @@
   .read-word { font-size:clamp(38px,10vw,58px); font-weight:700; color:#454a75; letter-spacing:4px; animation:popIn .5s; }
   .read-sentence { font-size:clamp(24px,6vw,34px); font-weight:700; color:#454a75; letter-spacing:1px; text-align:center; line-height:1.3; animation:popIn .5s; }
 
-  #speak-again {
+  #speak-again, #lesson-replay {
     background:linear-gradient(135deg,#ffd54f,#ffb300); border:none; cursor:pointer;
     font-family:inherit; font-weight:700; color:#5d3600; font-size:15px;
     padding:8px 18px; border-radius:999px; box-shadow:0 4px 0 #e69100;
   }
-  #speak-again:active { transform:translateY(3px); box-shadow:0 1px 0 #e69100; }
+  #speak-again:active, #lesson-replay:active { transform:translateY(3px); box-shadow:0 1px 0 #e69100; }
+  #lesson-replay { background:linear-gradient(135deg,#90caf9,#5b86e5); color:#fff; box-shadow:0 4px 0 #3f66c4; }
+  #lesson-replay:active { box-shadow:0 1px 0 #3f66c4; }
 
   #answers { width:100%; display:flex; flex-direction:column; align-items:center; gap:10px; padding:8px 0 4px; }
   .opts-row { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; width:100%; }
@@ -286,6 +288,50 @@
   #parents-card table { width:100%; border-collapse:collapse; margin:6px 0; }
   #parents-card td, #parents-card th { border-bottom:1px solid #e7e9f7; padding:4px 6px; text-align:center; }
   #parents-card th { color:#454a75; }
+
+  /* =============== AULINHA DA PROFESSORA =============== */
+  #screen-lesson { justify-content:flex-start; padding-top:18px; }
+  #lesson-head { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  #lesson-teacher { font-size:56px; animation:mascotJump 2.2s infinite; }
+  #lesson-title { text-align:left; }
+  #lesson-title b { display:block; color:#454a75; font-size:19px; }
+  #lesson-title small { color:#7a7fa8; font-size:13px; }
+  #lesson-stage {
+    width:min(560px,94vw); min-height:200px; background:#fff; border-radius:24px;
+    box-shadow:0 6px 0 #d8dcf0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:10px; padding:20px 14px; margin-bottom:10px;
+  }
+  #lesson-caption { color:#666b90; font-size:16.5px; font-weight:700; min-height:44px;
+    width:min(560px,94vw); text-align:center; line-height:1.35; }
+  #lesson-dots { display:flex; gap:7px; margin:6px 0 10px; }
+  #lesson-dots span { width:11px; height:11px; border-radius:50%; background:#d8dcf0; }
+  #lesson-dots span.on { background:#ffb300; transform:scale(1.25); }
+  #lesson-btns { display:flex; gap:10px; }
+  .ls-btn {
+    border:none; border-radius:16px; padding:13px 22px; font-family:inherit; font-weight:800;
+    font-size:17px; cursor:pointer; background:#ffb300; color:#fff; box-shadow:0 4px 0 #e69100;
+  }
+  .ls-btn.alt { background:#e7e9f7; color:#666b90; box-shadow:0 4px 0 #c9cde8; }
+  .ls-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #e69100; }
+  .ls-row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .ls-big { font-size:clamp(40px,12vw,64px); font-weight:900; color:#454a75; letter-spacing:2px; }
+  .ls-emoji { font-size:clamp(46px,13vw,70px); line-height:1; }
+  .ls-tile {
+    display:inline-block; background:#5b86e5; color:#fff; font-weight:900; border-radius:14px;
+    padding:10px 16px; font-size:clamp(24px,7vw,38px); box-shadow:0 4px 0 #3f66c4;
+  }
+  .ls-tile.gold { background:#ffb300; box-shadow:0 4px 0 #e69100; }
+  .ls-hl { background:#fff3c4; border-radius:8px; padding:0 6px; color:#e6820c; }
+  .ls-pop { opacity:0; animation:lsPop .5s forwards; }
+  @keyframes lsPop { 0%{opacity:0;transform:scale(0) rotate(-8deg);} 70%{transform:scale(1.15);} 100%{opacity:1;transform:scale(1);} }
+  .ls-slide { opacity:0; animation:lsSlide .7s forwards; }
+  @keyframes lsSlide { from{opacity:0;transform:translateX(-40px);} to{opacity:1;transform:none;} }
+  .ls-merge { animation:lsMerge 1.1s forwards; }
+  @keyframes lsMerge { 0%{gap:34px;} 55%{gap:34px;} 100%{gap:2px;} }
+  .ls-fadeout { animation:lsFade 1s forwards; }
+  @keyframes lsFade { to{opacity:.14; transform:scale(.82);} }
+  .ls-pulse { animation:lsPulse 1.2s infinite; display:inline-block; }
+  @keyframes lsPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.18);} }
 </style>
 </head>
 <body>
@@ -354,6 +400,7 @@
       <div id="prompt-text"></div>
       <div id="visual-area"></div>
       <button id="speak-again">🔊 Ouvir de novo</button>
+      <button id="lesson-replay">📺 Aula</button>
     </div>
     <div id="feedback"></div>
     <div id="answers"></div>
@@ -388,6 +435,21 @@
     </div>
     <div class="j-list" id="journey-list"></div>
     <button class="back-btn" id="btn-back-journey" style="margin-top:14px;">⬅ Voltar</button>
+  </div>
+
+  <!-- AULINHA DA PROFESSORA -->
+  <div class="screen" id="screen-lesson">
+    <div id="lesson-head">
+      <span id="lesson-teacher">🦉</span>
+      <div id="lesson-title"><b id="lesson-name"></b><small id="lesson-sub"></small></div>
+    </div>
+    <div id="lesson-stage"></div>
+    <div id="lesson-caption"></div>
+    <div id="lesson-dots"></div>
+    <div id="lesson-btns">
+      <button class="ls-btn" id="lesson-next">▶ Continuar</button>
+      <button class="ls-btn alt" id="lesson-skip">⏭ Pular aula</button>
+    </div>
   </div>
 
   <div id="overlay"><div id="overlay-card"></div></div>
@@ -829,7 +891,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1}, prog:{pt:0,math
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, stickers:[], lv:t.lv, prog:t.prog, stats:t.stats, mast:{}, pv:3, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0} };
+  return { name, avatar, coins:0, stickers:[], lv:t.lv, prog:t.prog, stats:t.stats, mast:{}, pv:3, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
 }
 
 function migrateProfile(p){
@@ -852,6 +914,8 @@ function migrateProfile(p){
     TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
     if(!p.deep) p.deep = {pt:0,math:0,en:0,de:0};
     TRACK_KEYS.forEach(t=>{ if(p.deep[t]==null) p.deep[t] = 0; });
+    if(!p.les) p.les = {pt:0,math:0,en:0,de:0};
+    TRACK_KEYS.forEach(t=>{ if(p.les[t]==null) p.les[t] = 0; });
     delete p.redo;
     return p;
   }
@@ -1039,6 +1103,13 @@ function startGame(track){
   state.track = track; state.practice = false; state.reinf = null; state.lastReinf = false;
   state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.recent = [];
   if(!p.prog[track]) p.prog[track] = 0;
+  const lv = curLevel();
+  if(lessonPending(track, lv)){ playLesson(track, lv, beginLevel); return; }
+  beginLevel();
+}
+
+function beginLevel(){
+  const track = state.track;
   showScreen("screen-game");
   updateGameHUD();
   const lv = curLevel();
@@ -1590,7 +1661,13 @@ function levelUp(){
       <button class="ov-btn alt" id="lvl-home">Menu</button>`);
     speak(`Uau! Você subiu para o nível ${p.lv[t]}! Ganhou ${bonus} moedas de bônus! Agora vamos aprender: ${nname}!`);
   }
-  $("#lvl-go").onclick = ()=>{ sndTap(); hideOverlay(); updateGameHUD(); nextQuestion(); };
+  $("#lvl-go").onclick = ()=>{
+    sndTap(); hideOverlay();
+    const nlv = curLevel();
+    if(!state.practice && lessonPending(t, nlv)){
+      playLesson(t, nlv, ()=>{ showScreen("screen-game"); updateGameHUD(); nextQuestion(); });
+    } else { updateGameHUD(); nextQuestion(); }
+  };
   $("#lvl-home").onclick = ()=>{ sndTap(); hideOverlay(); goHome(); };
 }
 
@@ -1607,6 +1684,325 @@ function practiceDone(){
   speak(`Treino completo! Mais ${PRACTICE_BONUS} moedas pra você! Quanto mais treina, mais craque fica!`);
   $("#pr-again").onclick = ()=>{ sndTap(); hideOverlay(); startPractice(state.track, state.practiceLv); };
   $("#pr-back").onclick = ()=>{ sndTap(); hideOverlay(); openJourney(state.track); };
+}
+
+/* =============== AULINHA DA PROFESSORA 📺 =============== */
+/* Método Kumon/fônico: cada nível ensina UM conceito — a aula modela o
+   raciocínio em voz alta (eu faço → nós fazemos → você faz) antes da prática. */
+let lesson = null;
+
+const sc = (v,t,s) => ({v,t,s});
+const lsE = (e,d) => `<span class="ls-emoji ls-pop"${d?` style="animation-delay:${d}s"`:""}>${e}</span>`;
+const lsB = (txt,cls) => `<div class="ls-big ls-pop ${cls||""}">${txt}</div>`;
+const lsRow = inner => `<div class="ls-row">${inner}</div>`;
+const lsTiles = (arr,cls,step) => lsRow(arr.map((x,i)=>`<span class="ls-tile ${cls||""} ls-pop" style="animation-delay:${i*(step||.45)}s">${x}</span>`).join(""));
+const lsCount = (n,e,step) => `<div class="ls-row" style="max-width:430px;">${Array.from({length:n},(_,i)=>`<span class="ls-emoji ls-pop" style="animation-delay:${i*(step||.55)}s;font-size:clamp(28px,8vw,44px);">${e}</span>`).join("")}</div>`;
+const lsWord = (w,e) => lsRow(lsB(w)+lsE(e,.5));
+const lsMerge = (a,b) => `<div class="ls-row ls-merge"><span class="ls-tile ls-pop">${a}</span><span class="ls-tile ls-pop" style="animation-delay:.4s">${b}</span></div>`;
+const lsHl = (w,i0,i1) => lsB(w.slice(0,i0)+`<span class="ls-hl">${w.slice(i0,i1)}</span>`+w.slice(i1));
+const lsSum = (a,b,e,e2) => lsRow(lsCount(a,e,.4)+lsB("+","ls-pulse")+lsCount(b,e2||e,.4));
+
+function lessonFor(track, lv){
+  if(lv > maxOf(track)) return null;
+  const scenes = track==="pt"? ptLesson(lv) : track==="math"? mathLesson(lv) : langLesson(track, lv);
+  return scenes && scenes.length? { scenes } : null;
+}
+
+function ptLesson(lv){
+  switch(lv){
+    case 1: return [
+      sc(lsRow(lsE("🦉")+lsE("👂",.5)), "Olhar, ouvir e repetir!", "Oi! Eu sou a professora Corujinha! Hoje a gente treina os ouvidos: escute a palavra e ache a figura!"),
+      sc(lsWord("GATO","🐱"), "Escute: GATO! Aponte e repita: GA-TO!", "Escute: GATO! Achou o gato? Aponte pra ele com o dedinho e repita comigo, bem alto: GAAA-TO!"),
+      sc(lsRow(lsE("👀")+lsE("👂",.4)+lsE("🗣️",.8)), "Olhar + ouvir + repetir = aprender!", "É assim que se aprende a ler: olhar a palavra, ouvir o som e repetir em voz alta! Vamos jogar?")];
+    case 2: return [
+      sc(lsRow(lsWord("BOLA","⚽")+lsWord("BOLO","🍰")), "BOLA e BOLO começam igual!", "Agora tem mais figuras! Cuidado: BOLA e BOLO começam igualzinho! Escute a palavra até o fim!"),
+      sc(lsE("👂"), "Escute até o FIM da palavra!", "O segredo do campeão: escutar até o fim! BO-LA... BO-LO... A última parte desempata!")];
+    case 3: return [
+      sc(lsTiles(VOWELS), "As vogais: A, E, I, O, U!", "Essas são as VOGAIS! A! É! I! Ó! U! Toda palavra do mundo tem pelo menos uma vogal!"),
+      sc(lsRow(lsB("A")+lsE("🐝",.5)), "A de ABELHA! A boca abre: AAAA!", "Olha a letra A! Ela faz AAAA! Abra a boca bem grande: AAAA de abelha! Agora fala você: AAAA!"),
+      sc(lsTiles(VOWELS,"gold"), "Cada letra tem um SOM!", "Cada letra tem um som! Primeiro aprenda o som, que é ele que ajuda a ler! Vamos achar as vogais?")];
+    case 4: return [
+      sc(lsRow(lsHl("UVA",0,1)+lsE("🍇",.5)), "UVA começa com U!", "As vogais se escondem dentro das palavras! UVA começa com U! Escute: UUU-VA!"),
+      sc(lsRow(lsHl("OVO",0,1)+lsE("🥚",.5)), "Que som começa a palavra?", "OVO começa com Ó! ÓÓÓ-VO! Escute o comecinho da palavra e ache a vogal!")];
+    case 5: return [
+      sc(lsRow(lsB("M")+lsE("🐒",.5)), "M faz mmmm... de MACACO!", "Letras novas! A letra M faz mmmm! Feche os lábios e estique o som: mmmm de MACACO! Faz comigo: mmmm!"),
+      sc(lsRow(lsB("P")+lsE("🦆",.5)), "P faz p! p! de PATO!", "A letra P faz p! p! p! Solta o arzinho: P de PATO! E a letra B faz b! b! de BOLA!"),
+      sc(lsTiles(["M","P","B","T","D","L"]), "O som vem antes do nome!", "Escute o som e ache a letra! Lembre: o som da letra é mais importante que o nome dela!")];
+    case 6: return [
+      sc(lsTiles(["A","B","C","D","E","F"],null,.3), "Todas as letras do alfabeto!", "Agora vem o alfabeto inteiro! São muitas letras, mas cada uma tem seu som e seu jeitinho!"),
+      sc(lsRow(lsB("F")+lsE("🦭",.5)), "Ffff... de FOCA!", "Olha: o F faz ffff de FOCA! O S faz ssss de SAPO, parece uma cobrinha! Escute o som e ache a letra!")];
+    case 7: return [
+      sc(lsTiles(["B","D","P","Q"]), "Letras gêmeas! Olhe a barriguinha!", "Cuidado: essas letras são gêmeas levadas! O bê tem a barriguinha pra frente, o dê tem a barriguinha pra trás!"),
+      sc(lsTiles(["M","N","U","V"]), "Parecidas, mas diferentes!", "O M tem três perninhas, o N tem duas! O U é redondinho embaixo, o V é pontudo! Olhe bem devagar antes de tocar!")];
+    case 8: return [
+      sc(lsMerge("M","A"), "M + A = MA!", "Agora a MÁGICA de ler! O M faz mmm, o A faz aaa. Cola os sons: mmmm... aaaa... MA! Fala devagar... agora rápido: MA!"),
+      sc(lsTiles(["MA","ME","MI","MO","MU"]), "A família do M!", "Olha a família do M! MA! ME! MI! MO! MU! Fala comigo, bem devagarinho... agora rapidinho!"),
+      sc(lsWord("MALA","🧳"), "MA + LA = MALA!", "E juntando os pedacinhos nasce a palavra: MA e LA... MALA! Você já está lendo!")];
+    case 9: return [
+      sc(lsTiles(["PA","PE","PI","PO","PU"]), "A família do P!", "O P também tem família! PA! PE! PI! PO! PU! É o som p colado com cada vogal!"),
+      sc(lsRow(lsTiles(["MA"])+lsTiles(["PA"],"gold")+lsTiles(["BA"])), "MA, PA e BA — escute a diferença!", "Escute a diferença: MA! PA! BA! O comecinho muda tudo! Preste atenção no primeiro sonzinho!")];
+    case 10: return [
+      sc(lsTiles(["SA","SE","SI","SO","SU"]), "Toda letra tem sua família!", "Toda consoante tem a sua família! O S: SA SE SI SO SU! O T: TA TE TI TO TU!"),
+      sc(lsMerge("L","U"), "Cola o som da letra com a vogal!", "O truque é sempre o mesmo: cola o som da letra com a vogal! Llll mais uuu: LU! Você consegue com qualquer letra!")];
+    case 11: return [
+      sc(lsRow(lsHl("GATO",0,1)+lsE("🐱",.5)), "G-G-GATO começa com G!", "Escute o comecinho da palavra: G! G! GATO! Começa com G! O primeiro sonzinho conta qual é a letra!"),
+      sc(lsRow(lsHl("BOLA",0,1)+lsE("⚽",.5)), "Fale a palavra e escute o começo!", "Fala a palavra devagarinho e escuta só o começo: B-B-BOLA! Começa com B! Agora é com você!")];
+    case 12: return [
+      sc(lsRow(lsHl("SAPO",0,1)+lsE("🐸",.5)), "Agora com mais opções!", "Agora ficou mais difícil: mais letras pra escolher! Fale a palavra baixinho e escute o primeiro som: S-S-SAPO!")];
+    case 13: return [
+      sc(lsRow(lsHl("MALA",1,2)+lsHl("MOTO",1,2)), "Todas começam com M!", "Pegadinha! MALA e MOTO começam as duas com M! E agora?"),
+      sc(lsTiles(["MA","MO"],"gold"), "A SEGUNDA letra desempata!", "Olhe a segunda letra! MA-LA tem A. MO-TO tem O. Quando o começo empata, a segunda letra desempata!")];
+    case 14: return [
+      sc(lsTiles(["SA","PA","TO"],null,.5), "Bata palma: SA-PA-TO!", "Toda palavra é feita de pedacinhos! Bata uma palma pra cada pedaço: SA! PA! TO! Três palmas!"),
+      sc(lsRow(lsTiles(["SA"],"gold")+lsB("...")), "O primeiro pedacinho!", "O primeiro pedacinho de SAPATO é SA! Fale a palavra com palmas e escute o primeiro pedaço!")];
+    case 15: return [
+      sc(lsRow(lsE("🏅")+lsE("✖️",.3)+lsB("3")), "Cada palavra, 3 vezes: aí ela é sua!", "Nível especial! Cada palavra nova você vai ver TRÊS vezes: ouvindo, lendo sozinho e montando! Aí ela fica sua pra sempre!"),
+      sc(lsWord("UVA","🍇"), "U-VA... UVA!", "Vamos treinar com palavras curtinhas: U... VA... UVA! Leia pedacinho por pedacinho e depois emende!")];
+    case 16: return [
+      sc(lsWord("GATO","🐱"), "GA... TO... GATO!", "Hora de ler de verdade! Leia pedacinho por pedacinho: GA... TO... agora emenda tudo: GATO!"),
+      sc(lsRow(lsE("👆")+lsE("🖼️",.4)), "A figurinha confirma!", "Deslize o dedinho embaixo da palavra enquanto lê. Leu? Olhe a figura e confira: é um gato mesmo? Acertou!")];
+    case 17: return [
+      sc(lsWord("VACA","🐮"), "Leia primeiro, ache depois!", "Agora são mais palavras! Leia primeiro com calma, pedacinho por pedacinho, e só depois procure a figura certa!")];
+    case 18: return [
+      sc(lsRow(lsE("🏅")+lsWord("BOLA","⚽")), "Palavras novas pra dominar!", "Mais palavras pra colecionar! Lembre: cada uma aparece três vezes. Na terceira, ela é sua! Leia sempre em voz alta!")];
+    case 19: return [
+      sc(lsRow(lsHl("GATO",0,1)+lsHl("PATO",0,1)+lsHl("RATO",0,1)), "GATO, PATO, RATO!", "Olha que engraçado: GATO, PATO, RATO! Quase iguais! Só a PRIMEIRA letra muda!"),
+      sc(lsRow(lsE("🐱")+lsE("🦆",.3)+lsE("🐭",.6)), "Leia o comecinho com atenção!", "Uma letrinha muda o bicho inteiro! Leia o comecinho com muita atenção antes de escolher!")];
+    case 20: return [
+      sc(lsTiles(["TO","GA"],null,.4), "Os pedaços embaralharam!", "Os pedacinhos da palavra se embaralharam! Sua missão: colocar na ordem certa!"),
+      sc(lsTiles(["GA","TO"],"gold",.4), "Fale devagar: GA... TO!", "O truque: fale a palavra bem devagar: GA... TO! O pedaço que você fala PRIMEIRO vem primeiro! GA, depois TO!")];
+    case 21: return [
+      sc(lsTiles(["G","A","T","O"],null,.35), "Agora letra por letra!", "Agora é letra por letra! Fale a palavra beeem devagar esticando cada som: G... A... T... O!"),
+      sc(lsRow(lsE("🗣️")+lsE("🧩",.4)), "Cada som, uma letra!", "Cada sonzinho que sua boca faz é uma letra no lugar certo! Monte com calma, som por som!")];
+    case 22: return [
+      sc(lsTiles(["MA","CA","CO"],null,.5), "Três palmas: MA-CA-CO!", "Palavras de três pedaços! Bata palma: MA! CA! CO! Três palmas, três pedaços: MACACO!"),
+      sc(lsWord("MACACO","🐒"), "Pedacinho por pedacinho!", "Palavra grande não assusta: é só ler um pedacinho de cada vez e emendar no final! MA-CA-CO... MACACO!")];
+    case 23: return [
+      sc(lsRow(lsB("G")+lsB("A")+lsE("✍️",.5)), "Escreva falando o som!", "Agora você escreve! O segredo: fale a palavra devagar e escreva o som que escutar: G... A... T... O!"),
+      sc(lsE("🗣️"), "Sua boca sabe a resposta!", "Se ficar difícil, fale a palavra de novo bem devagarinho. Sua boca sempre sabe qual é a próxima letra!")];
+    case 24: return [
+      sc(lsRow(lsE("🎧")+lsE("✍️",.4)), "Ditado: escute, repita, escreva!", "Ditado! Não tem palavra na tela: só o som! Escute com atenção, repita baixinho pra você mesmo, e escreva pedacinho por pedacinho!")];
+    case 25: return [
+      sc(lsRow(lsE("🎤")+lsWord("LUA","🌙")), "Leia BEM ALTO no microfone!", "Agora é você que fala! Leia a palavra com o dedinho embaixo e fale BEM ALTO no microfone: LUUUA!"),
+      sc(lsE("🗣️"), "Pode falar devagar e forte!", "Fale perto do celular, devagar e forte! Se não der certo, respire fundo e tente de novo com mais força!")];
+    case 26: return [
+      sc(lsWord("SAPATO","👟"), "Palavras grandes, sem pressa!", "Palavras grandes! Sem pressa: SA... PA... TO! Quanto mais pedaços, mais palmas — e mais moedas!")];
+    case 27: return [
+      sc(lsTiles(["BA","NA","NA"],null,.5), "Monte os três pedaços na ordem!", "Montar palavra grande é igual: fale devagar, BA-NA-NA, e coloque os pedaços na ordem que a boca fala!")];
+    case 28: return [
+      sc(lsRow(lsMerge("C","H")), "C + H de mãos dadas!", "Olha que legal: o C e o H andam de mãos dadas! Juntos eles fazem um som NOVO: chhhh!"),
+      sc(lsWord("CHUVA","🌧️"), "CH faz chhh... CHUVA!", "CHHH-UVA! CHUVA! E tem mais dupla: o L com H faz lhhh de MILHO! O N com H faz nhhh de NINHO!"),
+      sc(lsRow(lsE("🌽")+lsE("🪺",.4)), "Duas letras, UM som novo!", "Lembre: quando você vir CH, LH ou NH, são duas letras fazendo UM som só! Elas nunca se separam!")];
+    case 29: return [
+      sc(lsRow(lsE("🏅")+lsWord("ABELHA","🐝")), "Palavras especiais pra dominar!", "Palavras com os sons novos! A-BE-LHA! GA-LI-NHA! Leia com calma e domine cada uma três vezes!")];
+    case 30: return [
+      sc(lsRow(lsMerge("T","R")), "T e R juntinhos: TRRRR!", "Agora o T e o R aparecem coladinhos: TRRR de TREM! Fala os dois sons bem rapidinho: trrrem!"),
+      sc(lsRow(lsWord("ZEBRA","🦓")), "BR de ZEBRA, FL de FLOR!", "O B com R faz brrr: ZEBRA! O F com L faz fl: FLOR! São dois sons falados juntinhos, sem parar no meio!")];
+    case 31: return [
+      sc(lsRow(lsE("🏅")+lsWord("TIGRE","🐯")), "Domine as palavras com R e L!", "Palavras com R e L no meio! TI-GRE, LI-VRO, PRA-TO! Fale os dois sons colados e domine cada palavra!")];
+    case 32: return [
+      sc(lsTiles(["O","GATO","BEBE","LEITE"],null,.55), "Frase: um trenzinho de palavras!", "Agora você vai ler FRASES! Uma frase é um trenzinho de palavras: O... GATO... BEBE... LEITE!"),
+      sc(lsRow(lsE("🐱")+lsE("🥛",.4)), "Leu? Pergunte: o que aconteceu?", "Leia com o dedinho, palavra por palavra. No final, pergunte pra você: o que a frase contou? O gato bebeu leite!")];
+    case 33: return [
+      sc(lsRow(lsE("🏅")+lsWord("BORBOLETA","🦋")), "Palavras gigantes!", "Palavras GIGANTES! BOR-BO-LE-TA! Quatro palmas! Não tenha pressa: pedacinho por pedacinho você lê qualquer palavra do mundo!")];
+    case 34: return [
+      sc(lsRow(lsE("🎧")+lsE("💪",.4)), "Ditado de gente grande!", "Ditado difícil! Palavra grande no ouvido? Repita ela baixinho e escreva um pedacinho de cada vez: MA... CA... CO!")];
+    case 35: return [
+      sc(lsRow(lsE("📖")+lsE("🔎",.4)), "Historinhas! A resposta está no texto!", "Agora você lê historinhas de verdade! Leia com calma. Depois vem uma pergunta — e a resposta está ESCONDIDA no texto!"),
+      sc(lsE("🕵️"), "Vamos caçar a resposta!", "Se não souber a resposta, volte e leia de novo só o pedacinho que fala daquilo! É como caçar um tesouro no texto!")];
+    case 36: return [
+      sc(lsRow(lsE("👑")+lsE("🦉",.4)), "Você chegou ao topo!", "Uau! Você chegou no último nível! Aqui mistura TUDO que você aprendeu: sons, sílabas, palavras, frases e histórias!"),
+      sc(lsE("🚀"), "Confie em você!", "Confie em você: leia com o dedinho, cole os sons, bata palmas nos pedaços. Você virou um leitor de verdade! Vamos!")];
+  }
+  return null;
+}
+
+function mathLesson(lv){
+  switch(lv){
+    case 1: return [
+      sc(lsRow(lsE("🦉")+lsE("🔢",.4)), "Vamos contar!", "Oi! Sou a professora Corujinha! Hoje vamos contar! Contar é apontar UM dedinho pra CADA figurinha!"),
+      sc(lsCount(3,"🍎"), "UM... DOIS... TRÊS!", "Aponte comigo: UM... DOIS... TRÊS! O último número que você fala é o quanto tem! Três maçãs!")];
+    case 2: return [
+      sc(lsCount(5,"⭐"), "Conte até cinco!", "Agora até cinco! UM, DOIS, TRÊS, QUATRO, CINCO! Um dedinho pra cada estrela, sem pular nenhuma!"),
+      sc(lsRow(lsE("👀")+lsCount(3,"🍓",.3)), "Seu olho vai aprender a ver!", "Com o tempo, seu olho fica esperto e já VÊ o grupinho sem contar! Mas na dúvida, conte um por um!")];
+    case 3: return [
+      sc(lsCount(10,"🎈",.4), "Até DEZ!", "Agora vamos até DEZ! Conte com calma e capriche no dedinho: seis, sete, oito, nove, DEZ!")];
+    case 4: return [
+      sc(lsRow(lsB("7")+lsCount(7,"🐟",.35)), "Cada número tem sua cara!", "Cada número tem a sua cara! Esse é o SETE! Conte os peixinhos: são sete! O número é o retrato da quantidade!")];
+    case 5: return [
+      sc(lsTiles(["5","6","7"],null,.4), "Os números moram numa fila!", "Os números moram numa fila que NUNCA muda: cinco, seis, sete, oito!"),
+      sc(lsRow(lsTiles(["6"])+lsB("→","ls-pulse")+lsTiles(["7"],"gold")), "Vem DEPOIS = um passo PRA FRENTE!", "Quem vem DEPOIS do seis? Dá um passinho pra frente na fila: SETE! O vizinho da frente!")];
+    case 6: return [
+      sc(lsRow(lsTiles(["6"],"gold")+lsB("←","ls-pulse")+lsTiles(["7"])), "Vem ANTES = um passo PRA TRÁS!", "E quem vem ANTES do sete? Agora o passinho é pra TRÁS: SEIS! O vizinho de trás!")];
+    case 7: return [
+      sc(lsRow(lsCount(5,"🍪",.3)+lsB("×")+lsCount(3,"🍪",.3)), "Qual grupo tem MAIS?", "Qual tem mais? Conte os dois grupinhos: cinco... e três! O CINCO ganha, porque vem depois na fila dos números!")];
+    case 8: return [
+      sc(lsSum(2,1,"🍎"), "Somar é JUNTAR!", "Somar é JUNTAR os grupinhos! Duas maçãs... mais uma maçã..."),
+      sc(lsCount(3,"🍎"), "Junta tudo e conta: TRÊS!", "Agora junta tudo e conta: um, dois, TRÊS! Dois mais um é igual a três!")];
+    case 9: return [
+      sc(lsRow(lsTiles(["2"])+lsB("+")+lsTiles(["7"],"gold")), "O truque do campeão!", "Truque de campeão: guarde o número MAIOR na cabeça e conte pra frente! Dois mais sete? Guarda o SETE..."),
+      sc(lsTiles(["7","8","9"],null,.5), "Guarda o 7... e conta: 8, 9!", "Sete na cabeça... agora anda dois passinhos: OITO, NOVE! Dois mais sete é nove! Bem mais rápido!")];
+    case 10: return [
+      sc(lsRow(lsE("🧠")+lsE("⚡",.4)), "Agora de cabeça!", "Agora sem os dedos! Guarde o maior na cabeça e ande pra frente. Quanto mais você treina, mais rápido fica!")];
+    case 11: return [
+      sc(lsRow(lsE("🎧")+lsE("🔢",.4)), "Escute e escreva o número!", "Ditado de números! Escute com atenção e escreva o número no teclado. Escute de novo se precisar!")];
+    case 12: return [
+      sc(lsRow(lsE("🧮")+lsE("⌨️",.4)), "Faça a conta e digite!", "Agora você faz a continha e DIGITA a resposta! Use o truque: maior na cabeça, conta pra frente!")];
+    case 13: return [
+      sc(lsRow(lsTiles(["10"],"gold")+lsB("+")+lsCount(4,"🍓",.3)), "O DEZ é um pacotinho!", "Segredo dos números grandes: o DEZ é um PACOTINHO fechado! CATORZE é um pacotinho de dez... e mais quatro soltos!"),
+      sc(lsTiles(["11","12","13","14"],null,.35), "Onze, doze, treze...", "Depois do dez vem: onze, doze, treze, catorze... É sempre dez mais um pouquinho!")];
+    case 14: return [
+      sc(lsRow(lsTiles(["12"])+lsB("+")+lsTiles(["3"])), "O mesmo truque, números maiores!", "Somar até vinte usa o MESMO truque: doze na cabeça... treze, catorze, quinze! Você já sabe o caminho!")];
+    case 15: return [
+      sc(lsRow(lsTiles(["20"],"gold")+lsTiles(["3"])), "VINTE E TRÊS = 20 e 3!", "Escute o nome do número: VINTE E TRÊS! Primeiro escreve o vinte... e o três entra no lugar do zero: 23!")];
+    case 16: return [
+      sc(lsRow(lsTiles(["2","3","1"],null,.4)), "Três números? Dois de cada vez!", "Três números pra somar? Calma: junte DOIS primeiro! Dois mais três são cinco... e agora mais um: SEIS!")];
+    case 17: return [
+      sc(lsRow(lsCount(3,"🍪",.35)+`<span class="ls-emoji ls-fadeout" style="font-size:clamp(28px,8vw,44px);">🍪</span>`), "Tirar é o contrário de juntar!", "Tirar é o contrário de juntar! Tinha QUATRO biscoitos... comi um! Nham!"),
+      sc(lsCount(3,"🍪"), "Conte o que SOBROU!", "Agora conte só o que SOBROU: um, dois, três! Quatro menos um é três!")];
+    case 18: return [
+      sc(lsTiles(["7","6","5"],null,.5), "Menos é andar PRA TRÁS!", "Conta de menos é andar PRA TRÁS na fila! Sete menos dois: começa no sete... SEIS, CINCO! Dois passinhos pra trás!")];
+    case 19: return [
+      sc(lsRow(lsE("⌨️")+lsE("💪",.4)), "Digite a soma!", "Agora digite a resposta! Maior na cabeça, anda pra frente, e capricha no teclado!")];
+    case 20: return [
+      sc(lsRow(lsTiles(["5","+","2","=","7"],null,.3)), "Menos é a irmã do mais!", "Olha o segredo: a conta de menos é IRMÃ da conta de mais! Se cinco mais dois é sete..."),
+      sc(lsRow(lsTiles(["7","−","2","=","5"],"gold",.3)), "7 − 2 = 5!", "...então sete menos dois só pode ser CINCO! Quando travar, pense na conta de mais irmã!")];
+    case 21: return [
+      sc(lsRow(lsE("📦")+lsE("📦",.3)+lsE("📦",.6)), "Pacotinhos de DEZ!", "Dezenas são pacotinhos de DEZ! Um pacotinho: dez! Dois: vinte! Três: TRINTA!"),
+      sc(lsTiles(["10","20","30","40"],null,.35), "Conte de dez em dez!", "Conte comigo de dez em dez: dez, vinte, trinta, quarenta! É só contar os pacotinhos!")];
+    case 22: return [
+      sc(lsRow(lsTiles(["20"])+lsB("+")+lsTiles(["30"])), "Some os pacotinhos!", "Somar dezenas é fácil demais: vinte mais trinta? Dois pacotinhos mais três pacotinhos: CINCO pacotinhos! Cinquenta!")];
+    case 23: return [
+      sc(lsRow(lsTiles(["23"],"gold")+lsB("+")+lsTiles(["4"])), "Pacotinhos primeiro, soltos depois!", "Conta grande? Separe! Os pacotinhos ficam quietinhos, e você soma só os soltos: vinte e três mais quatro... vinte e SETE!")];
+    case 24: return [
+      sc(lsTiles(["15","14","13"],null,.5), "Pra trás, mesmo nos grandes!", "Subtrair número grande é o mesmo caminho: quinze menos dois? QUINZE... catorze, TREZE! Passinhos pra trás!")];
+    case 25: return [
+      sc(lsRow(lsCount(3,"🎈",.3)+lsB("+")+lsCount(3,"🎈",.3)), "O DOBRO: o número + ele mesmo!", "O DOBRO é o número mais ELE MESMO, feito um espelho! Dobro de três: três mais três... SEIS!")];
+    case 26: return [
+      sc(lsRow(lsCount(3,"🍬",.3)+lsB("|","ls-pulse")+lsCount(3,"🍬",.3)), "A METADE: divide no meio!", "A METADE é o contrário do dobro: reparte em DOIS montinhos iguais! Metade de seis: três pra cá, três pra lá!")];
+    case 27: return [
+      sc(lsRow(lsTiles(["20"])+lsB("+")+lsTiles(["3"],"gold")), "O 3 entra no lugar do zero!", "Vinte mais três? Olha a mágica: o três entra no lugar do ZERO do vinte: vinte e três! 23!")];
+    case 28: return [
+      sc(lsRow(lsE("📦")+lsE("💪",.4)), "Até cinquenta!", "Somando até cinquenta! Mesmo segredo: pacotinhos com pacotinhos, soltos com soltos. Você já é grande!")];
+    case 29: return [
+      sc(lsRow(lsE("📦")+lsE("🔙",.4)), "Subtraindo até cinquenta!", "Subtração grande: conte pra trás, ou pense na conta de mais irmã! Quarenta menos dez? Um pacotinho a menos: TRINTA!")];
+    case 30: return [
+      sc(lsTiles(["2","4","6","8"],null,.4), "Tabuada do 2 = o DOBRO!", "A tabuada do DOIS é a tabuada do DOBRO! Dois vezes quatro é quatro mais quatro: OITO!"),
+      sc(lsRow(lsE("👟")+lsE("👟",.3)+lsE("👟",.6)), "Pule de 2 em 2!", "E dá pra pular de dois em dois: dois, quatro, seis, oito, dez! Como pular amarelinha!")];
+    case 31: return [
+      sc(lsRow(lsE("🖐️")+lsE("🖐️",.3)+lsE("🖐️",.6)), "Tabuada do 5: conte de 5 em 5!", "Tabuada do CINCO: conte de cinco em cinco, como dedos da mão! Cinco, dez, quinze, vinte!"),
+      sc(lsTiles(["5","10","15","20"],"gold",.35), "Termina sempre em 5 ou 0!", "Olha o segredo dela: a resposta SEMPRE termina em cinco ou zero! Se não terminar, tem coisa errada!")];
+    case 32: return [
+      sc(lsRow(lsTiles(["3"])+lsB("×")+lsTiles(["10"])+lsB("=")+lsTiles(["30"],"gold")), "Tabuada do 10: põe um ZERO!", "A tabuada do DEZ é a mais fácil do mundo: é só colocar um ZERO do lado! Três vezes dez? Três... com zero: TRINTA!")];
+    case 33: return [
+      sc(lsRow(lsE("🍬")+lsE("🧒",.3)+lsE("🧒",.5)), "Dividir é repartir igualzinho!", "Dividir é repartir IGUALZINHO! Seis balas pra dois amigos: uma pra você, uma pra você... até acabar!"),
+      sc(lsRow(lsCount(3,"🍬",.3)+lsB("|")+lsCount(3,"🍬",.3)), "Três pra cada!", "Acabou! Ficou três pra cada um! Ninguém sai triste quando reparte igualzinho!")];
+    case 34: return [
+      sc(lsRow(lsE("🎧")+lsTiles(["87"],"gold")), "Números gigantes no ouvido!", "Ditado até cem! OITENTA E SETE: primeiro o oitenta... e o sete entra no lugar do zero: 87!")];
+    case 35: return [
+      sc(lsRow(lsE("📖")+lsE("🧠",.4)), "Desenhe a história na cabeça!", "Probleminhas! Escute a historinha e DESENHE ela na sua cabeça!"),
+      sc(lsRow(lsB("+","ls-pulse")+lsB("−","ls-pulse")), "Juntou = mais! Tirou = menos!", "Aí pergunte: a história JUNTOU coisas? Conta de MAIS! Alguém TIROU, comeu, perdeu? Conta de MENOS!")];
+    case 36: return [
+      sc(lsRow(lsE("👑")+lsE("🔢",.4)), "Mestre da Matemática!", "Você chegou no topo da matemática! Aqui mistura tudo: contar, somar, subtrair, tabuada e dividir!"),
+      sc(lsE("🚀"), "Use todos os truques!", "Use seus truques: maior na cabeça, passinhos pra trás, pacotinhos de dez e o zero da tabuada do dez! Vamos!")];
+  }
+  return null;
+}
+
+/* EN/DE: aula de vocabulário — a professora apresenta as palavras do nível */
+function langLesson(track, lv){
+  const en = track==="en";
+  const L = en? enT : deT;
+  const langName = en? "inglês" : "alemão";
+  const vocab = (pool, topic) => {
+    const items = shuffle(pool.slice()).slice(0,3);
+    return [
+      sc(lsRow(lsE(en?"🌎":"🥨")+lsE("🦉",.4)), `Hoje: ${topic} em ${langName}!`,
+        `Hora de aprender ${topic} em ${langName}! Escute com atenção e repita bem alto comigo!`),
+      ...items.map(it => sc(lsRow(lsB(it.v)+lsE(it.d,.5)), `${it.v}! Repita em voz alta!`,
+        [L(it.v+"!"), ptT("Fala você também:"), L(it.v+"!")])),
+      sc(lsE("👂"), "Escute e ache a figura!", `No jogo, escute a palavra em ${langName} e toque na figura certa! Se errar, escute de novo com calma!`)];
+  };
+  const NUMS = en? EN_NUMS : DE_NUMS;
+  switch(lv){
+    case 1: return vocab(en?EN_COLORS.slice(0,5):DE_COLORS.slice(0,5), "as cores");
+    case 2: return vocab(en?EN_COLORS.slice(5):DE_COLORS.slice(5), "mais cores");
+    case 3: return [
+      sc(lsCount(3,"⭐",.5), `Contar em ${langName}!`, [ptT(`Vamos contar em ${langName}!`), L(NUMS[0]+"!"), L(NUMS[1]+"!"), L(NUMS[2]+"!")]),
+      sc(lsTiles(["1","2","3","4","5"],null,.35), "Um número, uma palavra nova!", [ptT("Cada número tem um nome novo! Repita comigo:"), L(NUMS[3]+"!"), L(NUMS[4]+"!")])];
+    case 4: return [
+      sc(lsTiles(["6","7","8","9","10"],null,.35), "Agora até dez!", [ptT(`Agora até dez em ${langName}! Escute:`), L(NUMS[5]+"!"), L(NUMS[6]+"!"), L(NUMS[7]+"!"), L(NUMS[8]+"!"), L(NUMS[9]+"!")]),
+      sc(lsE("👂"), "Escute e ache o número!", "No jogo, escute o nome e toque no número certo! Escute quantas vezes quiser!")];
+    case 5: return vocab(en?EN_ANIMALS.slice(0,8):DE_ANIMALS.slice(0,8), "os bichos");
+    case 6: return vocab(en?EN_ANIMALS.slice(8):DE_ANIMALS.slice(8), "mais bichos");
+    case 7: return vocab(en?EN_FOOD.slice(0,8):DE_FOOD.slice(0,8), "as comidas");
+    case 8: return vocab(en?EN_FOOD.slice(8):DE_FOOD.slice(8), "mais comidas");
+    case 9: return vocab(en?EN_THINGS:DE_THINGS, "as coisas do mundo");
+    case 10: return [
+      sc(lsCount(4,"🍎",.45), en?"HOW MANY? Quantos?":"WIE VIELE? Quantos?", [L(en?"How many?":"Wie viele?"), ptT("significa: QUANTOS SÃO? Conte as figurinhas...")]),
+      sc(lsRow(lsB("4")+lsB("=","ls-pulse")+lsB(NUMS[3])), `Conte e responda em ${langName}!`, [ptT(`Conte em português na cabeça... mas responda em ${langName}!`), L(NUMS[3]+"!")])];
+    case 11: return [
+      sc(lsWord(en?"CAT":"KATZE","🐱"), "Leia a palavra e ache a figura!", [ptT(`Agora você vai LER em ${langName}! Olha essa palavra:`), L(en?"CAT!":"KATZE!"), ptT("É o gato! Leia com os olhos e ache a figura!")]),
+      sc(lsE("🧠"), "A palavra vira imagem!", `Em ${langName} as letras têm sons diferentes — mas você já viu essas palavras! Lembre da figurinha de cada uma!`)];
+    case 12: return [
+      sc(lsRow(lsB(en?"SUN":"SONNE")+lsE("☀️",.5)), "Agora com tudo misturado!", [ptT("Agora as palavras vêm todas misturadas: bichos, comidas e coisas! Olha:"), L(en?"SUN!":"SONNE!"), ptT("é o sol! Leia com calma!")])];
+    case 13: return [
+      sc(lsRow(lsHl(en?"CAT":"HUND",0,1)+lsE(en?"🐱":"🐶",.5)), "A primeira letra!", [ptT("Que letra começa a palavra?"), L(en?"CAT!":"HUND!"), ptT(en?"Cat começa com C!":"Hund começa com H!"), ptT("Escute o comecinho do som!")])];
+    case 14: return [
+      sc(lsTiles((en?"CAT":"BALL").split(""),null,.35), "Monte a palavra!", [ptT(`Monte a palavra em ${langName} letra por letra! Fale devagar:`), L(en?"CAT!":"BALL!"), ptT("e coloque cada letra no lugar!")])];
+    case 15: return [
+      sc(lsRow(lsE("✍️")+lsE(en?"🌎":"🥨",.4)), `Escreva em ${langName}!`, [ptT(`Agora escreva a palavra inteira em ${langName}! Olhe a figura, lembre da palavra e escreva letra por letra!`)])];
+    case 16: return [
+      sc(lsRow(lsE("🎧")+lsE("✍️",.4)), en?"Dictation!":"Diktat!", [ptT(`Ditado em ${langName}! Escute a palavra, repita baixinho e escreva! Escute quantas vezes precisar!`)])];
+    case 17: return [
+      sc(lsRow(lsE("🎤")+lsB(en?"DOG":"HUND")), en?"Say it!":"Sprich!", [ptT(`Agora é você que fala ${langName}! Leia a palavra e fale BEM ALTO no microfone:`), L(en?"DOG!":"HUND!"), ptT("Capriche no som!")])];
+    case 18: return [
+      sc(lsRow(lsB(en?"RED":"ROTE","gold")+lsB(en?"CAT":"KATZE")), "Cor + bicho!", [ptT("Duas palavras juntas! Primeiro a COR, depois o bicho:"), L(en?"RED CAT!":"ROTE KATZE!"), ptT(en?"gato vermelho!":"gata vermelha!")]),
+      sc(lsRow(lsE("🔴")+lsE("🐱",.4)), "Escute as DUAS palavras!", "Escute as duas palavras e ache a figura que tem a cor E o bicho certos!")];
+    case 19: return [
+      sc(lsRow(lsB(en?"THE CAT IS BLUE":"DIE KATZE IST BLAU","")), "Uma frase inteira!", [ptT(`Uma frase inteira em ${langName}!`), L(en?"THE CAT IS BLUE!":"DIE KATZE IST BLAU!"), ptT("quer dizer: o gato é azul!")]),
+      sc(lsRow(lsE("🐱")+lsE("🔵",.4)), "Procure o bicho e a cor!", "Escute a frase, procure o BICHO e a COR dentro dela, e ache a figura certa!")];
+    case 20: return [
+      sc(lsRow(lsE("👑")+lsE(en?"🌎":"🥨",.4)), (en?"English":"Deutsch")+" Master!", `Você chegou no último nível de ${langName}! Agora mistura tudo: cores, bichos, comidas, números e frases! Vamos!`)];
+  }
+  return null;
+}
+
+function playLesson(track, lv, after){
+  const Lz = lessonFor(track, lv);
+  if(!Lz){ if(after) after(); return; }
+  stopMic();
+  lesson = { L:Lz, track, lv, ix:0, gen:0, after };
+  $("#lesson-name").textContent = "Aula: " + (TRACKS[track].levels[lv-1]||"").replace(/[🎧🎤👑🏅📖]/g,"").trim();
+  $("#lesson-sub").textContent = `${TRACKS[track].icon} ${TRACKS[track].name} · Nível ${lv} · Professora Corujinha`;
+  $("#lesson-dots").innerHTML = Lz.scenes.map(()=>"<span></span>").join("");
+  showScreen("screen-lesson");
+  lessonScene();
+}
+function lessonScene(){
+  const scn = lesson.L.scenes[lesson.ix], gen = ++lesson.gen;
+  [...$("#lesson-dots").children].forEach((d,i)=>d.classList.toggle("on", i===lesson.ix));
+  $("#lesson-stage").innerHTML = scn.v || "";
+  $("#lesson-caption").textContent = scn.t || "";
+  $("#lesson-next").textContent = lesson.ix >= lesson.L.scenes.length-1 ? "🚀 Vamos jogar!" : "▶ Continuar";
+  speak(scn.s, ()=>{ if(lesson && lesson.gen===gen) setTimeout(()=>{ if(lesson && lesson.gen===gen) lessonNext(); }, 1200); });
+}
+function lessonNext(){
+  if(!lesson) return;
+  if(lesson.ix >= lesson.L.scenes.length-1) return lessonDone();
+  lesson.ix++; lessonScene();
+}
+function lessonDone(){
+  const l = lesson; lesson = null;
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  const p = P();
+  if(p){ p.les = p.les || {pt:0,math:0,en:0,de:0}; p.les[l.track] = Math.max(p.les[l.track]||0, l.lv); save(); }
+  if(l.after) l.after();
+}
+/* aula automática só na 1ª vez que a criança chega no nível */
+function lessonPending(track, lv){
+  const p = P();
+  return lv <= maxOf(track) && ((p.les||{})[track]||0) < lv && !!lessonFor(track, lv);
 }
 
 /* =============== GERADORES DE PERGUNTAS =============== */
@@ -2906,6 +3302,13 @@ function init(){
   $("#coin-pill").onclick = ()=>{ if(P()){ sndTap(); renderShop(); showScreen("screen-shop"); } };
   $("#btn-parents").onclick = ()=>{ sndTap(); openParents(); };
   $("#speak-again").onclick = ()=>{ if(state.q) speak(state.q.speech); };
+  $("#lesson-next").onclick = ()=>{ sndTap(); if(lesson){ lesson.gen++; if("speechSynthesis" in window) speechSynthesis.cancel(); lessonNext(); } };
+  $("#lesson-skip").onclick = ()=>{ sndTap(); if(lesson) lessonDone(); };
+  $("#lesson-replay").onclick = ()=>{
+    if(!state.track) return;
+    stopMic();
+    playLesson(state.track, curLevel(), ()=>{ showScreen("screen-game"); if(state.q) speak(state.q.speech); });
+  };
 
   document.querySelectorAll("#mascot,.mascot").forEach(m=>{
     m.onclick = ()=>{ confetti(10);
