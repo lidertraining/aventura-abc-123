@@ -708,7 +708,15 @@ const STICKERS = [
   ["🦸","Super-Herói","epico"],["👑","Coroa Real","epico"],["🌋","Vulcão Gigante","epico"],["🏴‍☠️","Navio Pirata","epico"],
   ["🤖","Robô do Futuro","epico"],["🧜‍♀️","Sereia Encantada","epico"],
   ["💎","Diamante Supremo","lendario"],["🌠","Estrela Cadente","lendario"],["🧞","Gênio da Lâmpada","lendario"],["🦖","Rex Dourado","lendario"],
-  ["🗿","Gigante de Pedra","lendario"],["🔱","Tridente Mágico","lendario"],["🥇","Medalha Suprema","lendario"],["🪐","Planeta Anel","lendario"]
+  ["🗿","Gigante de Pedra","lendario"],["🔱","Tridente Mágico","lendario"],["🥇","Medalha Suprema","lendario"],["🪐","Planeta Anel","lendario"],
+  ["🐢","Tartaruguinha","comum"],["🦆","Patinho","comum"],["🍓","Moranguinho","comum"],["🚌","Buzão Amarelo","comum"],
+  ["🐞","Joaninha","comum"],["🧁","Cupcake Fofo","comum"],
+  ["🐙","Polvo Malabarista","raro"],["🦜","Papagaio Falante","raro"],["🐧","Pinguim Dançarino","raro"],
+  ["🎠","Carrossel Mágico","raro"],["🛴","Patinete Veloz","raro"],["🍿","Pipoca Pula-Pula","raro"],
+  ["🧚","Fada Brilhante","epico"],["🦅","Águia Real","epico"],["🐳","Baleia Gigante","epico"],
+  ["🏰","Castelo Encantado","epico"],["🎪","Circo Maluco","epico"],
+  ["💫","Cometa Veloz","lendario"],["👽","Amigo das Estrelas","lendario"],["🧊","Cristal de Gelo","lendario"],
+  ["🎆","Fogos Mágicos","lendario"],["🌞","Sol Dourado","lendario"]
 ];
 
 /* ---- GRAUS DE PALAVRAS (domínio Kumon: repete a MESMA palavra até aprender) ---- */
@@ -918,7 +926,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1}, prog:{pt:0,math
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, stickers:[], lv:t.lv, prog:t.prog, stats:t.stats, mast:{}, pv:3, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
+  return { name, avatar, coins:0, stickers:[], lv:t.lv, hi:{pt:1,math:1,en:1,de:1}, prog:t.prog, stats:t.stats, mast:{}, pv:3, rm:2, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
 }
 
 function migrateProfile(p){
@@ -943,6 +951,15 @@ function migrateProfile(p){
     TRACK_KEYS.forEach(t=>{ if(p.deep[t]==null) p.deep[t] = 0; });
     if(!p.les) p.les = {pt:0,math:0,en:0,de:0};
     TRACK_KEYS.forEach(t=>{ if(p.les[t]==null) p.les[t] = 0; });
+    /* recorde de nível (hi): ranking e Jornada nunca regridem, mesmo se o nível atual voltar */
+    if(!p.hi) p.hi = {};
+    TRACK_KEYS.forEach(t=>{ p.hi[t] = Math.max(p.hi[t]||1, p.lv[t]||1); });
+    /* 🚀 Missão do Leitor (uma vez só): quem já passou das sílabas no chute volta
+       pro comecinho da formação de sílabas — sem perder moedas, figurinhas nem ranking */
+    if(p.rm==null){
+      if((p.lv.pt||1) > 14){ p.rm = 1; p.lv.pt = 8; p.prog.pt = 0; p.les.pt = Math.min(p.les.pt||0, 7); }
+      else p.rm = 2;
+    }
     delete p.redo;
     return p;
   }
@@ -982,6 +999,7 @@ function load(){
     }
   }catch(e){ db = { activeIdx:-1, profiles:[] }; }
   if(db.activeIdx >= db.profiles.length) db.activeIdx = -1;
+  if(db.profiles.length) save(); /* persiste migrações (hi, missão do leitor) na hora */
 }
 function save(){ try{
   const data = JSON.stringify(db);
@@ -1104,6 +1122,19 @@ function goHome(){
   });
   $("#album-sub").textContent = `${p.stickers.length} de ${STICKERS.length} figurinhas`;
   showScreen("screen-home");
+  if(p.rm===1){
+    p.rm = 2; save();
+    showOverlay(`
+      <span class="big">🚀</span>
+      <h2>Missão Especial do Leitor!</h2>
+      <p>Você é tão bom que ganhou uma missão de campeão: voltar pras <b>sílabas</b> e mostrar que lê TUDO em voz alta, de verdade!</p>
+      <p style="color:#27ae60;"><b>Suas moedas 🪙, figurinhas 🏆 e seu lugar no ranking 🥇 continuam todinhos guardados!</b> Refazer os níveis dá ainda MAIS moedas!</p>
+      <button class="ov-btn" id="rm-go">Aceito a missão! 🚀</button>
+      <button class="ov-btn alt" id="rm-later">Depois</button>`);
+    speak("Missão especial do leitor! Você vai voltar para as sílabas e ler tudo em voz alta, como um campeão de verdade! Não se preocupe: suas moedas, suas figurinhas e seu lugar no ranking continuam guardadinhos!");
+    $("#rm-go").onclick = ()=>{ sndTap(); hideOverlay(); startGame("pt"); };
+    $("#rm-later").onclick = ()=>{ sndTap(); hideOverlay(); };
+  }
 }
 
 /* =============== MOTOR DO JOGO =============== */
@@ -1667,6 +1698,8 @@ function levelUp(){
   const bonus = levelUpBonus(lv);
   p.coins += bonus;
   p.lv[t] = lv+1;
+  if(!p.hi) p.hi = {};
+  p.hi[t] = Math.max(p.hi[t]||1, p.lv[t]);
   p.prog[t] = 0;
   /* sempre passa de nível — as lições erradas seguem misturadas na fila de reforço */
   const pendR = reinfQ(t).length;
@@ -2111,6 +2144,16 @@ function genMastery(gi){
     };
   }
   if(rep===1){ /* 2º encontro: ler sozinho, sem ajuda de voz */
+    if(SR){ /* com microfone: tem que LER em voz alta — prova de leitura de verdade */
+      return {
+        kind:"mic", prompt:"Ela voltou! Leia em voz alta! 🎤",
+        visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
+        speech:[ptT("Essa palavra voltou! Leia ela bem alto no microfone!")],
+        hintSpeech: ptT(`${sylJoinSay(syl)}... ${focus.w}! Fale: ${focus.w}!`),
+        okSpeech:`${focus.w}! Você leu!`,
+        answer:focus.w, mword:focus.w
+      };
+    }
     return {
       kind:"opts", prompt:"Ela voltou! Agora leia sozinho!",
       visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
@@ -2189,6 +2232,17 @@ function genPtCore(lv){
     const fams = lv===6? ["M"] : lv===7? ["M","P","B"] : Object.keys(SYL_FAMILIES);
     const f = pick(fams);
     const syl = pick(SYL_FAMILIES[f]);
+    /* metade das vezes tem que LER a sílaba em voz alta 🎤 — sem chute! */
+    if(SR && Math.random() < .5){
+      return {
+        kind:"mic", prompt:"Leia a sílaba bem alto! 🎤",
+        visual:`<div class="read-word" style="font-size:clamp(34px,9vw,54px);">${syl}</div>`,
+        speech:[ptT("Leia essa sílaba bem alto no microfone!")],
+        hintSpeech: ptT(`${sylSay(syl)}! Fale: ${sylSay(syl)}!`),
+        okSpeech:`${sylSay(syl)}! Você leu!`,
+        answer: syl, accept:[sylSay(syl)]
+      };
+    }
     const pool = lv===6? SYL_FAMILIES[f] : shuffle(fams.flatMap(k=>SYL_FAMILIES[k]));
     return {
       kind:"opts", prompt:"Qual é a sílaba?",
@@ -2240,6 +2294,17 @@ function genPtCore(lv){
   }
   if(lv===13 || lv===14){ /* LER palavra → achar figura (não fala a palavra!) */
     const w = pick(WORDS);
+    /* metade das vezes: ler a palavra EM VOZ ALTA 🎤 (sem figura pra chutar) */
+    if(SR && Math.random() < .5){
+      return {
+        kind:"mic", prompt:"Leia a palavra em voz alta! 🎤",
+        visual:`<div class="read-word">${w.w}</div>`,
+        speech:[ptT("Leia a palavra bem alto no microfone! Pedacinho por pedacinho!")],
+        hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${w.w}! Fale: ${w.w}!`),
+        okSpeech:`${w.w}! Você leu!`,
+        answer: w.w
+      };
+    }
     return {
       kind:"opts", prompt:"Leia a palavra e ache a figura!",
       visual:`<div class="read-word">${w.w}</div>`,
@@ -3172,9 +3237,10 @@ function renderJourney(){
   const p = P(), t = journeyTrack, list = $("#journey-list");
   list.innerHTML = "";
   const cur = p.lv[t], mx = maxOf(t);
+  const best = Math.max(cur, (p.hi&&p.hi[t])||1); /* níveis já vencidos continuam liberados pra treino */
   TRACKS[t].levels.forEach((name,i)=>{
     const lv = i+1;
-    const st = lv<cur? "done" : lv===Math.min(cur,mx)? "now" : "lock";
+    const st = lv===Math.min(cur,mx)? "now" : lv<best? "done" : "lock";
     const item = document.createElement("button");
     item.className = "j-item "+st;
     item.innerHTML = `<span class="jn">${st==="done"?"✔":lv}</span>
@@ -3228,7 +3294,8 @@ function renderClasses(){
 function openRanking(){
   const total = TRACK_KEYS.reduce((s,t)=>s+maxOf(t),0);
   const rows = db.profiles.map(p=>{
-    const lvls  = TRACK_KEYS.reduce((s,t)=>s+Math.min((p.lv[t]||1)-1, maxOf(t)),0);
+    /* ranking usa o RECORDE (hi): refazer níveis na Missão do Leitor não tira pontos de ninguém */
+    const lvls  = TRACK_KEYS.reduce((s,t)=>s+Math.min(Math.max((p.hi&&p.hi[t])||1, p.lv[t]||1)-1, maxOf(t)),0);
     const hits  = TRACK_KEYS.reduce((s,t)=>s+((p.stats[t]||{}).a||0),0);
     const words = Object.values(p.mast||{}).filter(v=>v>=MASTERY).length;
     return {p, lvls, hits, words};
