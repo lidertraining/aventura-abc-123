@@ -219,6 +219,8 @@
     animation:popIn .4s backwards; position:relative; overflow:hidden;
   }
   .shop-card .emo { font-size:38px; }
+  .shop-card .emo.poke { width:62px; height:62px; display:flex; align-items:center; justify-content:center; }
+  .shop-card .emo.poke img { width:100%; height:100%; object-fit:contain; }
   .shop-card .nm { font-size:11.5px; font-weight:700; color:#454a75; line-height:1.1; }
   .shop-card .rar { font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:99px; color:#fff; }
   .rar-comum { background:#90a4ae; } .rar-raro { background:#42a5f5; }
@@ -765,41 +767,51 @@ const STICKERS = [
 ];
 /* ---- FIGURINHAS POKÉMON (mesmo sistema de moedas; alterna na loja/álbum) ----
    Pokémon não têm emoji próprio, então cada um ganha um emoji temático + o NOME real. */
+/* v3.18 — 4º item = número da Pokédex Nacional → imagem oficial via PokeAPI:
+   https://raw.githubusercontent.com/PokeAPI/sprites/.../official-artwork/{id}.png
+   (o emoji vira reserva caso a imagem não carregue sem internet) */
 const POKEMON_STICKERS = [
   /* comuns — iniciais e Pokémon fofos do comecinho */
-  ["🌱","Bulbasaur","comum"],["🔥","Charmander","comum"],["💧","Squirtle","comum"],
-  ["🐭","Rattata","comum"],["🐦","Pidgey","comum"],["🐛","Caterpie","comum"],
-  ["🐝","Weedle","comum"],["🦇","Zubat","comum"],["🌿","Oddish","comum"],
-  ["🐟","Magikarp","comum"],["🦆","Psyduck","comum"],["🐵","Mankey","comum"],
-  ["🐴","Ponyta","comum"],["🐚","Shellder","comum"],["🍄","Paras","comum"],
-  ["⚡","Pichu","comum"],["🐹","Marill","comum"],["🦉","Hoothoot","comum"],
-  ["🌱","Chikorita","comum"],["🔥","Cyndaquil","comum"],["💧","Totodile","comum"],
-  ["🌿","Treecko","comum"],["🔥","Torchic","comum"],["💧","Mudkip","comum"],
-  ["🌿","Turtwig","comum"],["🔥","Chimchar","comum"],["💧","Piplup","comum"],
+  ["🌱","Bulbasaur","comum",1],["🔥","Charmander","comum",4],["💧","Squirtle","comum",7],
+  ["🐭","Rattata","comum",19],["🐦","Pidgey","comum",16],["🐛","Caterpie","comum",10],
+  ["🐝","Weedle","comum",13],["🦇","Zubat","comum",41],["🌿","Oddish","comum",43],
+  ["🐟","Magikarp","comum",129],["🦆","Psyduck","comum",54],["🐵","Mankey","comum",56],
+  ["🐴","Ponyta","comum",77],["🐚","Shellder","comum",90],["🍄","Paras","comum",46],
+  ["⚡","Pichu","comum",172],["🐹","Marill","comum",183],["🦉","Hoothoot","comum",163],
+  ["🌱","Chikorita","comum",152],["🔥","Cyndaquil","comum",155],["💧","Totodile","comum",158],
+  ["🌿","Treecko","comum",252],["🔥","Torchic","comum",255],["💧","Mudkip","comum",258],
+  ["🌿","Turtwig","comum",387],["🔥","Chimchar","comum",390],["💧","Piplup","comum",393],
   /* raros — evoluções e favoritos */
-  ["⚡","Pikachu","raro"],["🐹","Raichu","raro"],["🐕","Eevee","raro"],
-  ["💧","Vaporeon","raro"],["⚡","Jolteon","raro"],["🔥","Flareon","raro"],
-  ["🌙","Umbreon","raro"],["☀️","Espeon","raro"],["🍃","Leafeon","raro"],
-  ["🦋","Butterfree","raro"],["🐺","Arcanine","raro"],["🦊","Ninetales","raro"],
-  ["🐢","Wartortle","raro"],["🔥","Charmeleon","raro"],["🌸","Vileplume","raro"],
-  ["🧲","Magneton","raro"],["🐎","Rapidash","raro"],["🦅","Pidgeot","raro"],
-  ["⚡","Luxray","raro"],["🦋","Beautifly","raro"],["🐉","Dragonair","raro"],
+  ["⚡","Pikachu","raro",25],["🐹","Raichu","raro",26],["🐕","Eevee","raro",133],
+  ["💧","Vaporeon","raro",134],["⚡","Jolteon","raro",135],["🔥","Flareon","raro",136],
+  ["🌙","Umbreon","raro",197],["☀️","Espeon","raro",196],["🍃","Leafeon","raro",470],
+  ["🦋","Butterfree","raro",12],["🐺","Arcanine","raro",59],["🦊","Ninetales","raro",38],
+  ["🐢","Wartortle","raro",8],["🔥","Charmeleon","raro",5],["🌸","Vileplume","raro",45],
+  ["🧲","Magneton","raro",82],["🐎","Rapidash","raro",78],["🦅","Pidgeot","raro",18],
+  ["⚡","Luxray","raro",405],["🦋","Beautifly","raro",267],["🐉","Dragonair","raro",148],
   /* épicos — finais fortes e pseudo-lendários */
-  ["🌳","Venusaur","epico"],["🔥","Charizard","epico"],["🌊","Blastoise","epico"],
-  ["👻","Gengar","epico"],["🧠","Alakazam","epico"],["😴","Snorlax","epico"],
-  ["🐉","Dragonite","epico"],["🦖","Aerodactyl","epico"],["🧊","Lapras","epico"],
-  ["⭐","Starmie","epico"],["👊","Machamp","epico"],["🌋","Typhlosion","epico"],
-  ["🐊","Feraligatr","epico"],["🌿","Meganium","epico"],["🪨","Tyranitar","epico"],
-  ["🌊","Gyarados","epico"],["🐲","Salamence","epico"],["🧲","Metagross","epico"],
-  ["🐧","Empoleon","epico"],
+  ["🌳","Venusaur","epico",3],["🔥","Charizard","epico",6],["🌊","Blastoise","epico",9],
+  ["👻","Gengar","epico",94],["🧠","Alakazam","epico",65],["😴","Snorlax","epico",143],
+  ["🐉","Dragonite","epico",149],["🦖","Aerodactyl","epico",142],["🧊","Lapras","epico",131],
+  ["⭐","Starmie","epico",121],["👊","Machamp","epico",68],["🌋","Typhlosion","epico",157],
+  ["🐊","Feraligatr","epico",160],["🌿","Meganium","epico",154],["🪨","Tyranitar","epico",248],
+  ["🌊","Gyarados","epico",130],["🐲","Salamence","epico",373],["🧲","Metagross","epico",376],
+  ["🐧","Empoleon","epico",395],
   /* lendários — os mais poderosos de todos */
-  ["⚡","Zapdos","lendario"],["🔥","Moltres","lendario"],["🧊","Articuno","lendario"],
-  ["🧬","Mewtwo","lendario"],["✨","Mew","lendario"],["⚡","Raikou","lendario"],
-  ["🔥","Entei","lendario"],["💧","Suicune","lendario"],["🌈","Ho-Oh","lendario"],
-  ["🌊","Lugia","lendario"],["⭐","Jirachi","lendario"],["🦎","Rayquaza","lendario"],
-  ["🌋","Groudon","lendario"],["🌊","Kyogre","lendario"],["🌌","Dialga","lendario"],
-  ["⏳","Palkia","lendario"],["👑","Arceus","lendario"]
+  ["⚡","Zapdos","lendario",145],["🔥","Moltres","lendario",146],["🧊","Articuno","lendario",144],
+  ["🧬","Mewtwo","lendario",150],["✨","Mew","lendario",151],["⚡","Raikou","lendario",243],
+  ["🔥","Entei","lendario",244],["💧","Suicune","lendario",245],["🌈","Ho-Oh","lendario",250],
+  ["🌊","Lugia","lendario",249],["⭐","Jirachi","lendario",385],["🦎","Rayquaza","lendario",384],
+  ["🌋","Groudon","lendario",383],["🌊","Kyogre","lendario",382],["🌌","Dialga","lendario",483],
+  ["⏳","Palkia","lendario",484],["👑","Arceus","lendario",493]
 ];
+const POKE_IMG = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+/* desenho da figurinha: imagem real do Pokémon (quando tem dex) ou o emoji */
+function stickerFace(st){
+  const [emo, nm, , dex] = st;
+  if(dex) return `<span class="emo poke"><img src="${POKE_IMG(dex)}" alt="${nm}" loading="lazy" onerror="this.parentNode.textContent='${emo}'"></span>`;
+  return `<span class="emo">${emo}</span>`;
+}
 /* conjuntos de figurinhas — o botão da loja/álbum alterna entre eles */
 const STICKER_SETS = {
   classic: { label:"Emojis",  icon:"😀", stickers:STICKERS },
@@ -1392,7 +1404,7 @@ function updateGameHUD(){
 }
 
 function nextQuestion(){
-  state.lock = false; state.qWrong = 0; state.typed = ""; state.micFails = 0; state.q = null; state.reinf = null;
+  state.lock = false; state.qWrong = 0; state.typed = ""; state.micFails = 0; state.micNoSpeech = 0; state.q = null; state.reinf = null;
   stopMic();
   $("#feedback").textContent = ""; $("#feedback").className = "";
   let q;
@@ -1636,12 +1648,13 @@ function micMatch(alts, q){
         const c = tk.replace(/h/g, "");
         return c.length > 0 && c.length <= 4 && [...c].every(ch => ch === t);
       })) ||
-      /* v3.16 — alvo é UMA VOGAL: o reconhecimento gruda uma consoante na vogal
-         da criança ("i" vira "si"/"mi"/"xi", "a" vira "ta"/"la", "o" vira "do"...).
-         Aceita palavrinha de até 2 letras que tenha a vogal-alvo e NENHUMA outra vogal. */
+      /* v3.18 — alvo é UMA VOGAL: o reconhecimento veste a vogal da criança com
+         consoantes e devolve uma palavrinha ("i"→"si"/"sim"/"vim"/"di",
+         "a"→"ta"/"la"/"cá", "o"→"do"/"dom", "u"→"um"/"tum", "e"→"de"/"nem").
+         Aceita QUALQUER token de até 4 letras cuja ÚNICA vogal seja a vogal-alvo. */
       (t.length === 1 && "aeiou".includes(t) && toks.some(tk => {
         const c = tk.replace(/h/g, "");
-        return c.length > 0 && c.length <= 2 && c.includes(t) &&
+        return c.length > 0 && c.length <= 4 && c.includes(t) &&
                [...c].every(ch => ch === t || !"aeiou".includes(ch));
       }))
     );
@@ -1663,28 +1676,43 @@ function startMic(q, mb, heard){
     const rec = new SR();
     state.rec = rec;
     rec.lang = q.de ? "de-DE" : q.en ? "en-US" : "pt-BR";
-    /* v3.16 — 10 alternativas: vogal isolada de criança quase nunca vem na 1ª opção */
-    rec.interimResults = false; rec.maxAlternatives = 10;
+    /* v3.18 — interimResults: as PRIMEIRAS hipóteses do reconhecimento muitas
+       vezes contêm a vogal pura ("i") antes do modelo de linguagem "corrigir"
+       pra uma palavra ("aí"). Testamos TODAS as hipóteses parciais e todas as
+       10 alternativas — e só marcamos erro quando chega o resultado FINAL. */
+    rec.interimResults = true; rec.maxAlternatives = 10;
     mb.classList.add("listening");
     heard.textContent = "Estou ouvindo... fale agora!";
     speechSynthesis.cancel();
-    let got = false;
+    let got = false, done = false, lastTxt = "";
     rec.onresult = ev=>{
+      if(done) return;
       got = true;
-      const alts = [...ev.results].flatMap(res=>[...res].map(r=>norm(r.transcript)));
-      heard.textContent = `Ouvi: "${ev.results[0][0].transcript}"`;
-      const ok = micMatch(alts, q);
-      if(ok){ mb.classList.remove("listening"); onCorrect(); }
-      else {
+      const results = [...ev.results];
+      const alts = results.flatMap(res=>[...res].map(r=>norm(r.transcript))).filter(Boolean);
+      const last = results[results.length-1];
+      lastTxt = (last[0].transcript||"").trim() || lastTxt;
+      if(micMatch(alts, q)){
+        done = true;
+        try{ rec.stop(); }catch(e){}
         mb.classList.remove("listening");
+        onCorrect();
+        return;
+      }
+      if(last.isFinal){
+        done = true;
+        mb.classList.remove("listening");
+        heard.textContent = `Eu ouvi: "${lastTxt}" 🤔 Toque e tente de novo!`;
         state.micFails++;
         onWrong();
         if(state.micFails >= 2) showMicSkip();
+      } else if(lastTxt){
+        heard.textContent = `Ouvindo: "${lastTxt}"...`;
       }
     };
     rec.onerror = ev=>{
       mb.classList.remove("listening");
-      if(got) return;
+      if(done || got) return;
       const err = ev && ev.error;
       if(err==="not-allowed" || err==="service-not-allowed"){
         micReady = false; if(!micBlock) micBlock = "denied";
@@ -1694,14 +1722,28 @@ function startMic(q, mb, heard){
         heard.textContent = "O microfone precisa de internet 😢 Pule esta palavra!";
         showMicSkip("👉 Pular esta palavra");
       } else if(err==="no-speech"){
-        heard.textContent = "Não ouvi nada... toque no microfone e fale bem alto!";
+        /* v3.18 — não ouviu nada: religa o microfone sozinho (até 2 vezes),
+           sem contar como erro da criança */
+        state.micNoSpeech = (state.micNoSpeech||0) + 1;
+        if(state.micNoSpeech <= 2 && !state.lock){
+          heard.textContent = "Não ouvi nada... fale BEM alto! 🔊";
+          setTimeout(()=>{ if(!state.lock && state.rec === rec) startMic(q, mb, heard); }, 350);
+        } else {
+          heard.textContent = "Não ouvi nada... toque no microfone e fale bem alto!";
+          showMicSkip();
+        }
       } else {
         heard.textContent = "Não deu certo... toque e tente de novo!";
         state.micFails++;
         if(state.micFails >= 2) showMicSkip();
       }
     };
-    rec.onend = ()=>{ mb.classList.remove("listening"); if(!got && heard.textContent.startsWith("Estou")) heard.textContent = "Não ouvi... toque e tente de novo!"; };
+    rec.onend = ()=>{
+      mb.classList.remove("listening");
+      if(done) return;
+      if(got && lastTxt) heard.textContent = `Eu ouvi: "${lastTxt}" 🤔 Toque e tente de novo!`;
+      else if(heard.textContent.startsWith("Estou")) heard.textContent = "Não ouvi... toque e tente de novo!";
+    };
     try{ rec.start(); }catch(e){ heard.textContent = "Microfone indisponível 😢"; showMicSkip("👉 Pular esta palavra"); }
   });
 }
@@ -2461,9 +2503,11 @@ function genStory(){
    reais que o Chrome/Edge devolvem quando a criança fala a letra sozinha.
    (norm() tira acentos antes de comparar, então tudo aqui é sem acento) */
 const LETTER_MIC = {
-  A:["ah","ha","aa","aah","la","na","ta"], E:["eh","he","ee","hein","ei","ne","eu"],
-  I:["ih","hi","ii","aqui","ai","sim"],
-  O:["oh","ho","oo","ou","oi"], U:["uh","hu","uu","um","hum","uma"],
+  A:["ah","ha","aa","aah","la","na","ta","ca","va","da","ah ta","atah"],
+  E:["eh","he","ee","hein","ei","ne","eu","de","te","que","ete","ehe"],
+  I:["ih","hi","ii","aqui","ai","sim","si","vi","di","ti","mi","xi","e ai","iii"],
+  O:["oh","ho","oo","ou","oi","o que","do","so","to","ooo"],
+  U:["uh","hu","uu","um","hum","uma","tu","du","mu","uhu","uuu"],
   B:["be","bem","bebe"], C:["ce","se"], D:["de","da"], F:["efe","efi","fe"], G:["ge","je"],
   H:["aga","aha"], J:["jota"], K:["ka"], L:["ele","eli","le"],
   M:["eme","emi","me","hmm"], N:["ene","eni","ne"], P:["pe"], Q:["que","ke"],
@@ -3608,31 +3652,35 @@ function renderShop(){
   renderSetToggle("shop-toggle", renderShop);
   grid.innerHTML = "";
   const sorted = setStickers().slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
-  sorted.forEach(([emo,nm,rar],i)=>{
+  sorted.forEach((st,i)=>{
+    const [emo,nm,rar] = st;
     const owned = p.stickers.includes(nm);
     const price = RARITIES[rar].price;
     const card = document.createElement("div");
     card.className = `shop-card r-${rar}` + (owned?"":" locked-card");
     card.style.animationDelay = (Math.min(i,14)*.04)+"s";
     card.innerHTML = `${rar==="lendario"?'<div class="shine"></div>':""}
-      <span class="emo">${emo}</span>
+      ${stickerFace(st)}
       <span class="nm">${nm}</span>
       <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
       ${owned? `<span class="owned-tag">✔ Sua!</span>`
              : `<button class="buy-btn" ${p.coins<price?"disabled":""}>🪙 ${price}</button>`}`;
     if(!owned){
       const btn = card.querySelector(".buy-btn");
-      btn.onclick = ()=>{
-        if(p.coins < price) return;
-        p.coins -= price;
-        p.stickers.push(nm);
-        save(); updateHUD(); coinBump(); confetti(40); sndLevelUp();
-        speak(`Uau! Você comprou ${nm}! Que figurinha ${rar==="lendario"?"lendária":rar==="epico"?"épica":rar==="raro"?"rara":"linda"}!`);
-        renderShop();
-      };
+      btn.onclick = ()=>buySticker(st, renderShop);
     }
     grid.appendChild(card);
   });
+}
+/* compra compartilhada entre Loja e Álbum */
+function buySticker(st, rerender){
+  const p = P(), [ , nm, rar] = st, price = RARITIES[rar].price;
+  if(!p || p.coins < price || p.stickers.includes(nm)) return;
+  p.coins -= price;
+  p.stickers.push(nm);
+  save(); updateHUD(); coinBump(); confetti(40); sndLevelUp();
+  speak(`Uau! Você comprou ${nm}! Que figurinha ${rar==="lendario"?"lendária":rar==="epico"?"épica":rar==="raro"?"rara":"linda"}!`);
+  rerender();
 }
 
 /* =============== ÁLBUM =============== */
@@ -3644,16 +3692,23 @@ function renderAlbum(){
   $("#album-count").textContent = `${ownedInSet} de ${arr.length} ${STICKER_SETS[activeSet()].label} · 🪙 ${p.coins} moedas`;
   grid.innerHTML = "";
   const sorted = arr.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
-  sorted.forEach(([emo,nm,rar],i)=>{
+  sorted.forEach((st,i)=>{
+    const [emo,nm,rar] = st;
     const owned = p.stickers.includes(nm);
+    const price = RARITIES[rar].price;
     const card = document.createElement("div");
     card.className = `shop-card r-${rar}` + (owned?"":" locked-card");
     card.style.animationDelay = (Math.min(i,14)*.04)+"s";
+    /* v3.18 — figurinha que falta mostra a IMAGEM (apagadinha), o NOME e o
+       botão de comprar direto no álbum — nada de ❓/??? escondendo tudo */
     card.innerHTML = `${owned&&rar==="lendario"?'<div class="shine"></div>':""}
-      <span class="emo">${owned?emo:"❓"}</span>
-      <span class="nm">${owned?nm:"???"}</span>
-      <span class="rar rar-${rar}">${RARITIES[rar].label}</span>`;
+      ${stickerFace(st)}
+      <span class="nm">${nm}</span>
+      <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
+      ${owned? `<span class="owned-tag">✔ Sua!</span>`
+             : `<button class="buy-btn" ${p.coins<price?"disabled":""}>🪙 ${price}</button>`}`;
     if(owned) card.onclick = ()=>{ sndTap(); confetti(10); speak(nm+"!"); };
+    else card.querySelector(".buy-btn").onclick = ev=>{ ev.stopPropagation(); buySticker(st, renderAlbum); };
     grid.appendChild(card);
   });
 }
