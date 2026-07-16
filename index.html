@@ -239,6 +239,9 @@
   @keyframes shine { to { left:135%; } }
 
   /* jornada */
+  .set-toggle { display:flex; gap:10px; justify-content:center; margin:2px 0 12px; flex-wrap:wrap; }
+  .set-btn { border:none; border-radius:99px; padding:10px 20px; font-family:inherit; font-weight:800; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:15px; }
+  .set-btn.sel { background:linear-gradient(135deg,#f7971e,#ffd200); color:#5d3600; box-shadow:0 3px 0 #c47f12; }
   .jtabs { display:flex; gap:8px; margin:6px 0 4px; }
   .jtab, .ctab { border:none; border-radius:99px; padding:9px 16px; font-family:inherit; font-weight:700; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:14.5px; }
   .jtab.sel { background:linear-gradient(135deg,#c471f5,#a044ff); color:#fff; box-shadow:0 3px 0 #6a3093; }
@@ -375,6 +378,10 @@
       <span class="ic">🥨</span>
       <span class="tx"><b>ALEMÃO</b><span id="de-sub"></span></span>
     </button>
+    <button class="mode-btn" id="btn-cur" style="background:linear-gradient(135deg,#c471f5,#a044ff);box-shadow:0 6px 0 #6a3093;color:#fff;">
+      <span class="ic">🔬</span>
+      <span class="tx"><b>CURIOSIDADES</b><span id="cur-sub"></span></span>
+    </button>
     <button class="mode-btn" id="btn-shop">
       <span class="ic">🛒</span>
       <span class="tx"><b>LOJA</b><span id="shop-sub">Compre figurinhas com suas moedas!</span></span>
@@ -417,6 +424,7 @@
   <div class="screen" id="screen-shop">
     <h1 class="title" style="font-size:28px;">🛒 Loja de Figurinhas</h1>
     <p class="subtitle">Ganhe moedas acertando e compre figurinhas raras!</p>
+    <div class="set-toggle" id="shop-toggle"></div>
     <div class="grid4" id="shop-grid"></div>
     <button class="back-btn" id="btn-back-shop" style="margin-top:16px;">⬅ Voltar</button>
   </div>
@@ -425,6 +433,7 @@
   <div class="screen" id="screen-album">
     <h1 class="title" style="font-size:28px;">🏆 Meu Álbum</h1>
     <p class="subtitle" id="album-count"></p>
+    <div class="set-toggle" id="album-toggle"></div>
     <div class="grid4" id="album-grid"></div>
     <button class="back-btn" id="btn-back-album" style="margin-top:16px;">⬅ Voltar</button>
   </div>
@@ -438,6 +447,7 @@
       <button class="jtab" data-track="math">🔢 Matemática</button>
       <button class="jtab" data-track="en">🌎 Inglês</button>
       <button class="jtab" data-track="de">🥨 Alemão</button>
+      <button class="jtab" data-track="cur">🔬 Curiosidades</button>
     </div>
     <div class="j-list" id="journey-list"></div>
     <button class="back-btn" id="btn-back-journey" style="margin-top:14px;">⬅ Voltar</button>
@@ -753,6 +763,51 @@ const STICKERS = [
   ["💫","Cometa Veloz","lendario"],["👽","Amigo das Estrelas","lendario"],["🧊","Cristal de Gelo","lendario"],
   ["🎆","Fogos Mágicos","lendario"],["🌞","Sol Dourado","lendario"]
 ];
+/* ---- FIGURINHAS POKÉMON (mesmo sistema de moedas; alterna na loja/álbum) ----
+   Pokémon não têm emoji próprio, então cada um ganha um emoji temático + o NOME real. */
+const POKEMON_STICKERS = [
+  /* comuns — iniciais e Pokémon fofos do comecinho */
+  ["🌱","Bulbasaur","comum"],["🔥","Charmander","comum"],["💧","Squirtle","comum"],
+  ["🐭","Rattata","comum"],["🐦","Pidgey","comum"],["🐛","Caterpie","comum"],
+  ["🐝","Weedle","comum"],["🦇","Zubat","comum"],["🌿","Oddish","comum"],
+  ["🐟","Magikarp","comum"],["🦆","Psyduck","comum"],["🐵","Mankey","comum"],
+  ["🐴","Ponyta","comum"],["🐚","Shellder","comum"],["🍄","Paras","comum"],
+  ["⚡","Pichu","comum"],["🐹","Marill","comum"],["🦉","Hoothoot","comum"],
+  ["🌱","Chikorita","comum"],["🔥","Cyndaquil","comum"],["💧","Totodile","comum"],
+  ["🌿","Treecko","comum"],["🔥","Torchic","comum"],["💧","Mudkip","comum"],
+  ["🌿","Turtwig","comum"],["🔥","Chimchar","comum"],["💧","Piplup","comum"],
+  /* raros — evoluções e favoritos */
+  ["⚡","Pikachu","raro"],["🐹","Raichu","raro"],["🐕","Eevee","raro"],
+  ["💧","Vaporeon","raro"],["⚡","Jolteon","raro"],["🔥","Flareon","raro"],
+  ["🌙","Umbreon","raro"],["☀️","Espeon","raro"],["🍃","Leafeon","raro"],
+  ["🦋","Butterfree","raro"],["🐺","Arcanine","raro"],["🦊","Ninetales","raro"],
+  ["🐢","Wartortle","raro"],["🔥","Charmeleon","raro"],["🌸","Vileplume","raro"],
+  ["🧲","Magneton","raro"],["🐎","Rapidash","raro"],["🦅","Pidgeot","raro"],
+  ["⚡","Luxray","raro"],["🦋","Beautifly","raro"],["🐉","Dragonair","raro"],
+  /* épicos — finais fortes e pseudo-lendários */
+  ["🌳","Venusaur","epico"],["🔥","Charizard","epico"],["🌊","Blastoise","epico"],
+  ["👻","Gengar","epico"],["🧠","Alakazam","epico"],["😴","Snorlax","epico"],
+  ["🐉","Dragonite","epico"],["🦖","Aerodactyl","epico"],["🧊","Lapras","epico"],
+  ["⭐","Starmie","epico"],["👊","Machamp","epico"],["🌋","Typhlosion","epico"],
+  ["🐊","Feraligatr","epico"],["🌿","Meganium","epico"],["🪨","Tyranitar","epico"],
+  ["🌊","Gyarados","epico"],["🐲","Salamence","epico"],["🧲","Metagross","epico"],
+  ["🐧","Empoleon","epico"],
+  /* lendários — os mais poderosos de todos */
+  ["⚡","Zapdos","lendario"],["🔥","Moltres","lendario"],["🧊","Articuno","lendario"],
+  ["🧬","Mewtwo","lendario"],["✨","Mew","lendario"],["⚡","Raikou","lendario"],
+  ["🔥","Entei","lendario"],["💧","Suicune","lendario"],["🌈","Ho-Oh","lendario"],
+  ["🌊","Lugia","lendario"],["⭐","Jirachi","lendario"],["🦎","Rayquaza","lendario"],
+  ["🌋","Groudon","lendario"],["🌊","Kyogre","lendario"],["🌌","Dialga","lendario"],
+  ["⏳","Palkia","lendario"],["👑","Arceus","lendario"]
+];
+/* conjuntos de figurinhas — o botão da loja/álbum alterna entre eles */
+const STICKER_SETS = {
+  classic: { label:"Emojis",  icon:"😀", stickers:STICKERS },
+  pokemon: { label:"Pokémon", icon:"⚡", stickers:POKEMON_STICKERS }
+};
+function activeSet(){ const p=P(); const s=(p&&p.stickerSet)||"classic"; return STICKER_SETS[s]?s:"classic"; }
+function setStickers(){ return STICKER_SETS[activeSet()].stickers; }
+const TOTAL_STICKERS = STICKERS.length + POKEMON_STICKERS.length;
 
 /* ---- GRAUS DE PALAVRAS (domínio Kumon: repete a MESMA palavra até aprender) ---- */
 const MASTERY = 3; /* 3 encontros: ouvir+ler → ler sozinho → montar */
@@ -838,11 +893,58 @@ const DE_LEVELS = [
   "Ler: Tiere","Ler: tudo","Primeira letra","Montar palavras","Escrever palavras",
   "Diktat 🎧","Sprich! 🎤","Cor + bicho","Frases","Deutsch-Meister 👑"
 ];
+/* =============== TRILHA DE CURIOSIDADES (ciências + história) ===============
+   Cada nível é um tema com historinhas curtas. Depois de ler/ouvir, a criança
+   responde um quiz pra mostrar que aprendeu a curiosidade. */
+const CUR_TRACK = [
+  { name:"Espaço 🚀", scenes:[
+    { cat:"🔬 Ciências", t:["O Sol é uma estrela gigante.","Cabem um milhão de Terras dentro dele!"], q:"O que é o Sol?", a:"Uma estrela", opts:["Uma estrela","Um planeta","Uma lua"] },
+    { cat:"🔬 Ciências", t:["A Lua não tem luz própria.","Ela brilha refletindo a luz do Sol."], q:"De onde vem a luz da Lua?", a:"Do Sol", opts:["Do Sol","Dela mesma","Das nuvens"] },
+    { cat:"🔬 Ciências", t:["A Terra gira como um pião.","Uma volta inteira dura um dia."], q:"Quanto dura uma volta da Terra?", a:"Um dia", opts:["Um dia","Um ano","Uma hora"] }
+  ]},
+  { name:"Animais 🐾", scenes:[
+    { cat:"🔬 Ciências", t:["A girafa é o animal mais alto do mundo.","O pescoço comprido alcança folhas bem no alto."], q:"Qual é o animal mais alto?", a:"A girafa", opts:["A girafa","O elefante","O leão"] },
+    { cat:"🔬 Ciências", t:["O polvo tem três corações!","E o sangue dele é azul."], q:"Quantos corações tem o polvo?", a:"Três", opts:["Três","Um","Dois"] },
+    { cat:"🔬 Ciências", t:["As abelhas fazem mel.","Elas levam pólen de flor em flor."], q:"O que as abelhas fazem?", a:"Mel", opts:["Mel","Leite","Queijo"] }
+  ]},
+  { name:"Corpo humano 🫀", scenes:[
+    { cat:"🔬 Ciências", t:["O coração bombeia sangue o dia todo.","Ele nunca para, nem quando dormimos."], q:"O que o coração faz?", a:"Bombeia sangue", opts:["Bombeia sangue","Pensa","Respira"] },
+    { cat:"🔬 Ciências", t:["Um bebê nasce com uns 300 ossos.","Crescendo, alguns se juntam e viram 206."], q:"Quantos ossos tem um adulto?", a:"206", opts:["206","10","1000"] },
+    { cat:"🔬 Ciências", t:["Os dentes são a parte mais dura do corpo.","Por isso escovamos todos os dias."], q:"Qual é a parte mais dura do corpo?", a:"Os dentes", opts:["Os dentes","O cabelo","A pele"] }
+  ]},
+  { name:"Natureza 🌳", scenes:[
+    { cat:"🔬 Ciências", t:["As plantas fazem seu alimento com a luz do Sol.","Isso se chama fotossíntese."], q:"Com o que a planta faz alimento?", a:"Luz do Sol", opts:["Luz do Sol","Areia","Pedras"] },
+    { cat:"🔬 Ciências", t:["A água pode virar gelo, líquido ou vapor.","Ela muda de forma com o calor e o frio."], q:"O que a água vira no congelador?", a:"Gelo", opts:["Gelo","Fogo","Vento"] },
+    { cat:"🔬 Ciências", t:["O arco-íris aparece com Sol e chuva juntos.","A luz se divide em várias cores."], q:"Quando aparece o arco-íris?", a:"Com Sol e chuva", opts:["Com Sol e chuva","À noite","Na neve"] }
+  ]},
+  { name:"Dinossauros 🦕", scenes:[
+    { cat:"📜 História", t:["Os dinossauros viveram há milhões de anos.","Sumiram bem antes das pessoas existirem."], q:"Quando viveram os dinossauros?", a:"Há milhões de anos", opts:["Há milhões de anos","Ano passado","Hoje"] },
+    { cat:"📜 História", t:["O Tiranossauro Rex tinha dentes enormes.","Era um dos maiores caçadores de todos."], q:"Como era o T-Rex?", a:"Um grande caçador", opts:["Um grande caçador","Um peixinho","Uma planta"] },
+    { cat:"🔬 Ciências", t:["Conhecemos os dinossauros pelos fósseis.","Fósseis são ossos que viraram pedra."], q:"O que são fósseis?", a:"Ossos que viraram pedra", opts:["Ossos que viraram pedra","Brinquedos","Nuvens"] }
+  ]},
+  { name:"Egito Antigo 🏺", scenes:[
+    { cat:"📜 História", t:["Os egípcios construíram pirâmides gigantes.","Elas eram túmulos dos faraós."], q:"Quem construiu as pirâmides?", a:"Os egípcios", opts:["Os egípcios","Os vikings","Os astronautas"] },
+    { cat:"📜 História", t:["O rei do Egito se chamava faraó.","Todos achavam que ele era muito poderoso."], q:"Como se chamava o rei do Egito?", a:"Faraó", opts:["Faraó","Presidente","Cacique"] },
+    { cat:"📜 História", t:["Os egípcios escreviam com desenhos.","Esses desenhos se chamam hieróglifos."], q:"Como os egípcios escreviam?", a:"Com desenhos", opts:["Com desenhos","Com números","Com fotos"] }
+  ]},
+  { name:"Invenções 💡", scenes:[
+    { cat:"📜 História", t:["A roda foi inventada há muito tempo.","Ela facilitou carregar coisas pesadas."], q:"Para que serve a roda?", a:"Carregar coisas", opts:["Carregar coisas","Cozinhar","Dormir"] },
+    { cat:"📜 História", t:["Antes da lâmpada, as casas usavam velas.","A lâmpada trouxe luz sem fogo."], q:"O que havia antes da lâmpada?", a:"Velas", opts:["Velas","Televisão","Celular"] },
+    { cat:"📜 História", t:["Santos Dumont fez um avião voar.","Ele foi um grande inventor brasileiro."], q:"Quem foi Santos Dumont?", a:"Um inventor", opts:["Um inventor","Um cantor","Um cozinheiro"] }
+  ]},
+  { name:"Brasil 🇧🇷", scenes:[
+    { cat:"📜 História", t:["Pedro Álvares Cabral chegou ao Brasil em 1500.","Ele veio de barco lá de Portugal."], q:"Quem chegou ao Brasil em 1500?", a:"Cabral", opts:["Cabral","Tiradentes","Pelé"] },
+    { cat:"📜 História", t:["Antes de Cabral, já viviam pessoas aqui.","Eram os povos indígenas."], q:"Quem já morava no Brasil antes?", a:"Os indígenas", opts:["Os indígenas","Ninguém","Os robôs"] },
+    { cat:"🔬 Ciências", t:["A Amazônia é a maior floresta do mundo.","Ela fica quase toda dentro do Brasil."], q:"Qual é a maior floresta do mundo?", a:"A Amazônia", opts:["A Amazônia","O deserto","O parque"] }
+  ]}
+];
+const CUR_LEVELS = CUR_TRACK.map(l=>l.name).concat("Mestre das Curiosidades 👑");
 const TRACKS = {
   pt:   { icon:"📚", name:"Português",  levels:PT_LEVELS },
   math: { icon:"🔢", name:"Matemática", levels:MATH_LEVELS },
   en:   { icon:"🌎", name:"Inglês",     levels:EN_LEVELS },
-  de:   { icon:"🥨", name:"Alemão",     levels:DE_LEVELS }
+  de:   { icon:"🥨", name:"Alemão",     levels:DE_LEVELS },
+  cur:  { icon:"🔬", name:"Curiosidades", levels:CUR_LEVELS }
 };
 const TRACK_KEYS = Object.keys(TRACKS);
 const maxOf = t => TRACKS[t].levels.length;
@@ -956,12 +1058,12 @@ const deT = t => ({t, lang:"de-DE"});
 const SAVE_KEY = "aventura-abc123-v2";
 let db = { activeIdx:-1, profiles:[] };
 
-function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1}, prog:{pt:0,math:0,en:0,de:0},
-  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0} } }; }
+function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1}, prog:{pt:0,math:0,en:0,de:0,cur:0},
+  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0}, cur:{a:0,e:0} } }; }
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, stickers:[], lv:t.lv, hi:{pt:1,math:1,en:1,de:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
+  return { name, avatar, coins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rq:{pt:[],math:[],en:[],de:[],cur:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0}, les:{pt:0,math:0,en:0,de:0,cur:0} };
 }
 
 function migrateProfile(p){
@@ -972,16 +1074,22 @@ function migrateProfile(p){
     if(!p.stats.de) p.stats.de = {a:0,e:0};
     if(!p.lv.de) p.lv.de = 1;
     if(p.prog.de==null) p.prog.de = 0;
+    if(!p.stats.cur) p.stats.cur = {a:0,e:0};
+    if(!p.lv.cur) p.lv.cur = 1;
+    if(p.prog.cur==null) p.prog.cur = 0;
     if(p.pv !== 3){
       /* renumerar nível PT da versão de 26 níveis para a trilha Kumon de 36 */
       p.lv.pt = p.lv.pt > 26 ? maxOf("pt") : (PT_REMAP[p.lv.pt] || p.lv.pt);
       p.pv = 3;
     }
     if(!p.mast) p.mast = {};
+    /* v3.17 — conjunto de figurinhas ativo (clássico/Pokémon) */
+    if(!p.stickerSet || !STICKER_SETS[p.stickerSet]) p.stickerSet = "classic";
     /* v3.14 — domínio por letra/sílaba/operação matemática (chaves com prefixo) */
     if(!p.dmast) p.dmast = {};
     if(!p.rq) p.rq = {pt:[],math:[],en:[]};
     if(!p.rq.de) p.rq.de = [];
+    if(!p.rq.cur) p.rq.cur = [];
     /* itens antigos da fila ganham a fase de fundamento */
     TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
     if(!p.deep) p.deep = {pt:0,math:0,en:0,de:0};
@@ -1108,7 +1216,7 @@ function renderProfiles(){
     c.className = "profile-card";
     c.style.animationDelay = (i*.08)+"s";
     c.innerHTML = `<span class="av">${p.avatar}</span><span class="nm">${p.name}</span>
-      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")} · 🥨 ${p.lv.de}/${maxOf("de")}<br>🪙 ${p.coins} · 🏆 ${p.stickers.length}/${STICKERS.length}</span>`;
+      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")} · 🥨 ${p.lv.de}/${maxOf("de")}<br>🪙 ${p.coins} · 🏆 ${p.stickers.length}/${TOTAL_STICKERS}</span>`;
     c.onclick = ()=>{ sndTap(); db.activeIdx = i; save(); goHome();
       speak(`Oi ${p.name}! Que bom te ver! Vamos jogar?`); };
     grid.appendChild(c);
@@ -1169,7 +1277,7 @@ function goHome(){
     const lv = p.lv[t], mx = maxOf(t);
     el.textContent = (lv>mx? "Trilha completa! 👑 Modo mestre" : `Nível ${lv} de ${mx} · ${TRACKS[t].levels[Math.min(lv,mx)-1]}`);
   });
-  $("#album-sub").textContent = `${p.stickers.length} de ${STICKERS.length} figurinhas`;
+  $("#album-sub").textContent = `${p.stickers.length} de ${TOTAL_STICKERS} figurinhas`;
   showScreen("screen-home");
   if(p.ra===1){
     p.ra = 2; save();
@@ -1209,7 +1317,7 @@ let state = { track:"pt", practice:false, practiceLv:0, q:null, lock:false, rein
    Depois dos 3 acertos, vem a fase de FUNDAMENTO: 2 questões novas da MESMA lição de origem,
    pra provar que entendeu a lógica (não decorou). Só então a lição sai da fila. */
 const REINF_HITS = 3, FUND_HITS = 2;
-function reinfQ(t){ const p=P(); if(!p.rq) p.rq={pt:[],math:[],en:[],de:[]}; if(!p.rq[t]) p.rq[t]=[]; return p.rq[t]; }
+function reinfQ(t){ const p=P(); if(!p.rq) p.rq={pt:[],math:[],en:[],de:[],cur:[]}; if(!p.rq[t]) p.rq[t]=[]; return p.rq[t]; }
 const qKey = q => (q.prompt||"") + "|" + (q.answer || (q.pieces||[]).join("") || (((q.options||[]).find(o=>o.correct))||{}).label || "");
 
 function curLevel(){ const p=P(); return state.practice ? state.practiceLv : Math.min(p.lv[state.track], maxOf(state.track)); }
@@ -1893,6 +2001,7 @@ const lsSum = (a,b,e,e2) => lsRow(lsCount(a,e,.4)+lsB("+","ls-pulse")+lsCount(b,
 
 function lessonFor(track, lv){
   if(lv > maxOf(track)) return null;
+  if(track==="cur") return null; /* a curiosidade já é a aula — sem lição separada */
   const scenes = track==="pt"? ptLesson(lv) : track==="math"? mathLesson(lv) : langLesson(track, lv);
   return scenes && scenes.length? { scenes } : null;
 }
@@ -2200,6 +2309,7 @@ function genFor(track, lv){
   if(track==="pt") q = genPt(lv);
   else if(track==="math") q = genMath(lv);
   else if(track==="de") q = genDe(lv);
+  else if(track==="cur") q = genCur(lv);
   else q = genEn(lv);
   q.flv = lv; /* lição de origem = fundamento (cada nível Kumon ensina UMA coisa) */
   return q;
@@ -2313,6 +2423,21 @@ function genMastery(gi){
     hintSpeech: ptT(`${piecesSay}!`),
     okSpeech:`${wordSay(focus.w)}!`,
     pieces, decoys, sayPieces:true, answer:focus.w, mword:focus.w
+  };
+}
+
+/* Trilha de Curiosidades: lê/ouve uma historinha de verdade e responde o quiz */
+function genCur(lv){
+  const lvl = CUR_TRACK[lv-1];
+  const pool = lvl ? lvl.scenes : CUR_TRACK.flatMap(l=>l.scenes); /* Mestre = mistura tudo */
+  const c = pick(pool);
+  return {
+    kind:"opts", prompt: c.q,
+    visual:`<div class="read-sentence" style="font-size:clamp(16px,4.2vw,22px);"><b style="display:block;font-size:.8em;color:#a044ff;margin-bottom:6px;">${c.cat}</b>${c.t[0]}<br>${c.t[1]}</div>`,
+    speech:[ptT(`${c.t[0]} ${c.t[1]} Agora me diga: ${c.q}`)],
+    okSpeech:`Isso mesmo! Você aprendeu a curiosidade!`,
+    optClass:"small-text", stacked:true,
+    options: shuffle(c.opts.slice()).map(o=>({label:o, correct:o===c.a}))
   };
 }
 
@@ -3469,10 +3594,20 @@ function genDe(lv){
 
 /* =============== LOJA =============== */
 const RAR_ORDER = ["comum","raro","epico","lendario"];
+function renderSetToggle(id, onChange){
+  const el = $("#"+id); if(!el) return;
+  const act = activeSet();
+  el.innerHTML = Object.entries(STICKER_SETS).map(([k,s])=>
+    `<button class="set-btn${k===act?" sel":""}" data-set="${k}">${s.icon} ${s.label}</button>`).join("");
+  el.querySelectorAll(".set-btn").forEach(b=>{
+    b.onclick = ()=>{ sndTap(); const p=P(); if(p){ p.stickerSet = b.dataset.set; save(); } onChange(); };
+  });
+}
 function renderShop(){
   const p = P(), grid = $("#shop-grid");
+  renderSetToggle("shop-toggle", renderShop);
   grid.innerHTML = "";
-  const sorted = STICKERS.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  const sorted = setStickers().slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
   sorted.forEach(([emo,nm,rar],i)=>{
     const owned = p.stickers.includes(nm);
     const price = RARITIES[rar].price;
@@ -3503,9 +3638,12 @@ function renderShop(){
 /* =============== ÁLBUM =============== */
 function renderAlbum(){
   const p = P(), grid = $("#album-grid");
-  $("#album-count").textContent = `${p.stickers.length} de ${STICKERS.length} figurinhas · 🪙 ${p.coins} moedas`;
+  renderSetToggle("album-toggle", renderAlbum);
+  const arr = setStickers();
+  const ownedInSet = arr.filter(([e,nm])=>p.stickers.includes(nm)).length;
+  $("#album-count").textContent = `${ownedInSet} de ${arr.length} ${STICKER_SETS[activeSet()].label} · 🪙 ${p.coins} moedas`;
   grid.innerHTML = "";
-  const sorted = STICKERS.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  const sorted = arr.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
   sorted.forEach(([emo,nm,rar],i)=>{
     const owned = p.stickers.includes(nm);
     const card = document.createElement("div");
@@ -3714,7 +3852,7 @@ function openParents(){
     const deepAtivo = TRACK_KEYS.filter(t => (p.deep?.[t]||0) > 0).map(t => TRACKS[t].icon).join(" ") || "nenhuma";
     report = `<h3>📊 Relatório de ${p.avatar} ${p.name}</h3>
       <table><tr><th>Trilha</th><th>Nível</th><th>Acertos</th><th>Erros</th><th>Aproveitamento</th></tr>${rows}</table>
-      <p>🪙 <b>${p.coins}</b> moedas · 🏆 <b>${p.stickers.length}</b>/${STICKERS.length} figurinhas · 🔁 <b>${rqCnt}</b> na fila de reforço · 📚 modo aprender ativo em: ${deepAtivo}</p>
+      <p>🪙 <b>${p.coins}</b> moedas · 🏆 <b>${p.stickers.length}</b>/${TOTAL_STICKERS} figurinhas · 🔁 <b>${rqCnt}</b> na fila de reforço · 📚 modo aprender ativo em: ${deepAtivo}</p>
       <div style="background:#f6f7ff;border-radius:14px;padding:12px 14px;margin:10px 0;">
         <b>🇧🇷 Português Kumon — onde ele está agora:</b><br>
         Etapa <b>${ptStage.emoji} ${ptStage.code} · ${ptStage.name}</b> (nível ${p.lv.pt} de ${maxOf("pt")}).<br>
@@ -3809,6 +3947,7 @@ function init(){
   $("#btn-math").onclick = ()=>{ sndTap(); startGame("math"); };
   $("#btn-en").onclick   = ()=>{ sndTap(); startGame("en"); };
   $("#btn-de").onclick   = ()=>{ sndTap(); startGame("de"); };
+  $("#btn-cur").onclick  = ()=>{ sndTap(); startGame("cur"); };
   $("#btn-shop").onclick = ()=>{ sndTap(); renderShop(); showScreen("screen-shop");
     speak("Bem-vindo à loja! Compre figurinhas com suas moedas!"); };
   $("#btn-album").onclick = ()=>{ sndTap(); renderAlbum(); showScreen("screen-album"); };
