@@ -1527,6 +1527,14 @@ function micMatch(alts, q){
       (t.length === 1 && /[a-z]/.test(t) && toks.some(tk => {
         const c = tk.replace(/h/g, "");
         return c.length > 0 && c.length <= 4 && [...c].every(ch => ch === t);
+      })) ||
+      /* v3.16 — alvo é UMA VOGAL: o reconhecimento gruda uma consoante na vogal
+         da criança ("i" vira "si"/"mi"/"xi", "a" vira "ta"/"la", "o" vira "do"...).
+         Aceita palavrinha de até 2 letras que tenha a vogal-alvo e NENHUMA outra vogal. */
+      (t.length === 1 && "aeiou".includes(t) && toks.some(tk => {
+        const c = tk.replace(/h/g, "");
+        return c.length > 0 && c.length <= 2 && c.includes(t) &&
+               [...c].every(ch => ch === t || !"aeiou".includes(ch));
       }))
     );
   });
@@ -1547,7 +1555,8 @@ function startMic(q, mb, heard){
     const rec = new SR();
     state.rec = rec;
     rec.lang = q.de ? "de-DE" : q.en ? "en-US" : "pt-BR";
-    rec.interimResults = false; rec.maxAlternatives = 5;
+    /* v3.16 — 10 alternativas: vogal isolada de criança quase nunca vem na 1ª opção */
+    rec.interimResults = false; rec.maxAlternatives = 10;
     mb.classList.add("listening");
     heard.textContent = "Estou ouvindo... fale agora!";
     speechSynthesis.cancel();
@@ -1660,7 +1669,11 @@ function onCorrect(){
   }
   /* v3.14 — domínio por LETRA/SÍLABA/OPERAÇÃO: só acerto limpo conta */
   let unitMasteredNow = false;
-  if(q.dkey && !state.reinf && state.qWrong === 0){
+  /* v3.16 — no MIC não existe chute: ou a criança falou certo ou não. Se o
+     reconhecimento entendeu errado antes, o acerto de agora conta mesmo assim
+     (e nunca zera o domínio por falha de microfone). */
+  const cleanHit = state.qWrong === 0 || q.kind === "mic";
+  if(q.dkey && !state.reinf && cleanHit){
     const m = (p.dmast[q.dkey]||0) + 1;
     p.dmast[q.dkey] = Math.min(m, MASTERY_DEEP);
     unitMasteredNow = m >= MASTERY_DEEP;
@@ -1668,7 +1681,7 @@ function onCorrect(){
     if(unitMasteredNow){ extra += 8; confetti(20); }
     else step = false;      /* acertos parciais não avançam o nível, só o domínio */
   } else if(q.dkey && state.qWrong > 0 && !state.reinf){
-    /* errou uma vez no meio do domínio: reset da unidade — não pode chutar até dominar */
+    /* errou uma vez no meio do domínio (opções/teclado): reset da unidade — não pode chutar até dominar */
     p.dmast[q.dkey] = 0;
     step = false;
   }
@@ -1724,8 +1737,10 @@ function onWrong(said){
   const p = P(), t = state.track, q = state.q;
   state.qWrong++; state.levelErrors++; state.streak = 0;
   p.stats[t].e++;
-  /* errou 1 vez → a MESMA questão entra na fila de reforço (3 acertos + 2 de fundamento pra sair) */
-  if(state.qWrong === 1 && !state.practice && !state.reinf){
+  /* errou 1 vez → a MESMA questão entra na fila de reforço (3 acertos + 2 de fundamento pra sair)
+     v3.16 — exceto questão de MIC com domínio (dkey): o mic erra sozinho, e o
+     domínio já exige 3 acertos — reforço em cima disso só inflava a fila */
+  if(state.qWrong === 1 && !state.practice && !state.reinf && !(q.kind === "mic" && q.dkey)){
     const queue = reinfQ(t), k = qKey(q);
     const ex = queue.find(it=>it.k===k);
     if(ex){ ex.left = REINF_HITS; ex.fleft = FUND_HITS; }
@@ -2321,8 +2336,9 @@ function genStory(){
    reais que o Chrome/Edge devolvem quando a criança fala a letra sozinha.
    (norm() tira acentos antes de comparar, então tudo aqui é sem acento) */
 const LETTER_MIC = {
-  A:["ah","ha","aa","aah","la"], E:["eh","he","ee","hein","ei","ne"], I:["ih","hi","ii","aqui"],
-  O:["oh","ho","oo","ou","oi"], U:["uh","hu","uu","um","hum","o u"],
+  A:["ah","ha","aa","aah","la","na","ta"], E:["eh","he","ee","hein","ei","ne","eu"],
+  I:["ih","hi","ii","aqui","ai","sim"],
+  O:["oh","ho","oo","ou","oi"], U:["uh","hu","uu","um","hum","uma"],
   B:["be","bem","bebe"], C:["ce","se"], D:["de","da"], F:["efe","efi","fe"], G:["ge","je"],
   H:["aga","aha"], J:["jota"], K:["ka"], L:["ele","eli","le"],
   M:["eme","emi","me","hmm"], N:["ene","eni","ne"], P:["pe"], Q:["que","ke"],
