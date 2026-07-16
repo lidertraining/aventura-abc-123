@@ -506,9 +506,14 @@ const SYL_FAMILIES = {
   C:["CA","CO","CU"], G:["GA","GO","GU"]
 };
 /* fala de sílabas: E/O finais átonos viram "i"/"u" no TTS pt-BR ("ME" soa "mi").
-   Circunflexo força a vogal clara SÓ na fala; a escrita na tela fica normal. */
-const sylSay = s => /[ÁÉÍÓÚÂÊÔÃÕ]/.test(s) ? s : s.replace(/E$/,"Ê").replace(/O$/,"Ô");
+   Circunflexo força a vogal clara SÓ na fala; a escrita na tela fica normal.
+   MINÚSCULO OBRIGATÓRIO: o TTS trata texto EM MAIÚSCULAS como sigla e soletra
+   ("MI" viraria "eme i"). Retornar lowercase faz o motor ler como palavra. */
+const sylSay = s => (/[ÁÉÍÓÚÂÊÔÃÕ]/.test(s) ? s : s.replace(/E$/,"Ê").replace(/O$/,"Ô")).toLowerCase();
 const sylJoinSay = (arr,sep="... ") => arr.map(sylSay).join(sep);
+/* pra falar uma "letra" (som Kumon) — usa o nome de dicionário e garante minúsculo */
+const letSay = L => (LETTER_SOUND[L] || L).toLowerCase();
+const wordSay = w => (w||"").toLowerCase();
 
 const WORDS = [
   { w:"GATO", e:"🐱", syl:["GA","TO"] },  { w:"BOLA", e:"⚽", syl:["BO","LA"] },
@@ -926,7 +931,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1}, prog:{pt:0,math
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, stickers:[], lv:t.lv, hi:{pt:1,math:1,en:1,de:1}, prog:t.prog, stats:t.stats, mast:{}, pv:3, rm:2, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
+  return { name, avatar, coins:0, stickers:[], lv:t.lv, hi:{pt:1,math:1,en:1,de:1}, prog:t.prog, stats:t.stats, mast:{}, pv:3, rm:2, ra:2, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
 }
 
 function migrateProfile(p){
@@ -959,6 +964,18 @@ function migrateProfile(p){
     if(p.rm==null){
       if((p.lv.pt||1) > 14){ p.rm = 1; p.lv.pt = 8; p.prog.pt = 0; p.les.pt = Math.min(p.les.pt||0, 7); }
       else p.rm = 2;
+    }
+    /* v3.13 — Missão do Alfabeto: rebaixa MAIS um passo pra fazer todas as letras
+       de novo (6A completo) antes de voltar pras sílabas. Aplica UMA VEZ pra quem
+       ainda tem rm=1 pendente OU pra quem já foi rebaixado pra sílabas (lv 8-13).
+       hi/coins/stickers/ranking preservados. */
+    if(p.ra==null){
+      if(p.rm===1 || (p.lv.pt>=6 && p.lv.pt<=13)){
+        p.ra = 1;
+        p.lv.pt = 3;              /* 6A · Vogais — antes de qualquer sílaba */
+        p.prog.pt = 0;
+        p.les.pt = Math.min(p.les.pt||0, 2); /* deixa reassistir aulinhas 3-7 */
+      } else p.ra = 2;
     }
     delete p.redo;
     return p;
@@ -1122,7 +1139,20 @@ function goHome(){
   });
   $("#album-sub").textContent = `${p.stickers.length} de ${STICKERS.length} figurinhas`;
   showScreen("screen-home");
-  if(p.rm===1){
+  if(p.ra===1){
+    p.ra = 2; save();
+    showOverlay(`
+      <span class="big">🔤</span>
+      <h2>Missão do Alfabeto!</h2>
+      <p>Antes das sílabas, você vai fazer TODAS as letras de novo, uma por uma, do seu jeito de campeão. Aí, quando montar as sílabas, cada uma vai soar redondinha!</p>
+      <p style="color:#27ae60;"><b>Suas moedas 🪙, figurinhas 🏆 e seu lugar no ranking 🥇 continuam todinhos guardados!</b> Cada nível que refizer dá moeda de novo!</p>
+      <button class="ov-btn" id="ra-go">Aceito a missão! 🔤</button>
+      <button class="ov-btn alt" id="ra-later">Depois</button>`);
+    speak("Missão do alfabeto! Antes de somar as sílabas, você vai identificar todas as letras uma por uma. Assim, quando você juntar, cada sílaba vai sair certinha! Suas moedas, figurinhas e seu lugar no ranking continuam guardadinhos!");
+    $("#ra-go").onclick = ()=>{ sndTap(); hideOverlay(); startGame("pt"); };
+    $("#ra-later").onclick = ()=>{ sndTap(); hideOverlay(); };
+  }
+  else if(p.rm===1){
     p.rm = 2; save();
     showOverlay(`
       <span class="big">🚀</span>
@@ -2089,12 +2119,24 @@ function makeOpts(correct, pool, n, labelFn){
 
 function letterQ(letters, nOpts){
   const L = pick(letters);
+  /* v3.13 — 35% do tempo: leia a letra em voz alta (nome dela) 🎤 — força o som Kumon */
+  if(SR && Math.random() < .35){
+    const nm = letSay(L);
+    return {
+      kind:"mic", prompt:"Leia essa letra bem alto! 🎤",
+      visual:`<div class="read-word" style="font-size:clamp(48px,12vw,80px);">${L}</div>`,
+      speech:[ptT(`Qual é o nome dessa letra? Fale bem alto no microfone!`)],
+      hintSpeech: ptT(`É a letra ${nm}! Fale: ${nm}!`),
+      okSpeech:`${nm}! Isso mesmo!`,
+      answer: L, accept:[nm, L.toLowerCase()]
+    };
+  }
   return {
     kind:"opts", prompt:"Qual é a letra?",
     visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🔤</span>`,
-    speech:[ptT(`Encontre a letra ${LETTER_SOUND[L]||L}!`)],
-    hintSpeech: ptT(`Procure a letra ${LETTER_SOUND[L]||L}.`),
-    okSpeech:`${LETTER_SOUND[L]||L}!`,
+    speech:[ptT(`Encontre a letra ${letSay(L)}!`)],
+    hintSpeech: ptT(`Procure a letra ${letSay(L)}.`),
+    okSpeech:`${letSay(L)}!`,
     options: makeOpts(L, letters, nOpts)
   };
 }
@@ -2136,9 +2178,9 @@ function genMastery(gi){
     return {
       kind:"opts", prompt:"Palavra nova! Escute e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
-      speech:[ptT(`Palavra nova: ${focus.w}! ${sylJoinSay(syl)}... ${focus.w}! Ache a figura!`)],
-      hintSpeech: ptT(`${focus.w}! ${sylJoinSay(syl)}!`),
-      okSpeech:`${focus.w}!`,
+      speech:[ptT(`Palavra nova: ${wordSay(focus.w)}! ${sylJoinSay(syl)}... ${wordSay(focus.w)}! Ache a figura!`)],
+      hintSpeech: ptT(`${wordSay(focus.w)}! ${sylJoinSay(syl)}!`),
+      okSpeech:`${wordSay(focus.w)}!`,
       optClass:"emoji-opt", mword:focus.w,
       options: makeOpts(focus, list, Math.min(3,list.length), x=>x.e)
     };
@@ -2149,8 +2191,8 @@ function genMastery(gi){
         kind:"mic", prompt:"Ela voltou! Leia em voz alta! 🎤",
         visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
         speech:[ptT("Essa palavra voltou! Leia ela bem alto no microfone!")],
-        hintSpeech: ptT(`${sylJoinSay(syl)}... ${focus.w}! Fale: ${focus.w}!`),
-        okSpeech:`${focus.w}! Você leu!`,
+        hintSpeech: ptT(`${sylJoinSay(syl)}... ${wordSay(focus.w)}! Fale: ${wordSay(focus.w)}!`),
+        okSpeech:`${wordSay(focus.w)}! Você leu!`,
         answer:focus.w, mword:focus.w
       };
     }
@@ -2159,7 +2201,7 @@ function genMastery(gi){
       visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${focus.w}</div>`,
       speech:[ptT("Essa palavra voltou! Agora leia sozinho e ache a figura!")],
       hintSpeech: ptT(`${sylJoinSay(syl)}...`),
-      okSpeech:`${focus.w}!`,
+      okSpeech:`${wordSay(focus.w)}!`,
       optClass:"emoji-opt", mword:focus.w,
       options: makeOpts(focus, list, Math.min(5,list.length), x=>x.e)
     };
@@ -2169,13 +2211,13 @@ function genMastery(gi){
   const decoys = syl.length>=2
     ? shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>!pieces.includes(s))).slice(0,2)
     : shuffle(AZ.filter(l=>!focus.w.includes(l))).slice(0,2);
-  const piecesSay = syl.length>=2 ? sylJoinSay(pieces) : pieces.map(l=>LETTER_SOUND[l]||l).join("... ");
+  const piecesSay = syl.length>=2 ? sylJoinSay(pieces) : pieces.map(letSay).join("... ");
   return {
     kind:"tiles", prompt:"Última vez! Monte a palavra e domine ela!",
     visual:`<span class="big-emoji">${focus.e}</span>`,
-    speech:[ptT(`Monte a palavra ${focus.w}! ${piecesSay}!`)],
+    speech:[ptT(`Monte a palavra ${wordSay(focus.w)}! ${piecesSay}!`)],
     hintSpeech: ptT(`${piecesSay}!`),
-    okSpeech:`${focus.w}!`,
+    okSpeech:`${wordSay(focus.w)}!`,
     pieces, decoys, sayPieces:true, answer:focus.w, mword:focus.w
   };
 }
@@ -2222,18 +2264,18 @@ function genPtCore(lv){
     const g = pick(CONFUSABLE), L = pick(g);
     const q = letterQ(g, Math.min(4,g.length));
     q.prompt = "Cuidado! São parecidas!";
-    q.speech = [ptT(`Atenção! Encontre a letra ${LETTER_SOUND[L]||L}!`)];
-    q.okSpeech = `${LETTER_SOUND[L]||L}!`;
+    q.speech = [ptT(`Atenção! Encontre a letra ${letSay(L)}!`)];
+    q.okSpeech = `${letSay(L)}!`;
     q.options = makeOpts(L, g, Math.min(4,g.length));
-    q.hintSpeech = ptT(`Olhe bem! É a letra ${LETTER_SOUND[L]||L}.`);
+    q.hintSpeech = ptT(`Olhe bem! É a letra ${letSay(L)}.`);
     return q;
   }
   if(lv===6 || lv===7 || lv===8){ /* sílabas */
     const fams = lv===6? ["M"] : lv===7? ["M","P","B"] : Object.keys(SYL_FAMILIES);
     const f = pick(fams);
     const syl = pick(SYL_FAMILIES[f]);
-    /* metade das vezes tem que LER a sílaba em voz alta 🎤 — sem chute! */
-    if(SR && Math.random() < .5){
+    /* v3.13 — 80% das vezes: LER a sílaba em voz alta 🎤 (Kumon: som antes do nome) */
+    if(SR && Math.random() < .8){
       return {
         kind:"mic", prompt:"Leia a sílaba bem alto! 🎤",
         visual:`<div class="read-word" style="font-size:clamp(34px,9vw,54px);">${syl}</div>`,
@@ -2260,9 +2302,9 @@ function genPtCore(lv){
     return {
       kind:"opts", prompt:`Com que letra começa?`,
       visual:`<span class="big-emoji">${w.e}</span>`,
-      speech:[ptT(`Com que letra começa a palavra ${w.w}?`)],
-      hintSpeech: ptT(`${w.w}... ${w.w[0]}${w.w[1]}... começa com ${LETTER_SOUND[first]||first}!`),
-      okSpeech:`${w.w} começa com ${LETTER_SOUND[first]||first}!`,
+      speech:[ptT(`Com que letra começa a palavra ${wordSay(w.w)}?`)],
+      hintSpeech: ptT(`${wordSay(w.w)}... ${sylSay(w.w.slice(0,2))}... começa com ${letSay(first)}!`),
+      okSpeech:`${wordSay(w.w)} começa com ${letSay(first)}!`,
       options: makeOpts(first, pool, lv===9? 3:5)
     };
   }
@@ -2272,9 +2314,9 @@ function genPtCore(lv){
     return {
       kind:"opts", prompt:"Todas começam igual! Leia a 2ª letra!",
       visual:`<span class="big-emoji">${target.e}</span>`,
-      speech:[ptT(`Atenção! Todas as palavras começam com a mesma letra! Encontre a palavra ${target.w}. Leia a segunda letra!`)],
-      hintSpeech: ptT(`${target.w}! A segunda letra é ${LETTER_SOUND[target.w[1]]||target.w[1]}!`),
-      okSpeech:`${target.w}!`,
+      speech:[ptT(`Atenção! Todas as palavras começam com a mesma letra! Encontre a palavra ${wordSay(target.w)}. Leia a segunda letra!`)],
+      hintSpeech: ptT(`${wordSay(target.w)}! A segunda letra é ${letSay(target.w[1])}!`),
+      okSpeech:`${wordSay(target.w)}!`,
       optClass:"mid-text",
       options: makeOpts(target, set.words, Math.min(4,set.words.length), x=>x.w)
     };
@@ -2286,9 +2328,9 @@ function genPtCore(lv){
     return {
       kind:"opts", prompt:"Qual é a primeira sílaba?",
       visual:`<span class="big-emoji">${w.e}</span>`,
-      speech:[ptT(`${w.w}! Qual é o primeiro pedacinho de ${w.w}?`)],
-      hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${w.w}!`),
-      okSpeech:`${sylSay(first)}! ${w.w}!`,
+      speech:[ptT(`${wordSay(w.w)}! Qual é o primeiro pedacinho de ${wordSay(w.w)}?`)],
+      hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${wordSay(w.w)}!`),
+      okSpeech:`${sylSay(first)}! ${wordSay(w.w)}!`,
       options: makeOpts(first, pool, 4)
     };
   }
@@ -2300,8 +2342,8 @@ function genPtCore(lv){
         kind:"mic", prompt:"Leia a palavra em voz alta! 🎤",
         visual:`<div class="read-word">${w.w}</div>`,
         speech:[ptT("Leia a palavra bem alto no microfone! Pedacinho por pedacinho!")],
-        hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${w.w}! Fale: ${w.w}!`),
-        okSpeech:`${w.w}! Você leu!`,
+        hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${wordSay(w.w)}! Fale: ${wordSay(w.w)}!`),
+        okSpeech:`${wordSay(w.w)}! Você leu!`,
         answer: w.w
       };
     }
@@ -2310,7 +2352,7 @@ function genPtCore(lv){
       visual:`<div class="read-word">${w.w}</div>`,
       speech:[ptT("Leia a palavra e toque na figura certa! Você consegue!")],
       hintSpeech: ptT(`${sylJoinSay(w.syl)}...`),
-      okSpeech:`${w.w}!`,
+      okSpeech:`${wordSay(w.w)}!`,
       optClass:"emoji-opt",
       options: makeOpts(w, WORDS, lv===13? 3:5, x=>x.e)
     };
@@ -2321,9 +2363,9 @@ function genPtCore(lv){
     return {
       kind:"opts", prompt:"Cuidado! São parecidas! Leia com atenção!",
       visual:`<span class="big-emoji">${set.emo[target]}</span>`,
-      speech:[ptT(`Atenção, são palavras parecidas! Encontre a palavra ${target}!`)],
-      hintSpeech: ptT(`${target}! Começa com ${LETTER_SOUND[target[0]]||target[0]}!`),
-      okSpeech:`${target}!`,
+      speech:[ptT(`Atenção, são palavras parecidas! Encontre a palavra ${wordSay(target)}!`)],
+      hintSpeech: ptT(`${wordSay(target)}! Começa com ${letSay(target[0])}!`),
+      okSpeech:`${wordSay(target)}!`,
       optClass:"mid-text",
       options: makeOpts(target, set.fam, Math.min(4,set.fam.length))
     };
@@ -2346,9 +2388,9 @@ function genPtCore(lv){
     return {
       kind:"tiles", prompt:"Monte a palavra com as letras!",
       visual:`<span class="big-emoji">${w.e}</span>`,
-      speech:[ptT(`Monte a palavra ${w.w}, letra por letra!`)],
-      hintSpeech: ptT(`${w.w.split("").map(l=>LETTER_SOUND[l]||l).join("... ")}!`),
-      okSpeech:`${w.w}!`,
+      speech:[ptT(`Monte a palavra ${wordSay(w.w)}, letra por letra!`)],
+      hintSpeech: ptT(`${w.w.split("").map(letSay).join("... ")}!`),
+      okSpeech:`${wordSay(w.w)}!`,
       pieces: w.w.split(""), decoys, sayPieces:true, answer:w.w
     };
   }
@@ -3316,6 +3358,29 @@ function openRanking(){
 }
 
 /* =============== PAINEL DOS PAIS =============== */
+/* v3.13 — helpers do relatório PT (etapa Kumon atual, palavras dominadas) */
+function ptStageOf(lv){
+  if(lv<=2) return {code:"7A", name:"Ouvir e apontar", emoji:"👂"};
+  if(lv<=7) return {code:"6A", name:"Letras do alfabeto", emoji:"🔤"};
+  if(lv<=14) return {code:"5A", name:"Sílabas", emoji:"🧩"};
+  if(lv<=18) return {code:"4A", name:"Palavras curtas", emoji:"📗"};
+  if(lv<=22) return {code:"3A", name:"Palavras médias", emoji:"📘"};
+  if(lv<=27) return {code:"2A", name:"Escrever e ditar", emoji:"✍️"};
+  if(lv<=31) return {code:"A",  name:"Sons especiais", emoji:"🎯"};
+  if(lv<=34) return {code:"B",  name:"Frases e ditados", emoji:"📖"};
+  if(lv<=35) return {code:"C",  name:"Historinhas", emoji:"📚"};
+  return {code:"👑", name:"Mestre da Leitura", emoji:"👑"};
+}
+function ptMasteryReport(p){
+  const grades = [["Curtinhas 🔤",0],["Fáceis 📗",1],["Médias 📘",2],["Sons novos 🎯",3],["R e L 🧩",4],["Gigantes 📚",5]];
+  return grades.map(([label,gi])=>{
+    const list = WORD_GRADES[gi]||[];
+    if(!list.length) return "";
+    const dom = list.filter(x=>(p.mast[x.w]||0) >= MASTERY).length;
+    return `<div class="pt-mast"><b>${label}</b>: ${dom}/${list.length} palavras 🏅</div>`;
+  }).filter(Boolean).join("");
+}
+
 function openParents(){
   const p = P();
   let report = "";
@@ -3323,15 +3388,33 @@ function openParents(){
     const rows = TRACK_KEYS.map(t=>{
       const s = p.stats[t], tot = s.a+s.e;
       const pct = tot? Math.round(s.a/tot*100) : "—";
-      return `<tr><td>${TRACKS[t].icon} ${TRACKS[t].name}</td><td>${Math.min(p.lv[t],maxOf(t))}${p.lv[t]>maxOf(t)?" 👑":""}/${maxOf(t)}</td><td>${s.a}</td><td>${s.e}</td><td>${pct}${tot?"%":""}</td></tr>`;
+      const cur = Math.min(p.lv[t],maxOf(t));
+      const hi = Math.max(p.hi?.[t]||0, cur);
+      const extra = t==="pt" ? ` <span style="opacity:.7;">· ${ptStageOf(cur).emoji} ${ptStageOf(cur).code} ${ptStageOf(cur).name}</span>` : "";
+      const trophy = p.lv[t]>maxOf(t) ? " 👑" : (hi>cur ? ` <span title="Recorde" style="opacity:.6;">(recorde ${hi})</span>` : "");
+      return `<tr><td>${TRACKS[t].icon} ${TRACKS[t].name}${extra}</td><td>${cur}${trophy}/${maxOf(t)}</td><td>${s.a}</td><td>${s.e}</td><td>${pct}${tot?"%":""}</td></tr>`;
     }).join("");
+    const ptStage = ptStageOf(p.lv.pt);
+    const nextName = p.lv.pt < maxOf("pt") ? (TRACKS.pt.levels[p.lv.pt]||"").replace(/[🎧🎤👑🏅📖·]/g,"").trim() : "Mestre!";
+    const rqCnt = TRACK_KEYS.reduce((s,t)=> s + ((p.rq?.[t]||[]).length), 0);
+    const deepAtivo = TRACK_KEYS.filter(t => (p.deep?.[t]||0) > 0).map(t => TRACKS[t].icon).join(" ") || "nenhuma";
     report = `<h3>📊 Relatório de ${p.avatar} ${p.name}</h3>
       <table><tr><th>Trilha</th><th>Nível</th><th>Acertos</th><th>Erros</th><th>Aproveitamento</th></tr>${rows}</table>
-      <p>🪙 ${p.coins} moedas · 🏆 ${p.stickers.length}/${STICKERS.length} figurinhas</p>`;
+      <p>🪙 <b>${p.coins}</b> moedas · 🏆 <b>${p.stickers.length}</b>/${STICKERS.length} figurinhas · 🔁 <b>${rqCnt}</b> na fila de reforço · 📚 modo aprender ativo em: ${deepAtivo}</p>
+      <div style="background:#f6f7ff;border-radius:14px;padding:12px 14px;margin:10px 0;">
+        <b>🇧🇷 Português Kumon — onde ele está agora:</b><br>
+        Etapa <b>${ptStage.emoji} ${ptStage.code} · ${ptStage.name}</b> (nível ${p.lv.pt} de ${maxOf("pt")}).<br>
+        Próximo desafio: <b>${nextName}</b>.<br>
+        <div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;">
+          ${ptMasteryReport(p)}
+        </div>
+      </div>`;
   }
   showOverlay(`<div id="parents-card">
     <h2 style="text-align:center;color:#454a75;">ℹ️ Para os pais</h2>
     ${report}
+    <h3>🔤 Missão do Alfabeto (v3.13)</h3>
+    <p>Se seu filho já passou pelas sílabas mas ainda "chutando", ele foi <b>rebaixado uma vez</b> para o começo do alfabeto (nível 3 · 6A · Vogais). O ranking, moedas e figurinhas ficam <b>preservados</b>. Ele refaz TODAS as letras (às vezes com microfone 🎤, falando o nome/som da letra) antes de voltar pras sílabas. Nas sílabas, 80% das perguntas agora <b>exigem ler em voz alta no microfone</b> — sem chute. Objetivo: quando ele juntar as letras, cada sílaba sai redondinha.</p>
     <h3>🎌 Método Kumon</h3>
     <p>Micro-passos: cada nível ensina UMA coisinha nova. A criança precisa de ${GOAL} acertos para avançar (domínio antes de progresso). Errar não pune — o jogo dá dicas e sugere revisar o nível anterior quando percebe dificuldade.</p>
     <p>A trilha de Português segue as <b>etapas oficiais do Kumon</b>: <b>7A</b> ouvir e apontar → <b>6A</b> letras → <b>5A</b> sílabas → <b>4A/3A/2A</b> palavras → <b>A</b> sons especiais → <b>B</b> frases → <b>C</b> pequenas histórias. Nos níveis 🏅 (domínio de palavras) a MESMA palavra repete 3 vezes — ouvir, ler sozinho e montar — até ser dominada, exatamente como a repetição do Kumon.</p>
