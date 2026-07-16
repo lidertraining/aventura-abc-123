@@ -1261,7 +1261,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1}, prog:{pt:
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rq:{pt:[],math:[],en:[],de:[],cur:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0}, les:{pt:0,math:0,en:0,de:0,cur:0} };
+  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rq:{pt:[],math:[],en:[],de:[],cur:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0}, les:{pt:0,math:0,en:0,de:0,cur:0} };
 }
 
 function migrateProfile(p){
@@ -1315,6 +1315,18 @@ function migrateProfile(p){
         p.les.pt = Math.min(p.les.pt||0, 2); /* deixa reassistir aulinhas 3-7 */
       } else p.ra = 2;
     }
+    /* v3.20 — reembolso: todas as moedas já gastas em figurinhas voltam pro
+       cofrinho (as figurinhas compradas continuam!), pra gastar na Pokédex nova */
+    if(p.rf==null){
+      const val = (p.stickers||[]).reduce((s,nm)=>{
+        const st = STICKERS.find(x=>x[1]===nm) || POKEMON_STICKERS.find(x=>x[1]===nm);
+        return s + (st ? RARITIES[st[2]].price : 0);
+      }, 0);
+      if(val>0){ p.coins += val; p.rf = 1; p.rfv = val; }
+      else p.rf = 2;
+    }
+    /* v3.20 — carteira Pokémon nasce igual à de figurinhas (saldo duplicado) */
+    if(p.pcoins==null) p.pcoins = p.coins;
     delete p.redo;
     return p;
   }
@@ -1323,6 +1335,7 @@ function migrateProfile(p){
   np.lv.pt   = ({1:3,2:11,3:16})[p.readLevel] || 3;
   np.lv.math = Math.min(Math.max(p.mathLevel||1,1), maxOf("math"));
   np.coins = p.coins||0;
+  np.pcoins = np.coins;
   np.stickers = [];
   return np;
 }
@@ -1385,6 +1398,13 @@ function importSave(file){
 }
 const P = () => db.profiles[db.activeIdx];
 
+/* v3.20 — duas carteiras: 🪙 figurinhas clássicas · ⚡ Pokémon.
+   Toda moeda ganha jogando entra NAS DUAS ao mesmo tempo. */
+function earnCoins(p, n){ p.coins += n; p.pcoins = (p.pcoins||0) + n; }
+function walletCoins(p){ return activeSet()==="pokemon" ? (p.pcoins||0) : p.coins; }
+function spendCoins(p, n){ if(activeSet()==="pokemon") p.pcoins = (p.pcoins||0) - n; else p.coins -= n; }
+function walletIcon(){ return activeSet()==="pokemon" ? "⚡" : "🪙"; }
+
 function updateHUD(){
   const p = P();
   const chip = $("#profile-chip");
@@ -1392,7 +1412,7 @@ function updateHUD(){
     chip.style.visibility = "visible";
     chip.querySelector(".av").textContent = p.avatar;
     chip.querySelector(".pn").textContent = p.name;
-    $("#coin-count").textContent = p.coins;
+    $("#coin-count").textContent = `${p.coins} · ⚡ ${p.pcoins||0}`;
     $("#coin-pill").style.visibility = "visible";
   } else {
     chip.style.visibility = "hidden";
@@ -1414,7 +1434,7 @@ function renderProfiles(){
     c.className = "profile-card";
     c.style.animationDelay = (i*.08)+"s";
     c.innerHTML = `<span class="av">${p.avatar}</span><span class="nm">${p.name}</span>
-      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")} · 🥨 ${p.lv.de}/${maxOf("de")}<br>🪙 ${p.coins} · 🏆 ${p.stickers.length}/${TOTAL_STICKERS}</span>`;
+      <span class="lv">📚 ${p.lv.pt}/${maxOf("pt")} · 🔢 ${p.lv.math}/${maxOf("math")} · 🌎 ${p.lv.en}/${maxOf("en")} · 🥨 ${p.lv.de}/${maxOf("de")}<br>🪙 ${p.coins} · ⚡ ${p.pcoins||0} · 🏆 ${p.stickers.length}/${TOTAL_STICKERS}</span>`;
     c.onclick = ()=>{ sndTap(); db.activeIdx = i; save(); goHome();
       speak(`Oi ${p.name}! Que bom te ver! Vamos jogar?`); };
     grid.appendChild(c);
@@ -1477,7 +1497,21 @@ function goHome(){
   });
   $("#album-sub").textContent = `${p.stickers.length} de ${TOTAL_STICKERS} figurinhas`;
   showScreen("screen-home");
-  if(p.ra===1){
+  if(p.rf===1){
+    p.rf = 2; save();
+    const v = p.rfv || 0;
+    showOverlay(`
+      <span class="big">💰</span>
+      <h2>Chuva de Moedas!</h2>
+      <p>Agora você tem <b>DOIS cofrinhos</b>: 🪙 pra figurinhas e ⚡ pra Pokémon — e cada moeda que você ganha jogando entra <b>nos dois ao mesmo tempo</b>!</p>
+      <p style="color:#27ae60;">E as moedas que você já gastou comprando figurinhas <b>voltaram</b>: 🪙 <b>+${v}</b> e ⚡ <b>+${v}</b>! As figurinhas continuam todinhas suas!</p>
+      <button class="ov-btn" id="rf-shop">Ir pra loja! 🛒</button>
+      <button class="ov-btn alt" id="rf-later">Depois</button>`);
+    speak(`Chuva de moedas! Agora você tem dois cofrinhos: um para figurinhas e um para Pokémon. Cada moeda que você ganha jogando entra nos dois ao mesmo tempo! E todas as moedas que você já gastou comprando figurinhas voltaram: ${v} moedas em cada cofrinho! E as suas figurinhas continuam todinhas suas! Corre na loja!`);
+    $("#rf-shop").onclick = ()=>{ sndTap(); hideOverlay(); renderShop(); showScreen("screen-shop"); };
+    $("#rf-later").onclick = ()=>{ sndTap(); hideOverlay(); };
+  }
+  else if(p.ra===1){
     p.ra = 2; save();
     showOverlay(`
       <span class="big">🔤</span>
@@ -2029,21 +2063,22 @@ function onCorrect(){
     p.dmast[q.dkey] = 0;
     step = false;
   }
-  p.coins += coins + extra;
+  earnCoins(p, coins + extra);
   p.stats[t].a++;
+  const gainTxt = `+${coins+extra}🪙 +${coins+extra}⚡`;
   const fb = $("#feedback");
   fb.className = "good";
   fb.textContent = reinfGone
-    ? `🔁✨ Pegou de vez! Lição e fundamento! +${coins+extra} moedas!`
+    ? `🔁✨ Pegou de vez! Lição e fundamento! ${gainTxt}!`
     : fundNow
-    ? `🔁💡 Agora vem o fundamento! +${coins+extra} moedas!`
+    ? `🔁💡 Agora vem o fundamento! ${gainTxt}!`
     : masteredNow
-    ? `🏅 Palavra dominada! +${coins+extra} moedas!`
+    ? `🏅 Palavra dominada! ${gainTxt}!`
     : unitMasteredNow
-    ? `🏅 Dominou! +${coins+extra} moedas!`
+    ? `🏅 Dominou! ${gainTxt}!`
     : deepDirty
-    ? `💛 +${coins+extra} moedas! Essa volta pra contar de novo!`
-    : `${pick(["🎉","⭐","🌈","💪","🏅"])} +${coins+extra} moedas!` + (extra?` (${state.streak} seguidas! 🔥)`:"");
+    ? `💛 ${gainTxt}! Essa volta pra contar de novo!`
+    : `${pick(["🎉","⭐","🌈","💪","🏅"])} ${gainTxt}!` + (extra?` (${state.streak} seguidas! 🔥)`:"");
   coinBump(); updateHUD();
 
   const goal = goalFor(t, lv);
@@ -2164,7 +2199,7 @@ function levelUp(){
   const p = P(), t = state.track;
   const lv = p.lv[t];
   const bonus = levelUpBonus(lv);
-  p.coins += bonus;
+  earnCoins(p, bonus);
   p.lv[t] = lv+1;
   if(!p.hi) p.hi = {};
   p.hi[t] = Math.max(p.hi[t]||1, p.lv[t]);
@@ -2179,7 +2214,7 @@ function levelUp(){
     showOverlay(`
       <span class="big">👑</span>
       <h2>${TRACKS[t].name}: COMPLETO!</h2>
-      <p>Você terminou TODOS os ${mx} níveis! Agora o modo Mestre mistura tudo — e dá muitas moedas! +${bonus} 🪙</p>
+      <p>Você terminou TODOS os ${mx} níveis! Agora o modo Mestre mistura tudo — e dá muitas moedas! +${bonus} 🪙 +${bonus} ⚡</p>
       <button class="ov-btn" id="lvl-go">Modo Mestre! 👑</button>
       <button class="ov-btn alt" id="lvl-home">Menu</button>`);
     speak(`Parabéns! Você completou toda a trilha de ${TRACKS[t].name}! Você é incrível! Agora vem o modo mestre!`);
@@ -2188,7 +2223,7 @@ function levelUp(){
     showOverlay(`
       <span class="big">🚀</span>
       <h2>NÍVEL ${p.lv[t]}!</h2>
-      <p>Você subiu de nível e ganhou <b>+${bonus} moedas</b> de bônus! 🪙<br>Agora vem: <b>${TRACKS[t].levels[p.lv[t]-1]}</b></p>
+      <p>Você subiu de nível e ganhou <b>+${bonus} 🪙</b> pras figurinhas e <b>+${bonus} ⚡</b> pros Pokémon!<br>Agora vem: <b>${TRACKS[t].levels[p.lv[t]-1]}</b></p>
       ${pendR? `<p style="color:#e67e22;">🔁 ${pendR===1? "Uma lição de reforço vai junto — ela volta misturada" : `<b>${pendR} lições de reforço</b> vão junto — elas voltam misturadas`} até você pegar de vez!</p>` : ""}
       <button class="ov-btn" id="lvl-go">Continuar! 🚀</button>
       <button class="ov-btn alt" id="lvl-home">Menu</button>`);
@@ -2206,12 +2241,12 @@ function levelUp(){
 
 function practiceDone(){
   const p = P();
-  p.coins += PRACTICE_BONUS;
+  earnCoins(p, PRACTICE_BONUS);
   save(); coinBump(); updateHUD(); confetti(35); sndLevelUp();
   showOverlay(`
     <span class="big">💪</span>
     <h2>Treino completo!</h2>
-    <p>Você ganhou <b>+${PRACTICE_BONUS} moedas</b> de bônus do treino! 🪙</p>
+    <p>Você ganhou <b>+${PRACTICE_BONUS} 🪙</b> e <b>+${PRACTICE_BONUS} ⚡</b> de bônus do treino!</p>
     <button class="ov-btn" id="pr-again">Treinar de novo 🔁</button>
     <button class="ov-btn alt" id="pr-back">Jornada 🗺️</button>`);
   speak(`Treino completo! Mais ${PRACTICE_BONUS} moedas pra você! Quanto mais treina, mais craque fica!`);
@@ -3881,7 +3916,7 @@ function renderShop(){
       <span class="nm">${nm}</span>
       <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
       ${owned? `<span class="owned-tag">✔ Sua!</span>`
-             : `<button class="buy-btn" ${p.coins<price?"disabled":""}>🪙 ${price}</button>`}`;
+             : `<button class="buy-btn" ${walletCoins(p)<price?"disabled":""}>${walletIcon()} ${price}</button>`}`;
     if(!owned){
       const btn = card.querySelector(".buy-btn");
       btn.onclick = ()=>buySticker(st, renderShop);
@@ -3892,8 +3927,8 @@ function renderShop(){
 /* compra compartilhada entre Loja e Álbum */
 function buySticker(st, rerender){
   const p = P(), [ , nm, rar] = st, price = RARITIES[rar].price;
-  if(!p || p.coins < price || p.stickers.includes(nm)) return;
-  p.coins -= price;
+  if(!p || walletCoins(p) < price || p.stickers.includes(nm)) return;
+  spendCoins(p, price);
   p.stickers.push(nm);
   save(); updateHUD(); coinBump(); confetti(40); sndLevelUp();
   speak(`Uau! Você comprou ${nm}! Que figurinha ${rar==="lendario"?"lendária":rar==="epico"?"épica":rar==="raro"?"rara":"linda"}!`);
@@ -3909,7 +3944,7 @@ function renderAlbum(){
   const ownedInSet = arr.filter(([e,nm])=>p.stickers.includes(nm)).length;
   if(activeSet()==="pokemon"){
     const tudo = setStickers(), ownAll = tudo.filter(([e,nm])=>p.stickers.includes(nm)).length;
-    $("#album-count").textContent = `Temporada ${pokeGen()}: ${ownedInSet} de ${arr.length} · Pokédex: ${ownAll} de ${tudo.length} · 🪙 ${p.coins} moedas`;
+    $("#album-count").textContent = `Temporada ${pokeGen()}: ${ownedInSet} de ${arr.length} · Pokédex: ${ownAll} de ${tudo.length} · ⚡ ${p.pcoins||0} moedas`;
   } else {
     $("#album-count").textContent = `${ownedInSet} de ${arr.length} ${STICKER_SETS[activeSet()].label} · 🪙 ${p.coins} moedas`;
   }
@@ -3929,7 +3964,7 @@ function renderAlbum(){
       <span class="nm">${nm}</span>
       <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
       ${owned? `<span class="owned-tag">✔ Sua!</span>`
-             : `<button class="buy-btn" ${p.coins<price?"disabled":""}>🪙 ${price}</button>`}`;
+             : `<button class="buy-btn" ${walletCoins(p)<price?"disabled":""}>${walletIcon()} ${price}</button>`}`;
     if(owned) card.onclick = ()=>{ sndTap(); confetti(10); speak(nm+"!"); };
     else card.querySelector(".buy-btn").onclick = ev=>{ ev.stopPropagation(); buySticker(st, renderAlbum); };
     grid.appendChild(card);
@@ -4130,7 +4165,7 @@ function openParents(){
     const deepAtivo = TRACK_KEYS.filter(t => (p.deep?.[t]||0) > 0).map(t => TRACKS[t].icon).join(" ") || "nenhuma";
     report = `<h3>📊 Relatório de ${p.avatar} ${p.name}</h3>
       <table><tr><th>Trilha</th><th>Nível</th><th>Acertos</th><th>Erros</th><th>Aproveitamento</th></tr>${rows}</table>
-      <p>🪙 <b>${p.coins}</b> moedas · 🏆 <b>${p.stickers.length}</b>/${TOTAL_STICKERS} figurinhas · 🔁 <b>${rqCnt}</b> na fila de reforço · 📚 modo aprender ativo em: ${deepAtivo}</p>
+      <p>🪙 <b>${p.coins}</b> · ⚡ <b>${p.pcoins||0}</b> moedas · 🏆 <b>${p.stickers.length}</b>/${TOTAL_STICKERS} figurinhas · 🔁 <b>${rqCnt}</b> na fila de reforço · 📚 modo aprender ativo em: ${deepAtivo}</p>
       <div style="background:#f6f7ff;border-radius:14px;padding:12px 14px;margin:10px 0;">
         <b>🇧🇷 Português Kumon — onde ele está agora:</b><br>
         Etapa <b>${ptStage.emoji} ${ptStage.code} · ${ptStage.name}</b> (nível ${p.lv.pt} de ${maxOf("pt")}).<br>
