@@ -244,6 +244,11 @@
   .set-toggle { display:flex; gap:10px; justify-content:center; margin:2px 0 12px; flex-wrap:wrap; }
   .set-btn { border:none; border-radius:99px; padding:10px 20px; font-family:inherit; font-weight:800; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:15px; }
   .set-btn.sel { background:linear-gradient(135deg,#f7971e,#ffd200); color:#5d3600; box-shadow:0 3px 0 #c47f12; }
+  /* v3.19 — abas de temporada (geração) da coleção Pokémon */
+  .gen-tabs { display:flex; gap:6px; justify-content:center; margin:0 0 12px; flex-wrap:wrap; }
+  .gen-btn { border:none; border-radius:12px; padding:8px 10px; font-family:inherit; font-weight:800; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:13px; line-height:1.25; }
+  .gen-btn.sel { background:linear-gradient(135deg,#ee0979,#ff6a00); color:#fff; box-shadow:0 3px 0 #a3084f; }
+  .gen-btn .gc { display:block; font-size:10.5px; font-weight:700; opacity:.85; }
   .jtabs { display:flex; gap:8px; margin:6px 0 4px; }
   .jtab, .ctab { border:none; border-radius:99px; padding:9px 16px; font-family:inherit; font-weight:700; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:14.5px; }
   .jtab.sel { background:linear-gradient(135deg,#c471f5,#a044ff); color:#fff; box-shadow:0 3px 0 #6a3093; }
@@ -427,6 +432,7 @@
     <h1 class="title" style="font-size:28px;">🛒 Loja de Figurinhas</h1>
     <p class="subtitle">Ganhe moedas acertando e compre figurinhas raras!</p>
     <div class="set-toggle" id="shop-toggle"></div>
+    <div class="gen-tabs" id="shop-gens"></div>
     <div class="grid4" id="shop-grid"></div>
     <button class="back-btn" id="btn-back-shop" style="margin-top:16px;">⬅ Voltar</button>
   </div>
@@ -436,6 +442,7 @@
     <h1 class="title" style="font-size:28px;">🏆 Meu Álbum</h1>
     <p class="subtitle" id="album-count"></p>
     <div class="set-toggle" id="album-toggle"></div>
+    <div class="gen-tabs" id="album-gens"></div>
     <div class="grid4" id="album-grid"></div>
     <button class="back-btn" id="btn-back-album" style="margin-top:16px;">⬅ Voltar</button>
   </div>
@@ -766,45 +773,224 @@ const STICKERS = [
   ["🎆","Fogos Mágicos","lendario"],["🌞","Sol Dourado","lendario"]
 ];
 /* ---- FIGURINHAS POKÉMON (mesmo sistema de moedas; alterna na loja/álbum) ----
-   Pokémon não têm emoji próprio, então cada um ganha um emoji temático + o NOME real. */
-/* v3.18 — 4º item = número da Pokédex Nacional → imagem oficial via PokeAPI:
-   https://raw.githubusercontent.com/PokeAPI/sprites/.../official-artwork/{id}.png
-   (o emoji vira reserva caso a imagem não carregue sem internet) */
-const POKEMON_STICKERS = [
-  /* comuns — iniciais e Pokémon fofos do comecinho */
-  ["🌱","Bulbasaur","comum",1],["🔥","Charmander","comum",4],["💧","Squirtle","comum",7],
-  ["🐭","Rattata","comum",19],["🐦","Pidgey","comum",16],["🐛","Caterpie","comum",10],
-  ["🐝","Weedle","comum",13],["🦇","Zubat","comum",41],["🌿","Oddish","comum",43],
-  ["🐟","Magikarp","comum",129],["🦆","Psyduck","comum",54],["🐵","Mankey","comum",56],
-  ["🐴","Ponyta","comum",77],["🐚","Shellder","comum",90],["🍄","Paras","comum",46],
-  ["⚡","Pichu","comum",172],["🐹","Marill","comum",183],["🦉","Hoothoot","comum",163],
-  ["🌱","Chikorita","comum",152],["🔥","Cyndaquil","comum",155],["💧","Totodile","comum",158],
-  ["🌿","Treecko","comum",252],["🔥","Torchic","comum",255],["💧","Mudkip","comum",258],
-  ["🌿","Turtwig","comum",387],["🔥","Chimchar","comum",390],["💧","Piplup","comum",393],
-  /* raros — evoluções e favoritos */
-  ["⚡","Pikachu","raro",25],["🐹","Raichu","raro",26],["🐕","Eevee","raro",133],
-  ["💧","Vaporeon","raro",134],["⚡","Jolteon","raro",135],["🔥","Flareon","raro",136],
-  ["🌙","Umbreon","raro",197],["☀️","Espeon","raro",196],["🍃","Leafeon","raro",470],
-  ["🦋","Butterfree","raro",12],["🐺","Arcanine","raro",59],["🦊","Ninetales","raro",38],
-  ["🐢","Wartortle","raro",8],["🔥","Charmeleon","raro",5],["🌸","Vileplume","raro",45],
-  ["🧲","Magneton","raro",82],["🐎","Rapidash","raro",78],["🦅","Pidgeot","raro",18],
-  ["⚡","Luxray","raro",405],["🦋","Beautifly","raro",267],["🐉","Dragonair","raro",148],
-  /* épicos — finais fortes e pseudo-lendários */
-  ["🌳","Venusaur","epico",3],["🔥","Charizard","epico",6],["🌊","Blastoise","epico",9],
-  ["👻","Gengar","epico",94],["🧠","Alakazam","epico",65],["😴","Snorlax","epico",143],
-  ["🐉","Dragonite","epico",149],["🦖","Aerodactyl","epico",142],["🧊","Lapras","epico",131],
-  ["⭐","Starmie","epico",121],["👊","Machamp","epico",68],["🌋","Typhlosion","epico",157],
-  ["🐊","Feraligatr","epico",160],["🌿","Meganium","epico",154],["🪨","Tyranitar","epico",248],
-  ["🌊","Gyarados","epico",130],["🐲","Salamence","epico",373],["🧲","Metagross","epico",376],
-  ["🐧","Empoleon","epico",395],
-  /* lendários — os mais poderosos de todos */
-  ["⚡","Zapdos","lendario",145],["🔥","Moltres","lendario",146],["🧊","Articuno","lendario",144],
-  ["🧬","Mewtwo","lendario",150],["✨","Mew","lendario",151],["⚡","Raikou","lendario",243],
-  ["🔥","Entei","lendario",244],["💧","Suicune","lendario",245],["🌈","Ho-Oh","lendario",250],
-  ["🌊","Lugia","lendario",249],["⭐","Jirachi","lendario",385],["🦎","Rayquaza","lendario",384],
-  ["🌋","Groudon","lendario",383],["🌊","Kyogre","lendario",382],["🌌","Dialga","lendario",483],
-  ["⏳","Palkia","lendario",484],["👑","Arceus","lendario",493]
+   v3.19 — POKÉDEX COMPLETA: todos os 1025 Pokémon, divididos por temporada
+   (geração 1-9). POKE_DB[i] = [Nome, temporada, raridade c/r/e/l, emoji do tipo];
+   índice+1 = número da Pokédex Nacional → imagem oficial via PokeAPI (o emoji
+   do tipo é reserva caso a imagem não carregue sem internet).
+   A raridade REAL do jogo original define o preço na loja: lendário/mítico →
+   lendário 🪙2000; evolução final de cadeia de 3 → épico 🪙800; evolução do
+   meio ou Pokémon sem evolução → raro 🪙300; básicos e bebês → comum 🪙100. */
+const POKE_DB=[
+["Bulbasaur",1,"c","🌿"],["Ivysaur",1,"r","🌿"],["Venusaur",1,"e","🌿"],["Charmander",1,"c","🔥"],["Charmeleon",1,"r","🔥"],
+["Charizard",1,"e","🔥"],["Squirtle",1,"c","💧"],["Wartortle",1,"r","💧"],["Blastoise",1,"e","💧"],["Caterpie",1,"c","🐛"],
+["Metapod",1,"r","🐛"],["Butterfree",1,"e","🐛"],["Weedle",1,"c","🐛"],["Kakuna",1,"r","🐛"],["Beedrill",1,"e","🐛"],
+["Pidgey",1,"c","🐾"],["Pidgeotto",1,"r","🐾"],["Pidgeot",1,"e","🐾"],["Rattata",1,"c","🐾"],["Raticate",1,"r","🐾"],
+["Spearow",1,"c","🐾"],["Fearow",1,"r","🐾"],["Ekans",1,"c","💜"],["Arbok",1,"r","💜"],["Pikachu",1,"r","⚡"],
+["Raichu",1,"r","⚡"],["Sandshrew",1,"c","⛰️"],["Sandslash",1,"r","⛰️"],["Nidoran♀",1,"c","💜"],["Nidorina",1,"r","💜"],
+["Nidoqueen",1,"e","💜"],["Nidoran♂",1,"c","💜"],["Nidorino",1,"r","💜"],["Nidoking",1,"e","💜"],["Clefairy",1,"c","🧚"],
+["Clefable",1,"r","🧚"],["Vulpix",1,"c","🔥"],["Ninetales",1,"r","🔥"],["Jigglypuff",1,"c","🐾"],["Wigglytuff",1,"r","🐾"],
+["Zubat",1,"c","💜"],["Golbat",1,"r","💜"],["Oddish",1,"c","🌿"],["Gloom",1,"r","🌿"],["Vileplume",1,"e","🌿"],
+["Paras",1,"c","🐛"],["Parasect",1,"r","🐛"],["Venonat",1,"c","🐛"],["Venomoth",1,"r","🐛"],["Diglett",1,"c","⛰️"],
+["Dugtrio",1,"r","⛰️"],["Meowth",1,"c","🐾"],["Persian",1,"r","🐾"],["Psyduck",1,"c","💧"],["Golduck",1,"r","💧"],
+["Mankey",1,"c","🥊"],["Primeape",1,"r","🥊"],["Growlithe",1,"c","🔥"],["Arcanine",1,"r","🔥"],["Poliwag",1,"c","💧"],
+["Poliwhirl",1,"r","💧"],["Poliwrath",1,"e","💧"],["Abra",1,"c","🔮"],["Kadabra",1,"r","🔮"],["Alakazam",1,"e","🔮"],
+["Machop",1,"c","🥊"],["Machoke",1,"r","🥊"],["Machamp",1,"e","🥊"],["Bellsprout",1,"c","🌿"],["Weepinbell",1,"r","🌿"],
+["Victreebel",1,"e","🌿"],["Tentacool",1,"c","💧"],["Tentacruel",1,"r","💧"],["Geodude",1,"c","🪨"],["Graveler",1,"r","🪨"],
+["Golem",1,"e","🪨"],["Ponyta",1,"c","🔥"],["Rapidash",1,"r","🔥"],["Slowpoke",1,"c","💧"],["Slowbro",1,"r","💧"],
+["Magnemite",1,"c","⚡"],["Magneton",1,"r","⚡"],["Farfetch'd",1,"c","🐾"],["Doduo",1,"c","🐾"],["Dodrio",1,"r","🐾"],
+["Seel",1,"c","💧"],["Dewgong",1,"r","💧"],["Grimer",1,"c","💜"],["Muk",1,"r","💜"],["Shellder",1,"c","💧"],
+["Cloyster",1,"r","💧"],["Gastly",1,"c","👻"],["Haunter",1,"r","👻"],["Gengar",1,"e","👻"],["Onix",1,"c","🪨"],
+["Drowzee",1,"c","🔮"],["Hypno",1,"r","🔮"],["Krabby",1,"c","💧"],["Kingler",1,"r","💧"],["Voltorb",1,"c","⚡"],
+["Electrode",1,"r","⚡"],["Exeggcute",1,"c","🌿"],["Exeggutor",1,"r","🌿"],["Cubone",1,"c","⛰️"],["Marowak",1,"r","⛰️"],
+["Hitmonlee",1,"r","🥊"],["Hitmonchan",1,"r","🥊"],["Lickitung",1,"c","🐾"],["Koffing",1,"c","💜"],["Weezing",1,"r","💜"],
+["Rhyhorn",1,"c","⛰️"],["Rhydon",1,"r","⛰️"],["Chansey",1,"c","🐾"],["Tangela",1,"c","🌿"],["Kangaskhan",1,"r","🐾"],
+["Horsea",1,"c","💧"],["Seadra",1,"r","💧"],["Goldeen",1,"c","💧"],["Seaking",1,"r","💧"],["Staryu",1,"c","💧"],
+["Starmie",1,"r","💧"],["Mr. Mime",1,"c","🔮"],["Scyther",1,"c","🐛"],["Jynx",1,"r","❄️"],["Electabuzz",1,"c","⚡"],
+["Magmar",1,"c","🔥"],["Pinsir",1,"r","🐛"],["Tauros",1,"r","🐾"],["Magikarp",1,"c","💧"],["Gyarados",1,"r","💧"],
+["Lapras",1,"r","💧"],["Ditto",1,"r","🐾"],["Eevee",1,"c","🐾"],["Vaporeon",1,"r","💧"],["Jolteon",1,"r","⚡"],
+["Flareon",1,"r","🔥"],["Porygon",1,"c","🐾"],["Omanyte",1,"c","🪨"],["Omastar",1,"r","🪨"],["Kabuto",1,"c","🪨"],
+["Kabutops",1,"r","🪨"],["Aerodactyl",1,"r","🪨"],["Snorlax",1,"r","🐾"],["Articuno",1,"l","❄️"],["Zapdos",1,"l","⚡"],
+["Moltres",1,"l","🔥"],["Dratini",1,"c","🐉"],["Dragonair",1,"r","🐉"],["Dragonite",1,"e","🐉"],["Mewtwo",1,"l","🔮"],
+["Mew",1,"l","🔮"],["Chikorita",2,"c","🌿"],["Bayleef",2,"r","🌿"],["Meganium",2,"e","🌿"],["Cyndaquil",2,"c","🔥"],
+["Quilava",2,"r","🔥"],["Typhlosion",2,"e","🔥"],["Totodile",2,"c","💧"],["Croconaw",2,"r","💧"],["Feraligatr",2,"e","💧"],
+["Sentret",2,"c","🐾"],["Furret",2,"r","🐾"],["Hoothoot",2,"c","🐾"],["Noctowl",2,"r","🐾"],["Ledyba",2,"c","🐛"],
+["Ledian",2,"r","🐛"],["Spinarak",2,"c","🐛"],["Ariados",2,"r","🐛"],["Crobat",2,"e","💜"],["Chinchou",2,"c","💧"],
+["Lanturn",2,"r","💧"],["Pichu",2,"c","⚡"],["Cleffa",2,"c","🧚"],["Igglybuff",2,"c","🐾"],["Togepi",2,"c","🧚"],
+["Togetic",2,"c","🧚"],["Natu",2,"c","🔮"],["Xatu",2,"r","🔮"],["Mareep",2,"c","⚡"],["Flaaffy",2,"r","⚡"],
+["Ampharos",2,"e","⚡"],["Bellossom",2,"e","🌿"],["Marill",2,"c","💧"],["Azumarill",2,"r","💧"],["Sudowoodo",2,"r","🪨"],
+["Politoed",2,"e","💧"],["Hoppip",2,"c","🌿"],["Skiploom",2,"r","🌿"],["Jumpluff",2,"e","🌿"],["Aipom",2,"c","🐾"],
+["Sunkern",2,"c","🌿"],["Sunflora",2,"r","🌿"],["Yanma",2,"c","🐛"],["Wooper",2,"c","💧"],["Quagsire",2,"r","💧"],
+["Espeon",2,"r","🔮"],["Umbreon",2,"r","🌑"],["Murkrow",2,"c","🌑"],["Slowking",2,"r","💧"],["Misdreavus",2,"c","👻"],
+["Unown",2,"r","🔮"],["Wobbuffet",2,"r","🔮"],["Girafarig",2,"c","🐾"],["Pineco",2,"c","🐛"],["Forretress",2,"r","🐛"],
+["Dunsparce",2,"c","🐾"],["Gligar",2,"c","⛰️"],["Steelix",2,"r","⚙️"],["Snubbull",2,"c","🧚"],["Granbull",2,"r","🧚"],
+["Qwilfish",2,"c","💧"],["Scizor",2,"r","🐛"],["Shuckle",2,"r","🐛"],["Heracross",2,"r","🐛"],["Sneasel",2,"c","🌑"],
+["Teddiursa",2,"c","🐾"],["Ursaring",2,"r","🐾"],["Slugma",2,"c","🔥"],["Magcargo",2,"r","🔥"],["Swinub",2,"c","❄️"],
+["Piloswine",2,"r","❄️"],["Corsola",2,"c","💧"],["Remoraid",2,"c","💧"],["Octillery",2,"r","💧"],["Delibird",2,"r","❄️"],
+["Mantine",2,"r","💧"],["Skarmory",2,"r","⚙️"],["Houndour",2,"c","🌑"],["Houndoom",2,"r","🌑"],["Kingdra",2,"e","💧"],
+["Phanpy",2,"c","⛰️"],["Donphan",2,"r","⛰️"],["Porygon2",2,"r","🐾"],["Stantler",2,"c","🐾"],["Smeargle",2,"r","🐾"],
+["Tyrogue",2,"c","🥊"],["Hitmontop",2,"r","🥊"],["Smoochum",2,"c","❄️"],["Elekid",2,"c","⚡"],["Magby",2,"c","🔥"],
+["Miltank",2,"r","🐾"],["Blissey",2,"r","🐾"],["Raikou",2,"l","⚡"],["Entei",2,"l","🔥"],["Suicune",2,"l","💧"],
+["Larvitar",2,"c","🪨"],["Pupitar",2,"r","🪨"],["Tyranitar",2,"e","🪨"],["Lugia",2,"l","🔮"],["Ho-Oh",2,"l","🔥"],
+["Celebi",2,"l","🔮"],["Treecko",3,"c","🌿"],["Grovyle",3,"r","🌿"],["Sceptile",3,"e","🌿"],["Torchic",3,"c","🔥"],
+["Combusken",3,"r","🔥"],["Blaziken",3,"e","🔥"],["Mudkip",3,"c","💧"],["Marshtomp",3,"r","💧"],["Swampert",3,"e","💧"],
+["Poochyena",3,"c","🌑"],["Mightyena",3,"r","🌑"],["Zigzagoon",3,"c","🐾"],["Linoone",3,"r","🐾"],["Wurmple",3,"c","🐛"],
+["Silcoon",3,"r","🐛"],["Beautifly",3,"e","🐛"],["Cascoon",3,"r","🐛"],["Dustox",3,"e","🐛"],["Lotad",3,"c","💧"],
+["Lombre",3,"r","💧"],["Ludicolo",3,"e","💧"],["Seedot",3,"c","🌿"],["Nuzleaf",3,"r","🌿"],["Shiftry",3,"e","🌿"],
+["Taillow",3,"c","🐾"],["Swellow",3,"r","🐾"],["Wingull",3,"c","💧"],["Pelipper",3,"r","💧"],["Ralts",3,"c","🔮"],
+["Kirlia",3,"r","🔮"],["Gardevoir",3,"e","🔮"],["Surskit",3,"c","🐛"],["Masquerain",3,"r","🐛"],["Shroomish",3,"c","🌿"],
+["Breloom",3,"r","🌿"],["Slakoth",3,"c","🐾"],["Vigoroth",3,"r","🐾"],["Slaking",3,"e","🐾"],["Nincada",3,"c","🐛"],
+["Ninjask",3,"r","🐛"],["Shedinja",3,"r","🐛"],["Whismur",3,"c","🐾"],["Loudred",3,"r","🐾"],["Exploud",3,"e","🐾"],
+["Makuhita",3,"c","🥊"],["Hariyama",3,"r","🥊"],["Azurill",3,"c","🐾"],["Nosepass",3,"c","🪨"],["Skitty",3,"c","🐾"],
+["Delcatty",3,"r","🐾"],["Sableye",3,"r","🌑"],["Mawile",3,"r","⚙️"],["Aron",3,"c","⚙️"],["Lairon",3,"r","⚙️"],
+["Aggron",3,"e","⚙️"],["Meditite",3,"c","🥊"],["Medicham",3,"r","🥊"],["Electrike",3,"c","⚡"],["Manectric",3,"r","⚡"],
+["Plusle",3,"r","⚡"],["Minun",3,"r","⚡"],["Volbeat",3,"r","🐛"],["Illumise",3,"r","🐛"],["Roselia",3,"c","🌿"],
+["Gulpin",3,"c","💜"],["Swalot",3,"r","💜"],["Carvanha",3,"c","💧"],["Sharpedo",3,"r","💧"],["Wailmer",3,"c","💧"],
+["Wailord",3,"r","💧"],["Numel",3,"c","🔥"],["Camerupt",3,"r","🔥"],["Torkoal",3,"r","🔥"],["Spoink",3,"c","🔮"],
+["Grumpig",3,"r","🔮"],["Spinda",3,"r","🐾"],["Trapinch",3,"c","⛰️"],["Vibrava",3,"r","⛰️"],["Flygon",3,"e","⛰️"],
+["Cacnea",3,"c","🌿"],["Cacturne",3,"r","🌿"],["Swablu",3,"c","🐾"],["Altaria",3,"r","🐉"],["Zangoose",3,"r","🐾"],
+["Seviper",3,"r","💜"],["Lunatone",3,"r","🪨"],["Solrock",3,"r","🪨"],["Barboach",3,"c","💧"],["Whiscash",3,"r","💧"],
+["Corphish",3,"c","💧"],["Crawdaunt",3,"r","💧"],["Baltoy",3,"c","⛰️"],["Claydol",3,"r","⛰️"],["Lileep",3,"c","🪨"],
+["Cradily",3,"r","🪨"],["Anorith",3,"c","🪨"],["Armaldo",3,"r","🪨"],["Feebas",3,"c","💧"],["Milotic",3,"r","💧"],
+["Castform",3,"r","🐾"],["Kecleon",3,"r","🐾"],["Shuppet",3,"c","👻"],["Banette",3,"r","👻"],["Duskull",3,"c","👻"],
+["Dusclops",3,"r","👻"],["Tropius",3,"r","🌿"],["Chimecho",3,"r","🔮"],["Absol",3,"r","🌑"],["Wynaut",3,"c","🔮"],
+["Snorunt",3,"c","❄️"],["Glalie",3,"r","❄️"],["Spheal",3,"c","❄️"],["Sealeo",3,"r","❄️"],["Walrein",3,"e","❄️"],
+["Clamperl",3,"c","💧"],["Huntail",3,"r","💧"],["Gorebyss",3,"r","💧"],["Relicanth",3,"r","💧"],["Luvdisc",3,"r","💧"],
+["Bagon",3,"c","🐉"],["Shelgon",3,"r","🐉"],["Salamence",3,"e","🐉"],["Beldum",3,"c","⚙️"],["Metang",3,"r","⚙️"],
+["Metagross",3,"e","⚙️"],["Regirock",3,"l","🪨"],["Regice",3,"l","❄️"],["Registeel",3,"l","⚙️"],["Latias",3,"l","🐉"],
+["Latios",3,"l","🐉"],["Kyogre",3,"l","💧"],["Groudon",3,"l","⛰️"],["Rayquaza",3,"l","🐉"],["Jirachi",3,"l","⚙️"],
+["Deoxys",3,"l","🔮"],["Turtwig",4,"c","🌿"],["Grotle",4,"r","🌿"],["Torterra",4,"e","🌿"],["Chimchar",4,"c","🔥"],
+["Monferno",4,"r","🔥"],["Infernape",4,"e","🔥"],["Piplup",4,"c","💧"],["Prinplup",4,"r","💧"],["Empoleon",4,"e","💧"],
+["Starly",4,"c","🐾"],["Staravia",4,"r","🐾"],["Staraptor",4,"e","🐾"],["Bidoof",4,"c","🐾"],["Bibarel",4,"r","🐾"],
+["Kricketot",4,"c","🐛"],["Kricketune",4,"r","🐛"],["Shinx",4,"c","⚡"],["Luxio",4,"r","⚡"],["Luxray",4,"e","⚡"],
+["Budew",4,"c","🌿"],["Roserade",4,"r","🌿"],["Cranidos",4,"c","🪨"],["Rampardos",4,"r","🪨"],["Shieldon",4,"c","🪨"],
+["Bastiodon",4,"r","🪨"],["Burmy",4,"c","🐛"],["Wormadam",4,"r","🐛"],["Mothim",4,"r","🐛"],["Combee",4,"c","🐛"],
+["Vespiquen",4,"r","🐛"],["Pachirisu",4,"r","⚡"],["Buizel",4,"c","💧"],["Floatzel",4,"r","💧"],["Cherubi",4,"c","🌿"],
+["Cherrim",4,"r","🌿"],["Shellos",4,"c","💧"],["Gastrodon",4,"r","💧"],["Ambipom",4,"r","🐾"],["Drifloon",4,"c","👻"],
+["Drifblim",4,"r","👻"],["Buneary",4,"c","🐾"],["Lopunny",4,"r","🐾"],["Mismagius",4,"r","👻"],["Honchkrow",4,"r","🌑"],
+["Glameow",4,"c","🐾"],["Purugly",4,"r","🐾"],["Chingling",4,"c","🔮"],["Stunky",4,"c","💜"],["Skuntank",4,"r","💜"],
+["Bronzor",4,"c","⚙️"],["Bronzong",4,"r","⚙️"],["Bonsly",4,"c","🪨"],["Mime Jr.",4,"c","🔮"],["Happiny",4,"c","🐾"],
+["Chatot",4,"r","🐾"],["Spiritomb",4,"r","👻"],["Gible",4,"c","🐉"],["Gabite",4,"r","🐉"],["Garchomp",4,"e","🐉"],
+["Munchlax",4,"c","🐾"],["Riolu",4,"c","🥊"],["Lucario",4,"r","🥊"],["Hippopotas",4,"c","⛰️"],["Hippowdon",4,"r","⛰️"],
+["Skorupi",4,"c","💜"],["Drapion",4,"r","💜"],["Croagunk",4,"c","💜"],["Toxicroak",4,"r","💜"],["Carnivine",4,"r","🌿"],
+["Finneon",4,"c","💧"],["Lumineon",4,"r","💧"],["Mantyke",4,"c","💧"],["Snover",4,"c","🌿"],["Abomasnow",4,"r","🌿"],
+["Weavile",4,"r","🌑"],["Magnezone",4,"e","⚡"],["Lickilicky",4,"r","🐾"],["Rhyperior",4,"e","⛰️"],["Tangrowth",4,"r","🌿"],
+["Electivire",4,"r","⚡"],["Magmortar",4,"r","🔥"],["Togekiss",4,"r","🧚"],["Yanmega",4,"r","🐛"],["Leafeon",4,"r","🌿"],
+["Glaceon",4,"r","❄️"],["Gliscor",4,"r","⛰️"],["Mamoswine",4,"e","❄️"],["Porygon-Z",4,"e","🐾"],["Gallade",4,"e","🔮"],
+["Probopass",4,"r","🪨"],["Dusknoir",4,"e","👻"],["Froslass",4,"r","❄️"],["Rotom",4,"r","⚡"],["Uxie",4,"l","🔮"],
+["Mesprit",4,"l","🔮"],["Azelf",4,"l","🔮"],["Dialga",4,"l","⚙️"],["Palkia",4,"l","💧"],["Heatran",4,"l","🔥"],
+["Regigigas",4,"l","🐾"],["Giratina",4,"l","👻"],["Cresselia",4,"l","🔮"],["Phione",4,"l","💧"],["Manaphy",4,"l","💧"],
+["Darkrai",4,"l","🌑"],["Shaymin",4,"l","🌿"],["Arceus",4,"l","🐾"],["Victini",5,"l","🔮"],["Snivy",5,"c","🌿"],
+["Servine",5,"r","🌿"],["Serperior",5,"e","🌿"],["Tepig",5,"c","🔥"],["Pignite",5,"r","🔥"],["Emboar",5,"e","🔥"],
+["Oshawott",5,"c","💧"],["Dewott",5,"r","💧"],["Samurott",5,"e","💧"],["Patrat",5,"c","🐾"],["Watchog",5,"r","🐾"],
+["Lillipup",5,"c","🐾"],["Herdier",5,"r","🐾"],["Stoutland",5,"e","🐾"],["Purrloin",5,"c","🌑"],["Liepard",5,"r","🌑"],
+["Pansage",5,"c","🌿"],["Simisage",5,"r","🌿"],["Pansear",5,"c","🔥"],["Simisear",5,"r","🔥"],["Panpour",5,"c","💧"],
+["Simipour",5,"r","💧"],["Munna",5,"c","🔮"],["Musharna",5,"r","🔮"],["Pidove",5,"c","🐾"],["Tranquill",5,"r","🐾"],
+["Unfezant",5,"e","🐾"],["Blitzle",5,"c","⚡"],["Zebstrika",5,"r","⚡"],["Roggenrola",5,"c","🪨"],["Boldore",5,"r","🪨"],
+["Gigalith",5,"e","🪨"],["Woobat",5,"c","🔮"],["Swoobat",5,"r","🔮"],["Drilbur",5,"c","⛰️"],["Excadrill",5,"r","⛰️"],
+["Audino",5,"r","🐾"],["Timburr",5,"c","🥊"],["Gurdurr",5,"r","🥊"],["Conkeldurr",5,"e","🥊"],["Tympole",5,"c","💧"],
+["Palpitoad",5,"r","💧"],["Seismitoad",5,"e","💧"],["Throh",5,"r","🥊"],["Sawk",5,"r","🥊"],["Sewaddle",5,"c","🐛"],
+["Swadloon",5,"r","🐛"],["Leavanny",5,"e","🐛"],["Venipede",5,"c","🐛"],["Whirlipede",5,"r","🐛"],["Scolipede",5,"e","🐛"],
+["Cottonee",5,"c","🌿"],["Whimsicott",5,"r","🌿"],["Petilil",5,"c","🌿"],["Lilligant",5,"r","🌿"],["Basculin",5,"c","💧"],
+["Sandile",5,"c","⛰️"],["Krokorok",5,"r","⛰️"],["Krookodile",5,"e","⛰️"],["Darumaka",5,"c","🔥"],["Darmanitan",5,"r","🔥"],
+["Maractus",5,"r","🌿"],["Dwebble",5,"c","🐛"],["Crustle",5,"r","🐛"],["Scraggy",5,"c","🌑"],["Scrafty",5,"r","🌑"],
+["Sigilyph",5,"r","🔮"],["Yamask",5,"c","👻"],["Cofagrigus",5,"r","👻"],["Tirtouga",5,"c","💧"],["Carracosta",5,"r","💧"],
+["Archen",5,"c","🪨"],["Archeops",5,"r","🪨"],["Trubbish",5,"c","💜"],["Garbodor",5,"r","💜"],["Zorua",5,"c","🌑"],
+["Zoroark",5,"r","🌑"],["Minccino",5,"c","🐾"],["Cinccino",5,"r","🐾"],["Gothita",5,"c","🔮"],["Gothorita",5,"r","🔮"],
+["Gothitelle",5,"e","🔮"],["Solosis",5,"c","🔮"],["Duosion",5,"r","🔮"],["Reuniclus",5,"e","🔮"],["Ducklett",5,"c","💧"],
+["Swanna",5,"r","💧"],["Vanillite",5,"c","❄️"],["Vanillish",5,"r","❄️"],["Vanilluxe",5,"e","❄️"],["Deerling",5,"c","🐾"],
+["Sawsbuck",5,"r","🐾"],["Emolga",5,"r","⚡"],["Karrablast",5,"c","🐛"],["Escavalier",5,"r","🐛"],["Foongus",5,"c","🌿"],
+["Amoonguss",5,"r","🌿"],["Frillish",5,"c","💧"],["Jellicent",5,"r","💧"],["Alomomola",5,"r","💧"],["Joltik",5,"c","🐛"],
+["Galvantula",5,"r","🐛"],["Ferroseed",5,"c","🌿"],["Ferrothorn",5,"r","🌿"],["Klink",5,"c","⚙️"],["Klang",5,"r","⚙️"],
+["Klinklang",5,"e","⚙️"],["Tynamo",5,"c","⚡"],["Eelektrik",5,"r","⚡"],["Eelektross",5,"e","⚡"],["Elgyem",5,"c","🔮"],
+["Beheeyem",5,"r","🔮"],["Litwick",5,"c","👻"],["Lampent",5,"r","👻"],["Chandelure",5,"e","👻"],["Axew",5,"c","🐉"],
+["Fraxure",5,"r","🐉"],["Haxorus",5,"e","🐉"],["Cubchoo",5,"c","❄️"],["Beartic",5,"r","❄️"],["Cryogonal",5,"r","❄️"],
+["Shelmet",5,"c","🐛"],["Accelgor",5,"r","🐛"],["Stunfisk",5,"r","⛰️"],["Mienfoo",5,"c","🥊"],["Mienshao",5,"r","🥊"],
+["Druddigon",5,"r","🐉"],["Golett",5,"c","⛰️"],["Golurk",5,"r","⛰️"],["Pawniard",5,"c","🌑"],["Bisharp",5,"r","🌑"],
+["Bouffalant",5,"r","🐾"],["Rufflet",5,"c","🐾"],["Braviary",5,"r","🐾"],["Vullaby",5,"c","🌑"],["Mandibuzz",5,"r","🌑"],
+["Heatmor",5,"r","🔥"],["Durant",5,"r","🐛"],["Deino",5,"c","🌑"],["Zweilous",5,"r","🌑"],["Hydreigon",5,"e","🌑"],
+["Larvesta",5,"c","🐛"],["Volcarona",5,"r","🐛"],["Cobalion",5,"l","⚙️"],["Terrakion",5,"l","🪨"],["Virizion",5,"l","🌿"],
+["Tornadus",5,"l","🪽"],["Thundurus",5,"l","⚡"],["Reshiram",5,"l","🐉"],["Zekrom",5,"l","🐉"],["Landorus",5,"l","⛰️"],
+["Kyurem",5,"l","🐉"],["Keldeo",5,"l","💧"],["Meloetta",5,"l","🐾"],["Genesect",5,"l","🐛"],["Chespin",6,"c","🌿"],
+["Quilladin",6,"r","🌿"],["Chesnaught",6,"e","🌿"],["Fennekin",6,"c","🔥"],["Braixen",6,"r","🔥"],["Delphox",6,"e","🔥"],
+["Froakie",6,"c","💧"],["Frogadier",6,"r","💧"],["Greninja",6,"e","💧"],["Bunnelby",6,"c","🐾"],["Diggersby",6,"r","🐾"],
+["Fletchling",6,"c","🐾"],["Fletchinder",6,"r","🔥"],["Talonflame",6,"e","🔥"],["Scatterbug",6,"c","🐛"],["Spewpa",6,"r","🐛"],
+["Vivillon",6,"e","🐛"],["Litleo",6,"c","🔥"],["Pyroar",6,"r","🔥"],["Flabébé",6,"c","🧚"],["Floette",6,"r","🧚"],
+["Florges",6,"e","🧚"],["Skiddo",6,"c","🌿"],["Gogoat",6,"r","🌿"],["Pancham",6,"c","🥊"],["Pangoro",6,"r","🥊"],
+["Furfrou",6,"r","🐾"],["Espurr",6,"c","🔮"],["Meowstic",6,"r","🔮"],["Honedge",6,"c","⚙️"],["Doublade",6,"r","⚙️"],
+["Aegislash",6,"e","⚙️"],["Spritzee",6,"c","🧚"],["Aromatisse",6,"r","🧚"],["Swirlix",6,"c","🧚"],["Slurpuff",6,"r","🧚"],
+["Inkay",6,"c","🌑"],["Malamar",6,"r","🌑"],["Binacle",6,"c","🪨"],["Barbaracle",6,"r","🪨"],["Skrelp",6,"c","💜"],
+["Dragalge",6,"r","💜"],["Clauncher",6,"c","💧"],["Clawitzer",6,"r","💧"],["Helioptile",6,"c","⚡"],["Heliolisk",6,"r","⚡"],
+["Tyrunt",6,"c","🪨"],["Tyrantrum",6,"r","🪨"],["Amaura",6,"c","🪨"],["Aurorus",6,"r","🪨"],["Sylveon",6,"r","🧚"],
+["Hawlucha",6,"r","🥊"],["Dedenne",6,"r","⚡"],["Carbink",6,"r","🪨"],["Goomy",6,"c","🐉"],["Sliggoo",6,"r","🐉"],
+["Goodra",6,"e","🐉"],["Klefki",6,"r","⚙️"],["Phantump",6,"c","👻"],["Trevenant",6,"r","👻"],["Pumpkaboo",6,"c","👻"],
+["Gourgeist",6,"r","👻"],["Bergmite",6,"c","❄️"],["Avalugg",6,"r","❄️"],["Noibat",6,"c","🪽"],["Noivern",6,"r","🪽"],
+["Xerneas",6,"l","🧚"],["Yveltal",6,"l","🌑"],["Zygarde",6,"l","🐉"],["Diancie",6,"l","🪨"],["Hoopa",6,"l","🔮"],
+["Volcanion",6,"l","🔥"],["Rowlet",7,"c","🌿"],["Dartrix",7,"r","🌿"],["Decidueye",7,"e","🌿"],["Litten",7,"c","🔥"],
+["Torracat",7,"r","🔥"],["Incineroar",7,"e","🔥"],["Popplio",7,"c","💧"],["Brionne",7,"r","💧"],["Primarina",7,"e","💧"],
+["Pikipek",7,"c","🐾"],["Trumbeak",7,"r","🐾"],["Toucannon",7,"e","🐾"],["Yungoos",7,"c","🐾"],["Gumshoos",7,"r","🐾"],
+["Grubbin",7,"c","🐛"],["Charjabug",7,"r","🐛"],["Vikavolt",7,"e","🐛"],["Crabrawler",7,"c","🥊"],["Crabominable",7,"r","🥊"],
+["Oricorio",7,"r","🔥"],["Cutiefly",7,"c","🐛"],["Ribombee",7,"r","🐛"],["Rockruff",7,"c","🪨"],["Lycanroc",7,"r","🪨"],
+["Wishiwashi",7,"r","💧"],["Mareanie",7,"c","💜"],["Toxapex",7,"r","💜"],["Mudbray",7,"c","⛰️"],["Mudsdale",7,"r","⛰️"],
+["Dewpider",7,"c","💧"],["Araquanid",7,"r","💧"],["Fomantis",7,"c","🌿"],["Lurantis",7,"r","🌿"],["Morelull",7,"c","🌿"],
+["Shiinotic",7,"r","🌿"],["Salandit",7,"c","💜"],["Salazzle",7,"r","💜"],["Stufful",7,"c","🐾"],["Bewear",7,"r","🐾"],
+["Bounsweet",7,"c","🌿"],["Steenee",7,"r","🌿"],["Tsareena",7,"e","🌿"],["Comfey",7,"r","🧚"],["Oranguru",7,"r","🐾"],
+["Passimian",7,"r","🥊"],["Wimpod",7,"c","🐛"],["Golisopod",7,"r","🐛"],["Sandygast",7,"c","👻"],["Palossand",7,"r","👻"],
+["Pyukumuku",7,"r","💧"],["Type: Null",7,"l","🐾"],["Silvally",7,"l","🐾"],["Minior",7,"r","🪨"],["Komala",7,"r","🐾"],
+["Turtonator",7,"r","🔥"],["Togedemaru",7,"r","⚡"],["Mimikyu",7,"r","👻"],["Bruxish",7,"r","💧"],["Drampa",7,"r","🐾"],
+["Dhelmise",7,"r","👻"],["Jangmo-o",7,"c","🐉"],["Hakamo-o",7,"r","🐉"],["Kommo-o",7,"e","🐉"],["Tapu Koko",7,"l","⚡"],
+["Tapu Lele",7,"l","🔮"],["Tapu Bulu",7,"l","🌿"],["Tapu Fini",7,"l","💧"],["Cosmog",7,"l","🔮"],["Cosmoem",7,"l","🔮"],
+["Solgaleo",7,"l","🔮"],["Lunala",7,"l","🔮"],["Nihilego",7,"r","🪨"],["Buzzwole",7,"r","🐛"],["Pheromosa",7,"r","🐛"],
+["Xurkitree",7,"r","⚡"],["Celesteela",7,"r","⚙️"],["Kartana",7,"r","🌿"],["Guzzlord",7,"r","🌑"],["Necrozma",7,"l","🔮"],
+["Magearna",7,"l","⚙️"],["Marshadow",7,"l","🥊"],["Poipole",7,"c","💜"],["Naganadel",7,"r","💜"],["Stakataka",7,"r","🪨"],
+["Blacephalon",7,"r","🔥"],["Zeraora",7,"l","⚡"],["Meltan",7,"l","⚙️"],["Melmetal",7,"l","⚙️"],["Grookey",8,"c","🌿"],
+["Thwackey",8,"r","🌿"],["Rillaboom",8,"e","🌿"],["Scorbunny",8,"c","🔥"],["Raboot",8,"r","🔥"],["Cinderace",8,"e","🔥"],
+["Sobble",8,"c","💧"],["Drizzile",8,"r","💧"],["Inteleon",8,"e","💧"],["Skwovet",8,"c","🐾"],["Greedent",8,"r","🐾"],
+["Rookidee",8,"c","🪽"],["Corvisquire",8,"r","🪽"],["Corviknight",8,"e","🪽"],["Blipbug",8,"c","🐛"],["Dottler",8,"r","🐛"],
+["Orbeetle",8,"e","🐛"],["Nickit",8,"c","🌑"],["Thievul",8,"r","🌑"],["Gossifleur",8,"c","🌿"],["Eldegoss",8,"r","🌿"],
+["Wooloo",8,"c","🐾"],["Dubwool",8,"r","🐾"],["Chewtle",8,"c","💧"],["Drednaw",8,"r","💧"],["Yamper",8,"c","⚡"],
+["Boltund",8,"r","⚡"],["Rolycoly",8,"c","🪨"],["Carkol",8,"r","🪨"],["Coalossal",8,"e","🪨"],["Applin",8,"c","🌿"],
+["Flapple",8,"r","🌿"],["Appletun",8,"r","🌿"],["Silicobra",8,"c","⛰️"],["Sandaconda",8,"r","⛰️"],["Cramorant",8,"r","🪽"],
+["Arrokuda",8,"c","💧"],["Barraskewda",8,"r","💧"],["Toxel",8,"c","⚡"],["Toxtricity",8,"r","⚡"],["Sizzlipede",8,"c","🔥"],
+["Centiskorch",8,"r","🔥"],["Clobbopus",8,"c","🥊"],["Grapploct",8,"r","🥊"],["Sinistea",8,"c","👻"],["Polteageist",8,"r","👻"],
+["Hatenna",8,"c","🔮"],["Hattrem",8,"r","🔮"],["Hatterene",8,"e","🔮"],["Impidimp",8,"c","🌑"],["Morgrem",8,"r","🌑"],
+["Grimmsnarl",8,"e","🌑"],["Obstagoon",8,"e","🌑"],["Perrserker",8,"r","⚙️"],["Cursola",8,"r","👻"],["Sirfetch'd",8,"r","🥊"],
+["Mr. Rime",8,"r","❄️"],["Runerigus",8,"r","⛰️"],["Milcery",8,"c","🧚"],["Alcremie",8,"r","🧚"],["Falinks",8,"r","🥊"],
+["Pincurchin",8,"r","⚡"],["Snom",8,"c","❄️"],["Frosmoth",8,"r","❄️"],["Stonjourner",8,"r","🪨"],["Eiscue",8,"r","❄️"],
+["Indeedee",8,"r","🔮"],["Morpeko",8,"r","⚡"],["Cufant",8,"c","⚙️"],["Copperajah",8,"r","⚙️"],["Dracozolt",8,"r","⚡"],
+["Arctozolt",8,"r","⚡"],["Dracovish",8,"r","💧"],["Arctovish",8,"r","💧"],["Duraludon",8,"c","⚙️"],["Dreepy",8,"c","🐉"],
+["Drakloak",8,"r","🐉"],["Dragapult",8,"e","🐉"],["Zacian",8,"l","🧚"],["Zamazenta",8,"l","🥊"],["Eternatus",8,"l","💜"],
+["Kubfu",8,"l","🥊"],["Urshifu",8,"l","🥊"],["Zarude",8,"l","🌑"],["Regieleki",8,"l","⚡"],["Regidrago",8,"l","🐉"],
+["Glastrier",8,"l","❄️"],["Spectrier",8,"l","👻"],["Calyrex",8,"l","🔮"],["Wyrdeer",8,"r","🐾"],["Kleavor",8,"r","🐛"],
+["Ursaluna",8,"e","⛰️"],["Basculegion",8,"r","💧"],["Sneasler",8,"r","🥊"],["Overqwil",8,"r","🌑"],["Enamorus",8,"l","🧚"],
+["Sprigatito",9,"c","🌿"],["Floragato",9,"r","🌿"],["Meowscarada",9,"e","🌿"],["Fuecoco",9,"c","🔥"],["Crocalor",9,"r","🔥"],
+["Skeledirge",9,"e","🔥"],["Quaxly",9,"c","💧"],["Quaxwell",9,"r","💧"],["Quaquaval",9,"e","💧"],["Lechonk",9,"c","🐾"],
+["Oinkologne",9,"r","🐾"],["Tarountula",9,"c","🐛"],["Spidops",9,"r","🐛"],["Nymble",9,"c","🐛"],["Lokix",9,"r","🐛"],
+["Pawmi",9,"c","⚡"],["Pawmo",9,"r","⚡"],["Pawmot",9,"e","⚡"],["Tandemaus",9,"c","🐾"],["Maushold",9,"r","🐾"],
+["Fidough",9,"c","🧚"],["Dachsbun",9,"r","🧚"],["Smoliv",9,"c","🌿"],["Dolliv",9,"r","🌿"],["Arboliva",9,"e","🌿"],
+["Squawkabilly",9,"r","🐾"],["Nacli",9,"c","🪨"],["Naclstack",9,"r","🪨"],["Garganacl",9,"e","🪨"],["Charcadet",9,"c","🔥"],
+["Armarouge",9,"r","🔥"],["Ceruledge",9,"r","🔥"],["Tadbulb",9,"c","⚡"],["Bellibolt",9,"r","⚡"],["Wattrel",9,"c","⚡"],
+["Kilowattrel",9,"r","⚡"],["Maschiff",9,"c","🌑"],["Mabosstiff",9,"r","🌑"],["Shroodle",9,"c","💜"],["Grafaiai",9,"r","💜"],
+["Bramblin",9,"c","🌿"],["Brambleghast",9,"r","🌿"],["Toedscool",9,"c","⛰️"],["Toedscruel",9,"r","⛰️"],["Klawf",9,"r","🪨"],
+["Capsakid",9,"c","🌿"],["Scovillain",9,"r","🌿"],["Rellor",9,"c","🐛"],["Rabsca",9,"r","🐛"],["Flittle",9,"c","🔮"],
+["Espathra",9,"r","🔮"],["Tinkatink",9,"c","🧚"],["Tinkatuff",9,"r","🧚"],["Tinkaton",9,"e","🧚"],["Wiglett",9,"c","💧"],
+["Wugtrio",9,"r","💧"],["Bombirdier",9,"r","🪽"],["Finizen",9,"c","💧"],["Palafin",9,"r","💧"],["Varoom",9,"c","⚙️"],
+["Revavroom",9,"r","⚙️"],["Cyclizar",9,"r","🐉"],["Orthworm",9,"r","⚙️"],["Glimmet",9,"c","🪨"],["Glimmora",9,"r","🪨"],
+["Greavard",9,"c","👻"],["Houndstone",9,"r","👻"],["Flamigo",9,"r","🪽"],["Cetoddle",9,"c","❄️"],["Cetitan",9,"r","❄️"],
+["Veluza",9,"r","💧"],["Dondozo",9,"r","💧"],["Tatsugiri",9,"r","🐉"],["Annihilape",9,"e","🥊"],["Clodsire",9,"r","💜"],
+["Farigiraf",9,"r","🐾"],["Dudunsparce",9,"r","🐾"],["Kingambit",9,"e","🌑"],["Great Tusk",9,"r","⛰️"],["Scream Tail",9,"r","🧚"],
+["Brute Bonnet",9,"r","🌿"],["Flutter Mane",9,"r","👻"],["Slither Wing",9,"r","🐛"],["Sandy Shocks",9,"r","⚡"],["Iron Treads",9,"r","⛰️"],
+["Iron Bundle",9,"r","❄️"],["Iron Hands",9,"r","🥊"],["Iron Jugulis",9,"r","🌑"],["Iron Moth",9,"r","🔥"],["Iron Thorns",9,"r","🪨"],
+["Frigibax",9,"c","🐉"],["Arctibax",9,"r","🐉"],["Baxcalibur",9,"e","🐉"],["Gimmighoul",9,"c","👻"],["Gholdengo",9,"r","⚙️"],
+["Wo-Chien",9,"l","🌑"],["Chien-Pao",9,"l","🌑"],["Ting-Lu",9,"l","🌑"],["Chi-Yu",9,"l","🌑"],["Roaring Moon",9,"r","🐉"],
+["Iron Valiant",9,"r","🧚"],["Koraidon",9,"l","🥊"],["Miraidon",9,"l","⚡"],["Walking Wake",9,"r","💧"],["Iron Leaves",9,"r","🌿"],
+["Dipplin",9,"r","🌿"],["Poltchageist",9,"c","🌿"],["Sinistcha",9,"r","🌿"],["Okidogi",9,"l","💜"],["Munkidori",9,"l","💜"],
+["Fezandipiti",9,"l","💜"],["Ogerpon",9,"l","🌿"],["Archaludon",9,"r","⚙️"],["Hydrapple",9,"e","🌿"],["Gouging Fire",9,"r","🔥"],
+["Raging Bolt",9,"r","⚡"],["Iron Boulder",9,"r","🪨"],["Iron Crown",9,"r","⚙️"],["Terapagos",9,"l","🐾"],["Pecharunt",9,"l","💜"]
 ];
+const POKE_GENS = 9;
+const RAR_CODE = {c:"comum", r:"raro", e:"epico", l:"lendario"};
+/* formato de figurinha: [emoji, Nome, raridade, dex, temporada] */
+const POKEMON_STICKERS = POKE_DB.map(([nm,gen,r,emo],i)=>[emo,nm,RAR_CODE[r],i+1,gen]);
 const POKE_IMG = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 /* desenho da figurinha: imagem real do Pokémon (quando tem dex) ou o emoji */
 function stickerFace(st){
@@ -1656,6 +1842,14 @@ function micMatch(alts, q){
         const c = tk.replace(/h/g, "");
         return c.length > 0 && c.length <= 4 && c.includes(t) &&
                [...c].every(ch => ch === t || !"aeiou".includes(ch));
+      })) ||
+      /* v3.19 — vogal falada SOZINHA vira ditongo na transcrição ("u"→"eu"/"ou",
+         "i"→"ai"/"ui", "o"→"ou"/"oi"): aceita tokenzinho SÓ de vogais (até 3
+         letras) que CONTENHA a vogal-alvo em qualquer posição. */
+      (t.length === 1 && "aeiou".includes(t) && toks.some(tk => {
+        const c = tk.replace(/h/g, "");
+        return c.length > 0 && c.length <= 3 && c.includes(t) &&
+               [...c].every(ch => "aeiou".includes(ch));
       }))
     );
   });
@@ -3647,11 +3841,34 @@ function renderSetToggle(id, onChange){
     b.onclick = ()=>{ sndTap(); const p=P(); if(p){ p.stickerSet = b.dataset.set; save(); } onChange(); };
   });
 }
+/* v3.19 — temporada (geração) escolhida da coleção Pokémon */
+function pokeGen(){ const p=P(); const g=(p&&p.pokeGen)||1; return (g>=1&&g<=POKE_GENS)?g:1; }
+/* abas Temporada 1..9 — só aparecem quando a coleção Pokémon está ativa */
+function renderGenTabs(id, onChange){
+  const el = $("#"+id); if(!el) return;
+  if(activeSet()!=="pokemon"){ el.innerHTML=""; return; }
+  const p = P(), act = pokeGen();
+  el.innerHTML = Array.from({length:POKE_GENS},(_,k)=>{
+    const g = k+1;
+    const all = POKEMON_STICKERS.filter(st=>st[4]===g);
+    const own = all.filter(st=>p.stickers.includes(st[1])).length;
+    return `<button class="gen-btn${g===act?" sel":""}" data-gen="${g}">T${g}<span class="gc">${own}/${all.length}</span></button>`;
+  }).join("");
+  el.querySelectorAll(".gen-btn").forEach(b=>{
+    b.onclick = ()=>{ sndTap(); const pp=P(); if(pp){ pp.pokeGen = +b.dataset.gen; save(); } onChange(); };
+  });
+}
+/* figurinhas visíveis: coleção ativa, filtrada pela temporada quando Pokémon */
+function visibleStickers(){
+  const arr = setStickers();
+  return activeSet()==="pokemon" ? arr.filter(st=>st[4]===pokeGen()) : arr;
+}
 function renderShop(){
   const p = P(), grid = $("#shop-grid");
   renderSetToggle("shop-toggle", renderShop);
+  renderGenTabs("shop-gens", renderShop);
   grid.innerHTML = "";
-  const sorted = setStickers().slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  const sorted = visibleStickers().slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
   sorted.forEach((st,i)=>{
     const [emo,nm,rar] = st;
     const owned = p.stickers.includes(nm);
@@ -3687,9 +3904,15 @@ function buySticker(st, rerender){
 function renderAlbum(){
   const p = P(), grid = $("#album-grid");
   renderSetToggle("album-toggle", renderAlbum);
-  const arr = setStickers();
+  renderGenTabs("album-gens", renderAlbum);
+  const arr = visibleStickers();
   const ownedInSet = arr.filter(([e,nm])=>p.stickers.includes(nm)).length;
-  $("#album-count").textContent = `${ownedInSet} de ${arr.length} ${STICKER_SETS[activeSet()].label} · 🪙 ${p.coins} moedas`;
+  if(activeSet()==="pokemon"){
+    const tudo = setStickers(), ownAll = tudo.filter(([e,nm])=>p.stickers.includes(nm)).length;
+    $("#album-count").textContent = `Temporada ${pokeGen()}: ${ownedInSet} de ${arr.length} · Pokédex: ${ownAll} de ${tudo.length} · 🪙 ${p.coins} moedas`;
+  } else {
+    $("#album-count").textContent = `${ownedInSet} de ${arr.length} ${STICKER_SETS[activeSet()].label} · 🪙 ${p.coins} moedas`;
+  }
   grid.innerHTML = "";
   const sorted = arr.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
   sorted.forEach((st,i)=>{
