@@ -497,6 +497,12 @@ const LETTER_SOUND = {
   K:"cá", W:"dáblio", Y:"ípsilon"
 };
 const CONFUSABLE = [["B","D","P","Q"],["M","N","U","V"],["E","F","L","T"],["C","G","O","Q"],["I","J","L","T"]];
+const CONFUSABLE_FLAT = [...new Set([].concat(...CONFUSABLE))];
+
+/* v3.14 — DOMÍNIO POR UNIDADE (letra, sílaba, operação): cada item precisa ser
+   acertado MASTERY_DEEP vezes NO MICROFONE (sem chute) pra contar como dominado.
+   Nível só sobe quando a meta de itens dominados for atingida. */
+const MASTERY_DEEP = 3;
 
 const SYL_FAMILIES = {
   M:["MA","ME","MI","MO","MU"], P:["PA","PE","PI","PO","PU"], L:["LA","LE","LI","LO","LU"],
@@ -504,6 +510,30 @@ const SYL_FAMILIES = {
   V:["VA","VE","VI","VO","VU"], N:["NA","NE","NI","NO","NU"], D:["DA","DE","DI","DO","DU"],
   F:["FA","FE","FI","FO","FU"], R:["RA","RE","RI","RO","RU"], J:["JA","JE","JI","JO","JU"],
   C:["CA","CO","CU"], G:["GA","GO","GU"]
+};
+const ALL_SYLLABLES = Object.values(SYL_FAMILIES).flat();
+
+/* v3.14 — catálogo de unidades por nível externo:
+   PT lv3-7 = letras / lv8-10 = sílabas.  Meta = dominar TODAS as unidades
+   (ou UNIT_GOAL[lv] delas quando o total é grande demais). */
+const LET_UNITS_PT = {
+  3: VOWELS, 4: VOWELS, 5: EASY_CONS, 6: AZ, 7: CONFUSABLE_FLAT
+};
+const SYL_UNITS_PT = {
+  8: SYL_FAMILIES.M,
+  9: [...SYL_FAMILIES.M, ...SYL_FAMILIES.P, ...SYL_FAMILIES.B],
+  10: ALL_SYLLABLES
+};
+/* limita meta pra níveis com muitas unidades (AZ tem 23 letras, todas sílabas 60+) */
+const UNIT_GOAL = { 3:5, 4:5, 5:6, 6:15, 7:8, 8:5, 9:15, 10:20 };
+
+/* Math: operações fixas por nível base — cada uma precisa ser dominada */
+const MATH_OPS = {
+  8:  ["+1","+2","+3","+4"],
+  9:  ["+5","+6","+7","+8","+9"],
+  10: ["d1","d2","d3","d4","d5","c1","c2","c3","c4"], /* dobros + complementos do 10 */
+  17: ["-1","-2","-3","-4"],
+  18: ["-5","-6","-7","-8","-9"]
 };
 /* fala de sílabas: E/O finais átonos viram "i"/"u" no TTS pt-BR ("ME" soa "mi").
    Circunflexo força a vogal clara SÓ na fala; a escrita na tela fica normal.
@@ -931,7 +961,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1}, prog:{pt:0,math
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, stickers:[], lv:t.lv, hi:{pt:1,math:1,en:1,de:1}, prog:t.prog, stats:t.stats, mast:{}, pv:3, rm:2, ra:2, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
+  return { name, avatar, coins:0, stickers:[], lv:t.lv, hi:{pt:1,math:1,en:1,de:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rq:{pt:[],math:[],en:[],de:[]}, deep:{pt:0,math:0,en:0,de:0}, les:{pt:0,math:0,en:0,de:0} };
 }
 
 function migrateProfile(p){
@@ -948,6 +978,8 @@ function migrateProfile(p){
       p.pv = 3;
     }
     if(!p.mast) p.mast = {};
+    /* v3.14 — domínio por letra/sílaba/operação matemática (chaves com prefixo) */
+    if(!p.dmast) p.dmast = {};
     if(!p.rq) p.rq = {pt:[],math:[],en:[]};
     if(!p.rq.de) p.rq.de = [];
     /* itens antigos da fila ganham a fase de fundamento */
@@ -1184,7 +1216,25 @@ function curLevel(){ const p=P(); return state.practice ? state.practiceLv : Mat
 /* níveis de domínio: meta é dominar 3 palavras (não 5 acertos) */
 function deepFrom(t){ const p=P(); return (p && p.deep && p.deep[t]) || 0; }
 function isDeep(t, lv){ const d = deepFrom(t); return d > 0 && lv >= d; }
-const goalFor = (t,lv) => (t==="pt" && PT_MASTERY[lv]!=null) ? (isDeep(t,lv)?4:3) : (isDeep(t,lv)? GOAL_DEEP : GOAL);
+/* v3.14 — meta por domínio unitário: níveis 3-10 exigem N unidades dominadas 3x cada.
+   Palavras 🏅 (PT_MASTERY) continuam com meta de 3-4 palavras. Resto usa GOAL/GOAL_DEEP. */
+function goalFor(t, lv){
+  if(t==="pt"){
+    if(LET_UNITS_PT[lv]) return UNIT_GOAL[lv] || LET_UNITS_PT[lv].length;
+    if(SYL_UNITS_PT[lv]) return UNIT_GOAL[lv] || SYL_UNITS_PT[lv].length;
+    if(PT_MASTERY[lv]!=null) return isDeep(t,lv)?4:3;
+  }
+  if(t==="math" && MATH_OPS[lv]) return MATH_OPS[lv].length;
+  return isDeep(t,lv)? GOAL_DEEP : GOAL;
+}
+/* helper: unidades pendentes de domínio num nível — array de chaves ainda < MASTERY_DEEP */
+function pendingUnits(p, t, lv){
+  const dm = (p && p.dmast) || {};
+  if(t==="pt" && LET_UNITS_PT[lv]) return LET_UNITS_PT[lv].filter(L => (dm["L:"+L]||0) < MASTERY_DEEP);
+  if(t==="pt" && SYL_UNITS_PT[lv]) return SYL_UNITS_PT[lv].filter(s => (dm["S:"+s]||0) < MASTERY_DEEP);
+  if(t==="math" && MATH_OPS[lv]) return MATH_OPS[lv].filter(op => (dm["M:"+op]||0) < MASTERY_DEEP);
+  return [];
+}
 
 function startGame(track){
   const p = P();
@@ -1602,6 +1652,20 @@ function onCorrect(){
     step = masteredNow;
     if(masteredNow){ extra += 10; confetti(24); }
   }
+  /* v3.14 — domínio por LETRA/SÍLABA/OPERAÇÃO: só acerto limpo conta */
+  let unitMasteredNow = false;
+  if(q.dkey && !state.reinf && state.qWrong === 0){
+    const m = (p.dmast[q.dkey]||0) + 1;
+    p.dmast[q.dkey] = Math.min(m, MASTERY_DEEP);
+    unitMasteredNow = m >= MASTERY_DEEP;
+    step = unitMasteredNow; /* nível só sobe quando UMA unidade é dominada — 3 acertos limpos por item */
+    if(unitMasteredNow){ extra += 8; confetti(20); }
+    else step = false;      /* acertos parciais não avançam o nível, só o domínio */
+  } else if(q.dkey && state.qWrong > 0 && !state.reinf){
+    /* errou uma vez no meio do domínio: reset da unidade — não pode chutar até dominar */
+    p.dmast[q.dkey] = 0;
+    step = false;
+  }
   p.coins += coins + extra;
   p.stats[t].a++;
   const fb = $("#feedback");
@@ -1612,6 +1676,8 @@ function onCorrect(){
     ? `🔁💡 Agora vem o fundamento! +${coins+extra} moedas!`
     : masteredNow
     ? `🏅 Palavra dominada! +${coins+extra} moedas!`
+    : unitMasteredNow
+    ? `🏅 Dominou! +${coins+extra} moedas!`
     : deepDirty
     ? `💛 +${coins+extra} moedas! Essa volta pra contar de novo!`
     : `${pick(["🎉","⭐","🌈","💪","🏅"])} +${coins+extra} moedas!` + (extra?` (${state.streak} seguidas! 🔥)`:"");
@@ -1628,9 +1694,16 @@ function onCorrect(){
   }
   save(); updateGameHUD();
 
+  const unitLabel = q.dkey && unitMasteredNow ? (
+    q.dkey.startsWith("L:") ? `a letra ${letSay(q.dkey.slice(2))}` :
+    q.dkey.startsWith("S:") ? `a sílaba ${sylSay(q.dkey.slice(2))}` :
+    q.dkey.startsWith("M:") ? `essa conta` : ""
+  ) : "";
   const praise = reinfGone ? "Agora você pegou essa lição de vez! Entendeu o fundamento! Muito bem!"
                : fundNow ? "Boa! Agora vamos ver umas parecidas, pra ter certeza que você entendeu o porquê!"
-               : masteredNow ? `Você dominou a palavra ${q.mword}! Incrível!` : pick(PRAISE);
+               : masteredNow ? `Você dominou a palavra ${wordSay(q.mword)}! Incrível!`
+               : unitMasteredNow ? `Você dominou ${unitLabel}! Três vezes seguidas sem errar! Incrível!`
+               : pick(PRAISE);
   const okSpeech = q.okSpeech || null;
   const after = ()=>{
     if(done === "levelup") levelUp();
@@ -2235,9 +2308,75 @@ function genStory(){
   };
 }
 
+/* v3.14 — pergunta de LETRA com domínio (mic obrigatório quando SR disponível).
+   Registra q.dkey = "L:X" — cada letra precisa MASTERY_DEEP acertos no mic. */
+function letterMasteryQ(L, pool){
+  const nm = letSay(L);
+  if(SR){
+    return {
+      kind:"mic", prompt:"Leia essa letra bem alto! 🎤",
+      visual:`<div class="read-word" style="font-size:clamp(56px,14vw,96px);">${L}</div>`,
+      speech:[ptT(`Qual é o nome dessa letra? Fale bem alto no microfone!`)],
+      hintSpeech: ptT(`É a letra ${nm}! Fale: ${nm}!`),
+      okSpeech:`${nm}! Você leu a letra ${nm}!`,
+      answer: L, accept:[nm, L.toLowerCase()],
+      dkey:"L:"+L
+    };
+  }
+  return {
+    kind:"opts", prompt:"Qual é a letra?",
+    visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🔤</span>`,
+    speech:[ptT(`Encontre a letra ${nm}!`)],
+    hintSpeech: ptT(`Procure a letra ${nm}.`),
+    okSpeech:`${nm}!`,
+    options: makeOpts(L, pool, Math.min(pool.length, 5)),
+    dkey:"L:"+L
+  };
+}
+/* v3.14 — pergunta de SÍLABA com domínio (mic obrigatório).
+   q.dkey = "S:MA" — cada sílaba precisa MASTERY_DEEP acertos limpos no mic. */
+function sylMasteryQ(syl, pool){
+  if(SR){
+    return {
+      kind:"mic", prompt:"Leia essa sílaba bem alto! 🎤",
+      visual:`<div class="read-word" style="font-size:clamp(48px,12vw,80px);">${syl}</div>`,
+      speech:[ptT(`Leia essa sílaba bem alto no microfone!`)],
+      hintSpeech: ptT(`${sylSay(syl)}! Fale: ${sylSay(syl)}!`),
+      okSpeech:`${sylSay(syl)}! Você leu!`,
+      answer: syl, accept:[sylSay(syl)],
+      dkey:"S:"+syl
+    };
+  }
+  return {
+    kind:"opts", prompt:"Qual é a sílaba?",
+    visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🧩</span>`,
+    speech:[ptT(`Encontre a sílaba ${sylSay(syl)}!`)],
+    hintSpeech: ptT(`${sylSay(syl)}! ${sylSay(syl)}!`),
+    okSpeech:`${sylSay(syl)}!`,
+    options: makeOpts(syl, pool, Math.min(5, pool.length)),
+    dkey:"S:"+syl
+  };
+}
+
 /* despachante da trilha Kumon completa (7A → C) */
 function genPt(lv){
   if(lv===1 || lv===2) return genListenWord(lv===1?3:5);
+  const p = P() || {dmast:{}};
+  const dm = p.dmast || {};
+  /* v3.14 — níveis 3-7 exigem domínio das letras (cada uma 3x no mic) */
+  if(LET_UNITS_PT[lv]){
+    const pool = LET_UNITS_PT[lv];
+    const need = pool.filter(L => (dm["L:"+L]||0) < MASTERY_DEEP);
+    const L = need.length ? pick(need) : pick(pool);
+    return letterMasteryQ(L, pool);
+  }
+  /* v3.14 — níveis 8-10 exigem domínio das sílabas (cada uma 3x no mic) */
+  if(SYL_UNITS_PT[lv]){
+    const pool = SYL_UNITS_PT[lv];
+    const need = pool.filter(s => (dm["S:"+s]||0) < MASTERY_DEEP);
+    const syl = need.length ? pick(need) : pick(pool);
+    return sylMasteryQ(syl, pool);
+  }
   if(PT_MASTERY[lv]!=null) return genMastery(PT_MASTERY[lv]);
   if(lv===34){ /* ditado difícil */
     const w = pick(DITADO_HARD);
@@ -2506,7 +2645,74 @@ function numOpts(correct, min, max, n){
   return shuffle([...set]).map(v=>({label:String(v), correct:v===correct}));
 }
 
+/* v3.14 — gera problema para uma OPERAÇÃO específica (não aleatório):
+   permite domínio por operação (+1, +2, ..., -1, ..., dobros, complementos do 10) */
+function mathOpQ(op){
+  const e = pick(COUNT_EMOJIS);
+  if(op.startsWith("+")){
+    const inc = +op.slice(1);
+    const a = 1+rand(Math.max(1, 10-inc));
+    const sum = a+inc;
+    return {
+      kind:"opts", prompt:`Quanto é ${a} + ${inc}?`,
+      visual: emojiGroup(a,e)+`<span class="op-sign">+</span>`+emojiGroup(inc,e),
+      speech:[ptT(`Quanto é ${a} mais ${inc}? Conte todos juntos!`)],
+      hintSpeech: ptT(`Comece no ${a} e conte mais ${inc}!`),
+      okSpeech:`${a} mais ${inc} é ${sum}!`,
+      options: numOpts(sum, Math.max(1,sum-3), Math.min(20,sum+3), 5),
+      dkey:"M:"+op
+    };
+  }
+  if(op.startsWith("-")){
+    const dec = +op.slice(1);
+    const a = dec + 1 + rand(Math.min(9, 10-dec));
+    const diff = a-dec;
+    return {
+      kind:"opts", prompt:`Quanto é ${a} − ${dec}?`,
+      visual: emojiGroup(a,e,dec),
+      speech:[ptT(`Tinha ${a}, e ${dec} foram embora! Quantos sobraram?`)],
+      hintSpeech: ptT(`Comece no ${a} e volte ${dec}!`),
+      okSpeech:`Sobraram ${diff}!`,
+      options: numOpts(diff, Math.max(0,diff-3), Math.min(10,diff+3), 5),
+      dkey:"M:"+op
+    };
+  }
+  if(op.startsWith("d")){ /* dobros: d1=1+1, d2=2+2, ... d5=5+5 */
+    const n = +op.slice(1);
+    return {
+      kind:"opts", prompt:`Quanto é ${n} + ${n}? (dobro!)`,
+      visual:`<span class="num-big">${n} + ${n} = ?</span>`,
+      speech:[ptT(`O dobro de ${n}! Quanto é ${n} mais ${n}?`)],
+      hintSpeech: ptT(`Dobro é o número duas vezes: ${n} e mais ${n}!`),
+      okSpeech:`O dobro de ${n} é ${n+n}!`,
+      options: numOpts(n+n, Math.max(1,n+n-3), n+n+3, 5),
+      dkey:"M:"+op
+    };
+  }
+  if(op.startsWith("c")){ /* complementos do 10: c1=1+9, c2=2+8, c3=3+7, c4=4+6 */
+    const n = +op.slice(1);
+    return {
+      kind:"opts", prompt:`Quanto falta pro 10? ${n} + ?`,
+      visual:`<span class="num-big">${n} + ? = 10</span>`,
+      speech:[ptT(`Quanto falta pro dez? Tem ${n}, quanto mais precisa pra chegar em dez?`)],
+      hintSpeech: ptT(`Conte a partir de ${n} até dez: ${n}... quantos passos?`),
+      okSpeech:`${n} mais ${10-n} é dez!`,
+      options: numOpts(10-n, 1, 9, 5),
+      dkey:"M:"+op
+    };
+  }
+  return null;
+}
+
 function genMath(lv){
+  /* v3.14 — níveis com domínio por operação: escolhe operação não dominada */
+  if(MATH_OPS[lv]){
+    const p = P() || {dmast:{}};
+    const dm = p.dmast || {};
+    const need = MATH_OPS[lv].filter(op => (dm["M:"+op]||0) < MASTERY_DEEP);
+    const op = need.length ? pick(need) : pick(MATH_OPS[lv]);
+    return mathOpQ(op);
+  }
   if(lv<=3){ /* contar 3 / 5 / 10 */
     const max = lv===1?3 : lv===2?5 : 10;
     const n = 1+rand(max), e = pick(COUNT_EMOJIS);
@@ -3380,6 +3586,67 @@ function ptMasteryReport(p){
     return `<div class="pt-mast"><b>${label}</b>: ${dom}/${list.length} palavras 🏅</div>`;
   }).filter(Boolean).join("");
 }
+/* v3.14 — mapa visual de domínio (letras/sílabas/operações): mostra o que foi dominado,
+   o que está parcial (1-2/3) e o que ainda não foi tocado. Ajuda o Caio a ver onde
+   o filho está encalhado sem precisar entrar no jogo. */
+function unitCell(label, state){
+  const bg = state==="done" ? "#27ae60" : state==="partial" ? "#f39c12" : "#e6e8f2";
+  const color = state==="pending" ? "#666" : "#fff";
+  const check = state==="done" ? "✓" : "";
+  return `<span style="display:inline-block;min-width:38px;padding:6px 8px;margin:3px;border-radius:8px;background:${bg};color:${color};font-weight:700;text-align:center;">${label}${check?" "+check:""}</span>`;
+}
+function unitState(p, key){
+  const v = p.dmast[key]||0;
+  if(v >= MASTERY_DEEP) return "done";
+  if(v > 0) return "partial";
+  return "pending";
+}
+function unitBlock(title, items, prefix, mapLabel){
+  const total = items.length;
+  return `
+    <div style="margin-top:10px;">
+      <b>${title}</b>
+      <div style="margin-top:4px;">
+        ${items.map(x => unitCell(mapLabel(x), "__state__"+prefix+x)).join("")}
+      </div>
+    </div>`;
+}
+function domainMapReport(p){
+  const parts = [];
+  /* letras — VOWELS + AZ (união única) */
+  const letters = [...new Set([...VOWELS, ...AZ])];
+  const letDone = letters.filter(L => (p.dmast["L:"+L]||0) >= MASTERY_DEEP).length;
+  const letPart = letters.filter(L => { const v=p.dmast["L:"+L]||0; return v>0 && v<MASTERY_DEEP; }).length;
+  parts.push(`<div style="margin-top:12px;">
+    <b>🔤 Letras dominadas (falando o nome no microfone 3x):</b> ${letDone}/${letters.length} · parciais: ${letPart}
+    <div style="margin-top:6px;">${letters.map(L => unitCell(L, unitState(p,"L:"+L))).join("")}</div>
+  </div>`);
+  /* sílabas por família */
+  parts.push(`<div style="margin-top:12px;"><b>🧩 Sílabas dominadas (lendo em voz alta 3x):</b></div>`);
+  const famKeys = Object.keys(SYL_FAMILIES);
+  const famRows = famKeys.map(f => {
+    const syls = SYL_FAMILIES[f];
+    const done = syls.filter(s => (p.dmast["S:"+s]||0) >= MASTERY_DEEP).length;
+    const cells = syls.map(s => unitCell(s, unitState(p,"S:"+s))).join("");
+    return `<div style="margin:6px 0;"><span style="display:inline-block;min-width:56px;font-weight:700;opacity:.8;">Família ${f}:</span> ${cells} <span style="opacity:.7;">${done}/${syls.length}</span></div>`;
+  }).join("");
+  parts.push(famRows);
+  /* operações matemáticas */
+  const mathBlocks = [
+    {title:"➕ Somas até 5", ops:MATH_OPS[8], label:o=>o},
+    {title:"➕ Somas até 10", ops:MATH_OPS[9], label:o=>o},
+    {title:"➕ Dobros e complementos do 10", ops:MATH_OPS[10], label:o=> o[0]==="d"?`${o.slice(1)}+${o.slice(1)}`:`${o.slice(1)}+${10-o.slice(1)}`},
+    {title:"➖ Subtrações até 5", ops:MATH_OPS[17], label:o=>o},
+    {title:"➖ Subtrações até 10", ops:MATH_OPS[18], label:o=>o}
+  ];
+  parts.push(`<div style="margin-top:12px;"><b>🔢 Contas dominadas (acertando 3x sem erro):</b></div>`);
+  mathBlocks.forEach(b => {
+    const done = b.ops.filter(op => (p.dmast["M:"+op]||0) >= MASTERY_DEEP).length;
+    const cells = b.ops.map(op => unitCell(b.label(op), unitState(p,"M:"+op))).join("");
+    parts.push(`<div style="margin:6px 0;"><span style="display:inline-block;min-width:120px;font-weight:600;opacity:.8;">${b.title}:</span> ${cells} <span style="opacity:.7;">${done}/${b.ops.length}</span></div>`);
+  });
+  return parts.join("");
+}
 
 function openParents(){
   const p = P();
@@ -3413,6 +3680,9 @@ function openParents(){
   showOverlay(`<div id="parents-card">
     <h2 style="text-align:center;color:#454a75;">ℹ️ Para os pais</h2>
     ${report}
+    <h3>🎯 Mapa de domínio (v3.14)</h3>
+    <p>Cada letra, sílaba e conta agora precisa de <b>3 acertos limpos no microfone</b> (ou digitando) pra virar dominada. Nada de passar de nível "no chute": se errar no meio, o contador daquela unidade zera. Só assim ele avança pra próxima etapa.</p>
+    ${p ? domainMapReport(p) : ""}
     <h3>🔤 Missão do Alfabeto (v3.13)</h3>
     <p>Se seu filho já passou pelas sílabas mas ainda "chutando", ele foi <b>rebaixado uma vez</b> para o começo do alfabeto (nível 3 · 6A · Vogais). O ranking, moedas e figurinhas ficam <b>preservados</b>. Ele refaz TODAS as letras (às vezes com microfone 🎤, falando o nome/som da letra) antes de voltar pras sílabas. Nas sílabas, 80% das perguntas agora <b>exigem ler em voz alta no microfone</b> — sem chute. Objetivo: quando ele juntar as letras, cada sílaba sai redondinha.</p>
     <h3>🎌 Método Kumon</h3>
