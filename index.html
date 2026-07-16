@@ -1261,7 +1261,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1}, prog:{pt:
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rq:{pt:[],math:[],en:[],de:[],cur:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0}, les:{pt:0,math:0,en:0,de:0,cur:0} };
+  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, rq:{pt:[],math:[],en:[],de:[],cur:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0}, les:{pt:0,math:0,en:0,de:0,cur:0} };
 }
 
 function migrateProfile(p){
@@ -1315,18 +1315,26 @@ function migrateProfile(p){
         p.les.pt = Math.min(p.les.pt||0, 2); /* deixa reassistir aulinhas 3-7 */
       } else p.ra = 2;
     }
-    /* v3.20 — reembolso: todas as moedas já gastas em figurinhas voltam pro
-       cofrinho (as figurinhas compradas continuam!), pra gastar na Pokédex nova */
+    /* v3.20 — reembolso: tudo que já foi gasto em figurinhas vira crédito NOVO
+       só na carteira Pokémon ⚡ (as figurinhas compradas continuam!) */
     if(p.rf==null){
       const val = (p.stickers||[]).reduce((s,nm)=>{
         const st = STICKERS.find(x=>x[1]===nm) || POKEMON_STICKERS.find(x=>x[1]===nm);
         return s + (st ? RARITIES[st[2]].price : 0);
       }, 0);
-      if(val>0){ p.coins += val; p.rf = 1; p.rfv = val; }
+      if(p.pcoins==null) p.pcoins = p.coins;
+      if(val>0){ p.pcoins += val; p.rf = 1; p.rfv = val; }
       else p.rf = 2;
+      p.rfp = 1;
     }
-    /* v3.20 — carteira Pokémon nasce igual à de figurinhas (saldo duplicado) */
+    /* v3.20 — carteira Pokémon nasce igual à de figurinhas */
     if(p.pcoins==null) p.pcoins = p.coins;
+    /* v3.20.1 — perfis migrados na v3.20 original tinham o reembolso também
+       no 🪙; tira de lá (o crédito fica só no ⚡) */
+    if(p.rfp==null){
+      if((p.rfv||0) > 0) p.coins = Math.max(0, p.coins - p.rfv);
+      p.rfp = 1;
+    }
     delete p.redo;
     return p;
   }
@@ -1504,10 +1512,10 @@ function goHome(){
       <span class="big">💰</span>
       <h2>Chuva de Moedas!</h2>
       <p>Agora você tem <b>DOIS cofrinhos</b>: 🪙 pra figurinhas e ⚡ pra Pokémon — e cada moeda que você ganha jogando entra <b>nos dois ao mesmo tempo</b>!</p>
-      <p style="color:#27ae60;">E as moedas que você já gastou comprando figurinhas <b>voltaram</b>: 🪙 <b>+${v}</b> e ⚡ <b>+${v}</b>! As figurinhas continuam todinhas suas!</p>
+      <p style="color:#27ae60;">E tudo que você já gastou comprando figurinhas virou <b>crédito novo pra Pokémon</b>: ⚡ <b>+${v}</b>! As figurinhas continuam todinhas suas!</p>
       <button class="ov-btn" id="rf-shop">Ir pra loja! 🛒</button>
       <button class="ov-btn alt" id="rf-later">Depois</button>`);
-    speak(`Chuva de moedas! Agora você tem dois cofrinhos: um para figurinhas e um para Pokémon. Cada moeda que você ganha jogando entra nos dois ao mesmo tempo! E todas as moedas que você já gastou comprando figurinhas voltaram: ${v} moedas em cada cofrinho! E as suas figurinhas continuam todinhas suas! Corre na loja!`);
+    speak(`Chuva de moedas! Agora você tem dois cofrinhos: um para figurinhas e um para Pokémon. Cada moeda que você ganha jogando entra nos dois ao mesmo tempo! E tudo que você já gastou comprando figurinhas virou crédito novo para Pokémon: ${v} moedas! E as suas figurinhas continuam todinhas suas! Corre na loja!`);
     $("#rf-shop").onclick = ()=>{ sndTap(); hideOverlay(); renderShop(); showScreen("screen-shop"); };
     $("#rf-later").onclick = ()=>{ sndTap(); hideOverlay(); };
   }
