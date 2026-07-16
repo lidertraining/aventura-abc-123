@@ -1521,7 +1521,13 @@ function micMatch(alts, q){
     return targets.some(t =>
       a === t || toks.includes(t) ||
       (t.includes(" ") && a.includes(t)) ||  /* alvo de várias palavras dentro da frase: "red cat" */
-      t.replace(/\s/g,"") === a.replace(/\s/g,"") /* soletrado ou colado: "ga to"→"gato", "redcat"→"red cat" */
+      t.replace(/\s/g,"") === a.replace(/\s/g,"") || /* soletrado ou colado: "ga to"→"gato", "redcat"→"red cat" */
+      /* v3.15 — alvo de UMA letra: aceita a letra esticada ou com "h" que o
+         reconhecimento inventa ("aaa", "ahh", "hã" → letra A) */
+      (t.length === 1 && /[a-z]/.test(t) && toks.some(tk => {
+        const c = tk.replace(/h/g, "");
+        return c.length > 0 && c.length <= 4 && [...c].every(ch => ch === t);
+      }))
     );
   });
 }
@@ -2201,7 +2207,7 @@ function letterQ(letters, nOpts){
       speech:[ptT(`Qual é o nome dessa letra? Fale bem alto no microfone!`)],
       hintSpeech: ptT(`É a letra ${nm}! Fale: ${nm}!`),
       okSpeech:`${nm}! Isso mesmo!`,
-      answer: L, accept:[nm, L.toLowerCase()]
+      answer: L, accept:[nm, L.toLowerCase(), ...(LETTER_MIC[L]||[])]
     };
   }
   return {
@@ -2310,6 +2316,20 @@ function genStory(){
 
 /* v3.14 — pergunta de LETRA com domínio (mic obrigatório quando SR disponível).
    Registra q.dkey = "L:X" — cada letra precisa MASTERY_DEEP acertos no mic. */
+/* v3.15 — o reconhecimento de voz quase nunca transcreve uma vogal isolada como
+   "a"/"e"/"o": devolve "ah", "há", "hein", "ou", "um"... Estas são as variantes
+   reais que o Chrome/Edge devolvem quando a criança fala a letra sozinha.
+   (norm() tira acentos antes de comparar, então tudo aqui é sem acento) */
+const LETTER_MIC = {
+  A:["ah","ha","aa","aah","la"], E:["eh","he","ee","hein","ei","ne"], I:["ih","hi","ii","aqui"],
+  O:["oh","ho","oo","ou","oi"], U:["uh","hu","uu","um","hum","o u"],
+  B:["be","bem","bebe"], C:["ce","se"], D:["de","da"], F:["efe","efi","fe"], G:["ge","je"],
+  H:["aga","aha"], J:["jota"], K:["ka"], L:["ele","eli","le"],
+  M:["eme","emi","me","hmm"], N:["ene","eni","ne"], P:["pe"], Q:["que","ke"],
+  R:["erre","erri","erro","re"], S:["esse","essi","se"], T:["te","ta"],
+  V:["ve"], W:["dablio","dabliu","dablo"], X:["xis","chis","his","seis"], Y:["ipsilon","ipslon"],
+  Z:["ze"]
+};
 function letterMasteryQ(L, pool){
   const nm = letSay(L);
   if(SR){
@@ -2319,7 +2339,7 @@ function letterMasteryQ(L, pool){
       speech:[ptT(`Qual é o nome dessa letra? Fale bem alto no microfone!`)],
       hintSpeech: ptT(`É a letra ${nm}! Fale: ${nm}!`),
       okSpeech:`${nm}! Você leu a letra ${nm}!`,
-      answer: L, accept:[nm, L.toLowerCase()],
+      answer: L, accept:[nm, L.toLowerCase(), ...(LETTER_MIC[L]||[])],
       dkey:"L:"+L
     };
   }
@@ -2335,6 +2355,17 @@ function letterMasteryQ(L, pool){
 }
 /* v3.14 — pergunta de SÍLABA com domínio (mic obrigatório).
    q.dkey = "S:MA" — cada sílaba precisa MASTERY_DEEP acertos limpos no mic. */
+/* v3.15 — variantes que o reconhecimento devolve pra sílabas isoladas:
+   "mi"→"mim", "vi"→"vim", "si"→"sim", "mô"→"mou", "nô"→"não"... */
+function sylMicAlts(syl){
+  const s = syl.toLowerCase(), out = [];
+  if(/i$/.test(s)) out.push(s+"m");
+  if(/o$/.test(s)) out.push(s.replace(/o$/,"ou"));
+  if(s==="no") out.push("nao");
+  if(s==="na") out.push("nah");
+  if(s==="se") out.push("si");
+  return out;
+}
 function sylMasteryQ(syl, pool){
   if(SR){
     return {
@@ -2343,7 +2374,7 @@ function sylMasteryQ(syl, pool){
       speech:[ptT(`Leia essa sílaba bem alto no microfone!`)],
       hintSpeech: ptT(`${sylSay(syl)}! Fale: ${sylSay(syl)}!`),
       okSpeech:`${sylSay(syl)}! Você leu!`,
-      answer: syl, accept:[sylSay(syl)],
+      answer: syl, accept:[sylSay(syl), ...sylMicAlts(syl)],
       dkey:"S:"+syl
     };
   }
@@ -2421,7 +2452,7 @@ function genPtCore(lv){
         speech:[ptT("Leia essa sílaba bem alto no microfone!")],
         hintSpeech: ptT(`${sylSay(syl)}! Fale: ${sylSay(syl)}!`),
         okSpeech:`${sylSay(syl)}! Você leu!`,
-        answer: syl, accept:[sylSay(syl)]
+        answer: syl, accept:[sylSay(syl), ...sylMicAlts(syl)]
       };
     }
     const pool = lv===6? SYL_FAMILIES[f] : shuffle(fams.flatMap(k=>SYL_FAMILIES[k]));
