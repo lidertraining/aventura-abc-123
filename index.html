@@ -389,6 +389,10 @@
       <span class="ic">🔬</span>
       <span class="tx"><b>CURIOSIDADES</b><span id="cur-sub"></span></span>
     </button>
+    <button class="mode-btn" id="btn-pk" style="background:linear-gradient(135deg,#f7d060,#f3b100);box-shadow:0 6px 0 #b98300;color:#5a4500;">
+      <span class="ic">⚡</span>
+      <span class="tx"><b>POKÉMON</b><span id="pk-sub"></span></span>
+    </button>
     <button class="mode-btn" id="btn-shop">
       <span class="ic">🛒</span>
       <span class="tx"><b>LOJA</b><span id="shop-sub">Compre figurinhas com suas moedas!</span></span>
@@ -457,6 +461,7 @@
       <button class="jtab" data-track="en">🌎 Inglês</button>
       <button class="jtab" data-track="de">🥨 Alemão</button>
       <button class="jtab" data-track="cur">🔬 Curiosidades</button>
+      <button class="jtab" data-track="pk">⚡ Pokémon</button>
     </div>
     <div class="j-list" id="journey-list"></div>
     <button class="back-btn" id="btn-back-journey" style="margin-top:14px;">⬅ Voltar</button>
@@ -1137,12 +1142,38 @@ const CUR_TRACK = [
   ]}
 ];
 const CUR_LEVELS = CUR_TRACK.map(l=>l.name).concat("Mestre das Curiosidades 👑");
+/* ---- TRILHA POKÉMON (v3.21): aprender a ler e escrever com os nomes ---- */
+const PK_LEVELS = [
+  "Ache o nome 👀","Primeira letra 🔤","Monte o nome 🧩","Nomes grandes 🧩",
+  "Copie o nome ✏️","Escreva sozinho ⌨️","Leia e ache 🕵️","Mestre Pokémon 👑"
+];
+/* [NOME, dex, sílabas] — Pokémon famosos, só letras A-Z, divididos em pedacinhos */
+const PK_WORDS = [
+  ["MEW",151,["MEW"]], ["ABRA",63,["A","BRA"]], ["ONIX",95,["O","NIX"]],
+  ["SEEL",86,["SEEL"]], ["EEVEE",133,["EE","VEE"]], ["ZUBAT",41,["ZU","BAT"]],
+  ["DITTO",132,["DIT","TO"]], ["PIDGEY",16,["PID","GEY"]], ["VULPIX",37,["VUL","PIX"]],
+  ["LAPRAS",131,["LA","PRAS"]], ["PONYTA",77,["PO","NY","TA"]], ["CUBONE",104,["CU","BO","NE"]],
+  ["MACHOP",66,["MA","CHOP"]], ["HORSEA",116,["HOR","SEA"]], ["STARYU",120,["STA","RYU"]],
+  ["MANKEY",56,["MAN","KEY"]], ["MEWTWO",150,["MEW","TWO"]], ["GENGAR",94,["GEN","GAR"]],
+  ["PIKACHU",25,["PI","KA","CHU"]], ["PSYDUCK",54,["PSY","DUCK"]], ["SNORLAX",143,["SNOR","LAX"]],
+  ["RAICHU",26,["RAI","CHU"]], ["GOLDEEN",118,["GOL","DEEN"]], ["MAGIKARP",129,["MA","GI","KARP"]],
+  ["SLOWPOKE",79,["SLOW","PO","KE"]], ["VOLTORB",100,["VOL","TORB"]], ["DRATINI",147,["DRA","TI","NI"]],
+  ["GYARADOS",130,["GYA","RA","DOS"]], ["ZAPDOS",145,["ZAP","DOS"]], ["MOLTRES",146,["MOL","TRES"]],
+  ["ARTICUNO",144,["AR","TI","CU","NO"]], ["TOGEPI",175,["TO","GE","PI"]],
+  ["LUGIA",249,["LU","GI","A"]], ["CELEBI",251,["CE","LE","BI"]], ["TORCHIC",255,["TOR","CHIC"]],
+  ["PIPLUP",393,["PI","PLUP"]], ["LUCARIO",448,["LU","CA","RIO"]], ["GRENINJA",658,["GRE","NIN","JA"]],
+  ["CHARMANDER",4,["CHAR","MAN","DER"]], ["BULBASAUR",1,["BUL","BA","SAUR"]],
+  ["SQUIRTLE",7,["SQUIR","TLE"]], ["CHARIZARD",6,["CHA","RI","ZARD"]],
+  ["FUECOCO",909,["FUE","CO","CO"]], ["SPRIGATITO",906,["SPRI","GA","TI","TO"]]
+];
+
 const TRACKS = {
   pt:   { icon:"📚", name:"Português",  levels:PT_LEVELS },
   math: { icon:"🔢", name:"Matemática", levels:MATH_LEVELS },
   en:   { icon:"🌎", name:"Inglês",     levels:EN_LEVELS },
   de:   { icon:"🥨", name:"Alemão",     levels:DE_LEVELS },
-  cur:  { icon:"🔬", name:"Curiosidades", levels:CUR_LEVELS }
+  cur:  { icon:"🔬", name:"Curiosidades", levels:CUR_LEVELS },
+  pk:   { icon:"⚡", name:"Pokémon",    levels:PK_LEVELS }
 };
 const TRACK_KEYS = Object.keys(TRACKS);
 const maxOf = t => TRACKS[t].levels.length;
@@ -1256,12 +1287,12 @@ const deT = t => ({t, lang:"de-DE"});
 const SAVE_KEY = "aventura-abc123-v2";
 let db = { activeIdx:-1, profiles:[] };
 
-function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1}, prog:{pt:0,math:0,en:0,de:0,cur:0},
-  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0}, cur:{a:0,e:0} } }; }
+function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:{pt:0,math:0,en:0,de:0,cur:0,pk:0},
+  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0}, cur:{a:0,e:0}, pk:{a:0,e:0} } }; }
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, rq:{pt:[],math:[],en:[],de:[],cur:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0}, les:{pt:0,math:0,en:0,de:0,cur:0} };
+  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
 }
 
 function migrateProfile(p){
@@ -1275,6 +1306,9 @@ function migrateProfile(p){
     if(!p.stats.cur) p.stats.cur = {a:0,e:0};
     if(!p.lv.cur) p.lv.cur = 1;
     if(p.prog.cur==null) p.prog.cur = 0;
+    if(!p.stats.pk) p.stats.pk = {a:0,e:0};
+    if(!p.lv.pk) p.lv.pk = 1;
+    if(p.prog.pk==null) p.prog.pk = 0;
     if(p.pv !== 3){
       /* renumerar nível PT da versão de 26 níveis para a trilha Kumon de 36 */
       p.lv.pt = p.lv.pt > 26 ? maxOf("pt") : (PT_REMAP[p.lv.pt] || p.lv.pt);
@@ -1288,6 +1322,7 @@ function migrateProfile(p){
     if(!p.rq) p.rq = {pt:[],math:[],en:[]};
     if(!p.rq.de) p.rq.de = [];
     if(!p.rq.cur) p.rq.cur = [];
+    if(!p.rq.pk) p.rq.pk = [];
     /* itens antigos da fila ganham a fase de fundamento */
     TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
     if(!p.deep) p.deep = {pt:0,math:0,en:0,de:0};
@@ -2280,7 +2315,7 @@ const lsSum = (a,b,e,e2) => lsRow(lsCount(a,e,.4)+lsB("+","ls-pulse")+lsCount(b,
 
 function lessonFor(track, lv){
   if(lv > maxOf(track)) return null;
-  if(track==="cur") return null; /* a curiosidade já é a aula — sem lição separada */
+  if(track==="cur"||track==="pk") return null; /* a curiosidade/pokémon já é a aula — sem lição separada */
   const scenes = track==="pt"? ptLesson(lv) : track==="math"? mathLesson(lv) : langLesson(track, lv);
   return scenes && scenes.length? { scenes } : null;
 }
@@ -2583,12 +2618,92 @@ function lessonPending(track, lv){
 }
 
 /* =============== GERADORES DE PERGUNTAS =============== */
+/* ============ TRILHA POKÉMON ⚡ — ler e escrever com os nomes ============ */
+const pkImg = (w, size) => `<img src="${POKE_IMG(w[1])}" alt="${w[0]}" style="width:${size||"clamp(110px,32vw,170px)"};height:${size||"clamp(110px,32vw,170px)"};object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));">`;
+const pkSay = w => w[0].charAt(0) + w[0].slice(1).toLowerCase();
+function genPk(lv){
+  if(lv>=8) lv = 1 + Math.floor(Math.random()*7); /* mestre: mistura tudo */
+  if(lv===1){ /* ver o Pokémon, ouvir e achar o nome */
+    const w = pick(PK_WORDS.filter(x=>x[0].length<=8));
+    const pool = PK_WORDS.map(x=>x[0]);
+    return {
+      kind:"opts", prompt:"Ache o nome desse Pokémon!",
+      visual:pkImg(w),
+      speech:[ptT(`Esse é o ${pkSay(w)}! Ache o nome ${pkSay(w)}!`)],
+      hintSpeech: ptT(`Procure ${pkSay(w)}! Começa com a letra ${letSay(w[0][0])}!`),
+      okSpeech:`${pkSay(w)}! Você conhece os Pokémon!`,
+      optClass:"mid-text",
+      options: makeOpts(w[0], pool, 3)
+    };
+  }
+  if(lv===2){ /* primeira letra do nome */
+    const w = pick(PK_WORDS);
+    const first = w[0][0];
+    const pool = shuffle([...new Set(PK_WORDS.map(x=>x[0][0]))]);
+    return {
+      kind:"opts", prompt:"Com que letra começa?",
+      visual:`${pkImg(w)}<div class="read-word" style="font-size:clamp(26px,7vw,40px);">${w[0]}</div>`,
+      speech:[ptT(`${pkSay(w)}! Com que letra começa ${pkSay(w)}?`)],
+      hintSpeech: ptT(`${pkSay(w)} começa com a letra ${letSay(first)}!`),
+      okSpeech:`Letra ${letSay(first)}! ${pkSay(w)}!`,
+      options: makeOpts(first, pool, 4).map(o=>Object.assign(o, {say:{t:letSay(o.label), lang:"pt-BR"}}))
+    };
+  }
+  if(lv===3 || lv===4){ /* montar o nome com os pedacinhos */
+    const w = pick(PK_WORDS.filter(x=> lv===3 ? x[2].length===2 : x[2].length>=3));
+    const decoys = shuffle(PK_WORDS.filter(x=>x!==w).map(x=>x[2]).flat().filter(s=>!w[2].includes(s))).slice(0, lv===3?2:3);
+    return {
+      kind:"tiles", prompt: lv===3? "Monte o nome do Pokémon!" : "Nome grande! Monte os pedacinhos!",
+      visual:pkImg(w),
+      speech:[ptT(`Monte o nome ${pkSay(w)}!`)],
+      hintSpeech: ptT(`${w[2].join("... ")}! ${pkSay(w)}!`),
+      okSpeech:`${pkSay(w)}! Capturado!`,
+      pieces: w[2], decoys, sayPieces:false, answer:w[0]
+    };
+  }
+  if(lv===5){ /* copiar o nome olhando */
+    const w = pick(PK_WORDS.filter(x=>x[0].length<=7));
+    return {
+      kind:"abc", prompt:"Copie o nome do Pokémon!",
+      visual:`${pkImg(w,"clamp(90px,26vw,140px)")}<div class="read-word" style="font-size:clamp(24px,6.5vw,38px);">${w[0]}</div>`,
+      speech:[ptT(`Copie o nome ${pkSay(w)}, letra por letra!`)],
+      hintSpeech: ptT(`Olhe o nome escrito e copie: ${w[0].split("").map(letSay).join("... ")}!`),
+      okSpeech:`${pkSay(w)}! Você escreveu!`,
+      answer:w[0], maxLen:w[0].length
+    };
+  }
+  if(lv===6){ /* escrever sozinho (só figura + voz) */
+    const w = pick(PK_WORDS.filter(x=>x[0].length<=6));
+    return {
+      kind:"abc", prompt:"Escreva o nome sozinho!",
+      visual:pkImg(w),
+      speech:[ptT(`Escreva o nome desse Pokémon: ${pkSay(w)}!`)],
+      hintSpeech: ptT(`${w[2].join("... ")}! Letra por letra: ${w[0].split("").map(letSay).join("... ")}!`),
+      okSpeech:`${pkSay(w)}! Mestre das palavras!`,
+      answer:w[0], maxLen:w[0].length
+    };
+  }
+  /* lv 7 — ler o nome e achar o Pokémon certo */
+  const cands = shuffle(PK_WORDS).slice(0,3);
+  const w = cands[0];
+  return {
+    kind:"opts", prompt:"Leia o nome e ache o Pokémon!",
+    visual:`<div class="read-word" style="font-size:clamp(28px,8vw,46px);">${w[0]}</div>`,
+    speech:[ptT(`Leia o nome escrito e toque no Pokémon certo!`)],
+    hintSpeech: ptT(`Está escrito ${pkSay(w)}! Ache o ${pkSay(w)}!`),
+    okSpeech:`${pkSay(w)}! Você leu sozinho!`,
+    optClass:"emoji-opt",
+    options: shuffle(cands.map(c=>({ label:pkImg(c,"clamp(56px,14vw,84px)"), correct:c===w, say:{t:`Esse é o ${pkSay(c)}!`, lang:"pt-BR"} })))
+  };
+}
+
 function genFor(track, lv){
   let q;
   if(track==="pt") q = genPt(lv);
   else if(track==="math") q = genMath(lv);
   else if(track==="de") q = genDe(lv);
   else if(track==="cur") q = genCur(lv);
+  else if(track==="pk") q = genPk(lv);
   else q = genEn(lv);
   q.flv = lv; /* lição de origem = fundamento (cada nível Kumon ensina UMA coisa) */
   return q;
@@ -4269,6 +4384,7 @@ function init(){
   $("#btn-en").onclick   = ()=>{ sndTap(); startGame("en"); };
   $("#btn-de").onclick   = ()=>{ sndTap(); startGame("de"); };
   $("#btn-cur").onclick  = ()=>{ sndTap(); startGame("cur"); };
+  $("#btn-pk").onclick   = ()=>{ sndTap(); startGame("pk"); };
   $("#btn-shop").onclick = ()=>{ sndTap(); renderShop(); showScreen("screen-shop");
     speak("Bem-vindo à loja! Compre figurinhas com suas moedas!"); };
   $("#btn-album").onclick = ()=>{ sndTap(); renderAlbum(); showScreen("screen-album"); };
