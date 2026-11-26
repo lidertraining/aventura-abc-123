@@ -249,6 +249,13 @@
   .gen-btn { border:none; border-radius:12px; padding:8px 10px; font-family:inherit; font-weight:800; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:13px; line-height:1.25; }
   .gen-btn.sel { background:linear-gradient(135deg,#ee0979,#ff6a00); color:#fff; box-shadow:0 3px 0 #a3084f; }
   .gen-btn .gc { display:block; font-size:10.5px; font-weight:700; opacity:.85; }
+  /* v3.26 — busca de Pokémon por nome */
+  .poke-search { margin:0 0 12px; }
+  .poke-search input { width:100%; box-sizing:border-box; border:3px solid #d9dcff; border-radius:16px;
+    padding:12px 16px; font-family:inherit; font-size:17px; font-weight:700; color:#4a4e8a;
+    background:#fff; outline:none; }
+  .poke-search input:focus { border-color:#a044ff; }
+  .poke-tag { display:block; font-size:11px; font-weight:800; color:#8a8fc7; margin-top:2px; }
   .jtabs { display:flex; gap:8px; margin:6px 0 4px; }
   .jtab, .ctab { border:none; border-radius:99px; padding:9px 16px; font-family:inherit; font-weight:700; background:#eef0ff; color:#6a6fa5; cursor:pointer; font-size:14.5px; }
   .jtab.sel { background:linear-gradient(135deg,#c471f5,#a044ff); color:#fff; box-shadow:0 3px 0 #6a3093; }
@@ -437,6 +444,7 @@
     <p class="subtitle">Ganhe moedas acertando e compre figurinhas raras!</p>
     <div class="set-toggle" id="shop-toggle"></div>
     <div class="gen-tabs" id="shop-gens"></div>
+    <div class="poke-search" id="shop-search"></div>
     <div class="grid4" id="shop-grid"></div>
     <button class="back-btn" id="btn-back-shop" style="margin-top:16px;">⬅ Voltar</button>
   </div>
@@ -447,6 +455,7 @@
     <p class="subtitle" id="album-count"></p>
     <div class="set-toggle" id="album-toggle"></div>
     <div class="gen-tabs" id="album-gens"></div>
+    <div class="poke-search" id="album-search"></div>
     <div class="grid4" id="album-grid"></div>
     <button class="back-btn" id="btn-back-album" style="margin-top:16px;">⬅ Voltar</button>
   </div>
@@ -1003,14 +1012,55 @@ function stickerFace(st){
   if(dex) return `<span class="emo poke"><img src="${POKE_IMG(dex)}" alt="${nm}" loading="lazy" onerror="this.parentNode.textContent='${emo}'"></span>`;
   return `<span class="emo">${emo}</span>`;
 }
+/* ---- v3.26 — COLEÇÕES NOVAS (ele já comprou todos os emojis!) ----
+   Mesmo formato clássico [emoji, nome, raridade] — sem dex, então o
+   stickerFace usa o emoji. Pagas com 🪙 moedas normais (só Pokémon usa ⚡).
+   Nomes são ÚNICOS entre todos os conjuntos (o álbum guarda só o nome). */
+const GABBY_STICKERS = [
+  ["😺","Miauzinho","comum"],["🎨","Gato Artista","comum"],["🍪","Biscoito Miau","comum"],
+  ["🧶","Novelo de Lã","comum"],["🌸","Florzinha da Gabby","comum"],["🎂","Festa dos Gatinhos","comum"],
+  ["✨","Varinha da Gabby","comum"],
+  ["🎧","DJ Miau","raro"],["🏎️","Carlita","raro"],["🧜","Gata Sereia","raro"],
+  ["🐭","Gatorrato","raro"],["📦","Caixa Surpresa","raro"],
+  ["🐼","Pandy Patas","epico"],["🧁","Bolinho da Gabby","epico"],["🧚","Gatinha Fada","epico"],
+  ["🎀","Gabby","lendario"],["🏠","Casa de Bonecas","lendario"]
+];
+const TSUBASA_STICKERS = [
+  ["⚽","Bola do Estádio","comum"],["🏟️","Estádio Lotado","comum"],["📣","Torcida Animada","comum"],
+  ["🧃","Lanche do Time","comum"],["🏳️","Bandeirinha","comum"],["🧦","Meião do Time","comum"],
+  ["🇧🇷","Roberto Hongo","raro"],["🦵","Bicicleta Dupla","raro"],["🥅","Defesa Incrível","raro"],
+  ["👟","Chuteira de Ouro","raro"],["🏃","Bruce Harper","raro"],
+  ["🧤","Benji Price","epico"],["🔥","Steve Hyuga","epico"],["🎯","Tom Misaki","epico"],["🌀","Drive Shot","epico"],
+  ["⚽","Oliver Tsubasa","lendario"],["🐯","Chute do Tigre","lendario"]
+];
+const DBZ_STICKERS = [
+  ["📡","Radar do Dragão","comum"],["🫘","Semente Senzu","comum"],["🐷","Oolong","comum"],
+  ["🥢","Festa do Goku","comum"],["🏔️","Montanha Paozu","comum"],["🥊","Torneio de Luta","comum"],
+  ["🔧","Bulma","raro"],["🟠","Esfera de 4 Estrelas","raro"],["👴","Mestre Kame","raro"],
+  ["🧑‍🦲","Kuririn","raro"],["⚔️","Trunks","raro"],["☁️","Nuvem Voadora","raro"],
+  ["💪","Vegeta","epico"],["🟢","Piccolo","epico"],["🌊","Kame-Hame-Ha","epico"],["👦","Gohan","epico"],
+  ["🐉","Shen Long","lendario"],["🥋","Goku","lendario"]
+];
+const CDZ_STICKERS = [
+  ["✨","Cosmo","comum"],["🏛️","Santuário","comum"],["⭐","Constelação","comum"],
+  ["🥉","Armadura de Bronze","comum"],["🌌","Céu das Constelações","comum"],["🎽","Treino no Santuário","comum"],
+  ["☄️","Meteoro de Pégaso","raro"],["🌊","Cólera do Dragão","raro"],["❄️","Pó de Diamante","raro"],
+  ["🦅","Marin de Águia","raro"],["🕊️","Ave Fênix","raro"],
+  ["🔥","Ikki de Fênix","epico"],["🐲","Shiryu de Dragão","epico"],["🦢","Hyoga de Cisne","epico"],["⛓️","Shun de Andrômeda","epico"],
+  ["🐴","Seiya de Pégaso","lendario"],["🛡️","Atena","lendario"]
+];
 /* conjuntos de figurinhas — o botão da loja/álbum alterna entre eles */
 const STICKER_SETS = {
-  classic: { label:"Emojis",  icon:"😀", stickers:STICKERS },
-  pokemon: { label:"Pokémon", icon:"⚡", stickers:POKEMON_STICKERS }
+  classic: { label:"Emojis",      icon:"😀", stickers:STICKERS },
+  pokemon: { label:"Pokémon",     icon:"⚡", stickers:POKEMON_STICKERS },
+  gabby:   { label:"Gabby",       icon:"🎀", stickers:GABBY_STICKERS },
+  tsubasa: { label:"Tsubasa",     icon:"⚽", stickers:TSUBASA_STICKERS },
+  dbz:     { label:"Dragon Ball", icon:"🐉", stickers:DBZ_STICKERS },
+  cdz:     { label:"Cavaleiros",  icon:"🛡️", stickers:CDZ_STICKERS }
 };
 function activeSet(){ const p=P(); const s=(p&&p.stickerSet)||"classic"; return STICKER_SETS[s]?s:"classic"; }
 function setStickers(){ return STICKER_SETS[activeSet()].stickers; }
-const TOTAL_STICKERS = STICKERS.length + POKEMON_STICKERS.length;
+const TOTAL_STICKERS = Object.values(STICKER_SETS).reduce((s,x)=>s+x.stickers.length,0);
 
 /* ---- GRAUS DE PALAVRAS (domínio Kumon: repete a MESMA palavra até aprender) ---- */
 const MASTERY = 3; /* 3 encontros: ouvir+ler → ler sozinho → montar */
@@ -4374,17 +4424,49 @@ function renderGenTabs(id, onChange){
     b.onclick = ()=>{ sndTap(); const pp=P(); if(pp){ pp.pokeGen = +b.dataset.gen; save(); } onChange(); };
   });
 }
-/* figurinhas visíveis: coleção ativa, filtrada pela temporada quando Pokémon */
+/* v3.26 — busca de Pokémon por nome (não persiste; some ao sair) */
+let pokeQuery = "";
+function pokeSearching(){ return activeSet()==="pokemon" && norm(pokeQuery).trim().length>0; }
+/* campo de busca — IDEMPOTENTE: só cria o input se ainda não existe no
+   container, pra não perder o foco/cursor quando o grid re-renderiza */
+function renderPokeSearch(id, onChange){
+  const el = $("#"+id); if(!el) return;
+  if(activeSet()!=="pokemon"){ el.innerHTML=""; pokeQuery=""; return; }
+  let inp = el.querySelector("input");
+  if(!inp){
+    el.innerHTML = `<input type="search" placeholder="🔎 Digite o nome do Pokémon…" autocomplete="off">`;
+    inp = el.querySelector("input");
+    inp.value = pokeQuery;
+    inp.oninput = ()=>{ pokeQuery = inp.value; onChange(); };
+  }
+}
+/* figurinhas visíveis: coleção ativa, filtrada pela temporada quando Pokémon.
+   v3.26: se tem busca digitada, procura em TODAS as temporadas —
+   quem começa com o texto vem primeiro, depois quem contém. */
 function visibleStickers(){
   const arr = setStickers();
-  return activeSet()==="pokemon" ? arr.filter(st=>st[4]===pokeGen()) : arr;
+  if(activeSet()!=="pokemon") return arr;
+  if(pokeSearching()){
+    const q = norm(pokeQuery).trim();
+    const starts=[], has=[];
+    for(const st of POKEMON_STICKERS){
+      const n = norm(st[1]);
+      if(n.startsWith(q)) starts.push(st);
+      else if(n.includes(q)) has.push(st);
+    }
+    return starts.concat(has).slice(0,60);
+  }
+  return arr.filter(st=>st[4]===pokeGen());
 }
 function renderShop(){
   const p = P(), grid = $("#shop-grid");
   renderSetToggle("shop-toggle", renderShop);
   renderGenTabs("shop-gens", renderShop);
+  renderPokeSearch("shop-search", renderShop);
   grid.innerHTML = "";
-  const sorted = visibleStickers().slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  const busca = pokeSearching();
+  const sorted = busca ? visibleStickers()
+    : visibleStickers().slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
   sorted.forEach((st,i)=>{
     const [emo,nm,rar] = st;
     const owned = p.stickers.includes(nm);
@@ -4396,6 +4478,7 @@ function renderShop(){
       ${stickerFace(st)}
       <span class="nm">${nm}</span>
       <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
+      ${busca? `<span class="poke-tag">Temporada ${st[4]}</span>`:""}
       ${owned? `<span class="owned-tag">✔ Sua!</span>`
              : `<button class="buy-btn" ${walletCoins(p)<price?"disabled":""}>${walletIcon()} ${price}</button>`}`;
     if(!owned){
@@ -4421,16 +4504,21 @@ function renderAlbum(){
   const p = P(), grid = $("#album-grid");
   renderSetToggle("album-toggle", renderAlbum);
   renderGenTabs("album-gens", renderAlbum);
+  renderPokeSearch("album-search", renderAlbum);
   const arr = visibleStickers();
+  const busca = pokeSearching();
   const ownedInSet = arr.filter(([e,nm])=>p.stickers.includes(nm)).length;
-  if(activeSet()==="pokemon"){
+  if(busca){
+    $("#album-count").textContent = `🔎 ${arr.length} Pokémon encontrados · ⚡ ${p.pcoins||0} moedas`;
+  } else if(activeSet()==="pokemon"){
     const tudo = setStickers(), ownAll = tudo.filter(([e,nm])=>p.stickers.includes(nm)).length;
     $("#album-count").textContent = `Temporada ${pokeGen()}: ${ownedInSet} de ${arr.length} · Pokédex: ${ownAll} de ${tudo.length} · ⚡ ${p.pcoins||0} moedas`;
   } else {
     $("#album-count").textContent = `${ownedInSet} de ${arr.length} ${STICKER_SETS[activeSet()].label} · 🪙 ${p.coins} moedas`;
   }
   grid.innerHTML = "";
-  const sorted = arr.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
+  const sorted = busca ? arr
+    : arr.slice().sort((a,b)=>RAR_ORDER.indexOf(a[2])-RAR_ORDER.indexOf(b[2]));
   sorted.forEach((st,i)=>{
     const [emo,nm,rar] = st;
     const owned = p.stickers.includes(nm);
@@ -4444,6 +4532,7 @@ function renderAlbum(){
       ${stickerFace(st)}
       <span class="nm">${nm}</span>
       <span class="rar rar-${rar}">${RARITIES[rar].label}</span>
+      ${busca? `<span class="poke-tag">Temporada ${st[4]}</span>`:""}
       ${owned? `<span class="owned-tag">✔ Sua!</span>`
              : `<button class="buy-btn" ${walletCoins(p)<price?"disabled":""}>${walletIcon()} ${price}</button>`}`;
     if(owned) card.onclick = ()=>{ sndTap(); confetti(10); speak(nm+"!"); };
@@ -4696,6 +4785,7 @@ function openParents(){
     <p>Letra + som + imagem sempre juntos. A voz fala tudo, então a criança joga sozinha mesmo sem saber ler.</p>
     <h3>🪙 Economia de moedas</h3>
     <p>Acertos valem moedas (níveis altos valem mais; escrever/falar vale 50% a mais). Figurinhas lendárias custam 2000 moedas — incentivo para treinar níveis antigos na Jornada (repetição espaçada, como no Kumon).</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.26:</b> a loja e o álbum ganharam uma <b>busca de Pokémon por nome</b> (procura em todas as temporadas enquanto digita) e <b>4 coleções novas</b> de figurinhas: 🎀 Gabby, ⚽ Tsubasa, 🐉 Dragon Ball e 🛡️ Cavaleiros do Zodíaco — pagas com as moedas 🪙 normais.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
