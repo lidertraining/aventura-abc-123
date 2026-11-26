@@ -1266,14 +1266,22 @@ function loadVoices(){
 }
 if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 
+/* v3.25 — relógio PRÓPRIO da fala: em alguns Chrome (principalmente celular) o
+   flag speechSynthesis.speaking TRAVA em true pra sempre — e o jogo, achando que
+   ainda estava falando, IGNORAVA tudo que a criança dizia no microfone. Agora só
+   confiamos no flag dentro da janela de tempo estimada da nossa própria fala. */
+let ttsUntil = 0;
+function ttsBusy(){ return (speechSynthesis.speaking || speechSynthesis.pending) && Date.now() < ttsUntil; }
+
 /* speak("texto") ou speak([{t:"Encontre",lang:"pt-BR"},{t:"RED!",lang:"en-US"}], cb) */
 function speak(parts, cb){
   if(typeof parts === "string") parts = [{t:parts, lang:"pt-BR"}];
   const list = (parts||[]).filter(p=>p && p.t);
   let called = false;
-  const fire = ()=>{ if(!called){ called = true; if(cb) cb(); } };
+  const fire = ()=>{ if(!called){ called = true; ttsUntil = 0; if(cb) cb(); } };
   if(!("speechSynthesis" in window) || !list.length){ fire(); return; }
   speechSynthesis.cancel();
+  ttsUntil = Date.now() + Math.min(list.reduce((s,p)=>s+Math.max(1300, p.t.length*95), 600), 9000) + 2500;
   list.forEach((p,i)=>{
     const u = new SpeechSynthesisUtterance(p.t);
     u.lang = p.lang || "pt-BR";
@@ -1309,10 +1317,23 @@ let db = { activeIdx:-1, profiles:[] };
 function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:{pt:0,math:0,en:0,de:0,cur:0,pk:0},
   stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0}, cur:{a:0,e:0}, pk:{a:0,e:0} } }; }
 
-function newProfile(name, avatar){
+function newProfile(name, avatar, bday){
   const t = freshTrackState();
-  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
+  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
 }
+
+/* v3.25 — idade do perfil pela data de nascimento (null = não informada).
+   tinyKid: 5 anos ou menos ganha contagens menores e o modo "contar em voz alta". */
+function ageOf(p){
+  if(!p || !p.bday) return null;
+  const b = new Date(p.bday+"T00:00:00");
+  if(isNaN(b)) return null;
+  const n = new Date();
+  let a = n.getFullYear()-b.getFullYear();
+  if(n.getMonth()<b.getMonth() || (n.getMonth()===b.getMonth() && n.getDate()<b.getDate())) a--;
+  return (a>=0 && a<=17)? a : null;
+}
+function tinyKid(){ const a = ageOf(P()); return a!==null && a<=5; }
 
 function migrateProfile(p){
   if(p.lv && p.prog && p.stats) {
@@ -1334,6 +1355,8 @@ function migrateProfile(p){
       p.pv = 3;
     }
     if(!p.mast) p.mast = {};
+    /* v3.25 — data de nascimento (ajusta dificuldade pros pequenos) */
+    if(p.bday === undefined) p.bday = null;
     /* v3.17 — conjunto de figurinhas ativo (clássico/Pokémon) */
     if(!p.stickerSet || !STICKER_SETS[p.stickerSet]) p.stickerSet = "classic";
     /* v3.14 — domínio por letra/sílaba/operação matemática (chaves com prefixo) */
@@ -1532,6 +1555,8 @@ function openCreateProfile(){
     <p>Escolha seu bichinho e escreva seu nome:</p>
     <div class="avatar-pick">${avBtns}</div>
     <input id="name-input" maxlength="12" placeholder="Seu nome" autocomplete="off">
+    <p style="margin:10px 0 4px;font-size:.85em;">🎂 Quando você nasceu? (deixa o jogo do tamanho certo)</p>
+    <input id="bday-input" type="date" autocomplete="off">
     <div style="margin-top:14px;">
       <button class="ov-btn" id="create-ok">Criar! 🎉</button>
       <button class="ov-btn alt" id="create-cancel">Voltar</button>
@@ -1546,7 +1571,8 @@ function openCreateProfile(){
   $("#create-ok").onclick = ()=>{
     const name = ($("#name-input").value||"").trim();
     if(!name){ $("#name-input").style.borderColor = "#ff5e62"; speak("Escreva seu nome, por favor!"); return; }
-    db.profiles.push(newProfile(name.charAt(0).toUpperCase()+name.slice(1), selAvatar));
+    const bd = ($("#bday-input") && $("#bday-input").value) || null;
+    db.profiles.push(newProfile(name.charAt(0).toUpperCase()+name.slice(1), selAvatar, bd));
     db.activeIdx = db.profiles.length-1;
     save(); hideOverlay(); confetti(30); sndLevelUp();
     goHome();
@@ -1968,16 +1994,18 @@ function micMatch(alts, q){
 
 /* v3.22 — liga o microfone SOZINHO quando a pergunta 🎤 aparece: espera o jogo
    terminar de falar o enunciado (senão ele ouviria a própria voz) e chama
-   startMic. Se a criança trocar de pergunta nesse meio tempo, desiste. */
+   startMic. Se a criança trocar de pergunta nesse meio tempo, desiste.
+   v3.25 — usa ttsBusy() (relógio próprio) em vez do flag speechSynthesis.speaking,
+   que trava em true em alguns Chrome e deixava o mic esperando pra sempre. */
 function autoMic(q, mb, heard){
   let waited = 0;
   const tryStart = ()=>{
     if(state.lock || state.q !== q) return;             /* já saiu da pergunta */
-    if(speechSynthesis.speaking || speechSynthesis.pending){
-      waited += 300;
-      if(waited < 15000) setTimeout(tryStart, 300);     /* TTS ainda falando */
-      else startMic(q, mb, heard);                      /* trava? liga mesmo assim */
-      return;
+    if(ttsBusy() && waited < 12000){
+      waited += 300; setTimeout(tryStart, 300); return; /* TTS ainda falando */
+    }
+    if(speechSynthesis.speaking && !ttsBusy()){
+      try{ speechSynthesis.cancel(); }catch(e){}        /* flag travado: destrava */
     }
     startMic(q, mb, heard);
   };
@@ -2010,7 +2038,7 @@ function startMic(q, mb, heard){
     let matched = false, fatal = false, lastTxt = "";
     rec.onresult = ev=>{
       if(matched || state.rec !== rec) return;
-      if(speechSynthesis.speaking) return;              /* não ouvir a si mesmo */
+      if(ttsBusy()) return;                             /* não ouvir a si mesmo */
       const results = [...ev.results];
       const alts = results.flatMap(res=>[...res].map(r=>norm(r.transcript))).filter(Boolean);
       const last = results[results.length-1];
@@ -2677,6 +2705,20 @@ const pkRow = (dex, n, gone=0) => `<div style="display:flex;flex-wrap:wrap;gap:4
 }</div>`;
 /* distratores numéricos vizinhos (contar/repartir fica desafiador de verdade) */
 const pkNear = (n, max) => { const s = new Set([String(n)]); for(let d=1; s.size<5 && d<=4; d++){ if(n-d>=1) s.add(String(n-d)); if(n+d<=max) s.add(String(n+d)); } return [...s]; };
+
+/* v3.25 — contar EM VOZ ALTA: o microfone fica aberto e ouve a criança contar
+   "um, dois, três...". Quando ela chega no número certo, acertou — mesmo sem
+   saber qual algarismo é (perfeito pros pequenos, tipo 3 anos). */
+function countAloudQ(n, visual, thing){
+  return {
+    kind:"mic", prompt:"Conte em voz alta! 🎤",
+    visual,
+    speech:[ptT(`Conte os ${thing} em voz alta, apontando com o dedinho: um, dois... até o fim!`)],
+    hintSpeech: ptT(`Aponte um por um e fale junto: um... dois... três... Quantos ${thing} tem?`),
+    okSpeech:`Você contou certinho! São ${n} ${thing}! Esse é o número ${n}!`,
+    answer:String(n)
+  };
+}
 function genPk(lv){
   if(lv>=20) lv = 1 + rand(19); /* mestre: mistura tudo */
   const p = P() || {dmast:{}};
@@ -2696,7 +2738,13 @@ function genPk(lv){
     };
   }
   if(lv===2){ /* contar os Pokémon */
-    const n = 1 + rand(9);
+    const n = tinyKid()? 1 + rand(4) : 1 + rand(9);
+    if(SR && tinyKid() && Math.random()<.5){
+      const q = countAloudQ(n, pkRow(W[2], n), W[3]+"s");
+      q.speech = [ptT(`Olha quantos ${W[3]}! Conte em voz alta, apontando com o dedinho: um, dois... até o fim!`)];
+      q.okSpeech = `Você contou certinho! São ${n} Pokémon!`;
+      return q;
+    }
     return {
       kind:"opts", prompt:"Quantos Pokémon tem aqui?",
       visual: pkRow(W[2], n),
@@ -3591,8 +3639,9 @@ function genMath(lv){
     return mathOpQ(op);
   }
   if(lv<=3){ /* contar 3 / 5 / 10 */
-    const max = lv===1?3 : lv===2?5 : 10;
+    const max = lv===1?3 : lv===2?5 : (tinyKid()? 5 : 10);
     const n = 1+rand(max), e = pick(COUNT_EMOJIS);
+    if(SR && tinyKid() && Math.random()<.5) return countAloudQ(n, emojiGroup(n,e), "desenhos");
     return {
       kind:"opts", prompt:"Quantos são? Conte com o dedinho!",
       visual: emojiGroup(n,e),
@@ -4634,6 +4683,13 @@ function openParents(){
     <p>Se o jogo foi aberto com <b>duplo clique</b> (endereço começa com <b>file://</b>), o navegador <b>nega o microfone sem nem perguntar</b> — é uma regra do Chrome/Edge. Solução: abra o jogo pelo <b>JOGAR.bat</b> que está na pasta do jogo (ele abre em http://127.0.0.1:8123 e aí o pedido de permissão aparece — clique em <b>Permitir</b>). <b>Atenção:</b> o progresso não passa sozinho do jeito antigo pro novo endereço — no jogo antigo use "💾 Salvar em arquivo" e no novo "📂 Recuperar de arquivo" (uma vez só). Se ainda bloquear: cadeado 🔒 na barra → Microfone → Permitir; e em Configurações do Windows → Privacidade e segurança → Microfone, ligue o acesso para aplicativos. O reconhecimento de voz precisa de internet.</p>
     <p style="text-align:center;"><button class="ov-btn alt" id="parents-mictest">🎤 Testar microfone agora</button></p>
     <div id="mic-test-out" style="text-align:center;font-weight:600;min-height:1.4em;"></div>
+    <p style="font-size:.9em;opacity:.85;">🔧 <b>v3.25:</b> consertamos um defeito em que o jogo achava que ainda estava falando e <b>ignorava tudo que a criança dizia</b> no microfone. Agora o jogo usa um relógio próprio e o microfone volta a ouvir sempre.</p>
+    <h3>🎂 Idade da criança (v3.25)</h3>
+    <p>Informe a data de nascimento e o jogo se ajusta sozinho: <b>pequenos (até 5 anos)</b> contam quantidades menores e ganham o modo <b>"contar em voz alta" 🎤</b> — o microfone fica aberto e ouve a criança contar "um, dois, três..."; quando ela chega no número certo, acertou, <b>mesmo sem saber qual é o algarismo</b>.</p>
+    ${p ? `<p style="text-align:center;">Perfil ativo: <b>${p.avatar} ${p.name}</b> · idade: <b>${ageOf(p)!==null ? ageOf(p)+" anos" : "não informada"}</b><br>
+      <input type="date" id="bday-set" value="${p.bday||""}" style="margin-top:6px;">
+      <button class="ov-btn alt" id="bday-save">💾 Salvar data</button></p>
+    <div id="bday-out" style="text-align:center;font-weight:600;min-height:1.2em;"></div>` : ""}
     <h3>📚 Nivelamento → Aprender de verdade</h3>
     <p>Até o primeiro erro, o jogo funciona como <b>teste de nivelamento</b>: base pequena, 5 acertos por nível — a criança avança rápido pelo que já sabe. Quando ela erra (do nível 3 em diante), aquele nível vira o <b>nível real</b> dela: dali pra cima destrava a <b>base completa</b> (todas as cores, muito mais bichos, comidas, coisas e números até 20), a meta sobe pra <b>10 acertos</b> (níveis de domínio 🏅: 4 palavras) e <b>só acerto limpo conta</b> — se errou na pergunta, ela volta pra fila. O 📚 no topo mostra que o modo aprender está ativo naquele nível.</p>
     <h3>🔤 Método fônico</h3>
@@ -4663,6 +4719,15 @@ function openParents(){
   $("#parents-switch").onclick = ()=>{ sndTap(); hideOverlay(); goProfiles(); };
   $("#parents-ranking").onclick = ()=>{ sndTap(); hideOverlay(); openRanking(); };
   $("#parents-mictest").onclick = ()=>{ sndTap(); micTest(); };
+  if(p && $("#bday-save")) $("#bday-save").onclick = ()=>{
+    sndTap();
+    p.bday = $("#bday-set").value || null;
+    save();
+    const a = ageOf(p);
+    $("#bday-out").textContent = p.bday
+      ? (a!==null ? `Salvo! ${p.name} tem ${a} anos.${a<=5 ? " Modo pequeninos ativado! 🎤" : ""}` : "Data salva, mas parece inválida — confira o ano.")
+      : "Data removida.";
+  };
   $("#parents-export").onclick = ()=>{ sndTap(); exportSave(); };
   $("#parents-import").onclick = ()=>{ sndTap(); $("#import-file").click(); };
   $("#import-file").onchange = ev=>{ const f = ev.target.files[0]; if(f) importSave(f); };
