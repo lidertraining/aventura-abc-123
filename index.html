@@ -2937,9 +2937,55 @@ const LETTER_MIC = {
   V:["ve"], W:["dablio","dabliu","dablo"], X:["xis","chis","his","seis"], Y:["ipsilon","ipslon"],
   Z:["ze"]
 };
+/* v3.23 — o CONTRÁRIO do microfone: o computador fala e a criança identifica.
+   Mostra uma palavra DE VERDADE letra por letra e pede pra tocar na letra certa
+   ("Olhe a palavra CASA! Toque na letra Á!"). As opções são as letras da
+   palavra NA ORDEM (sem embaralhar) — a criança enxerga a palavra inteira. */
+function findLetterQ(L, dkey, word){
+  let w = word;
+  if(!w){
+    const pool = WORDS.concat(WORDS_BIG).filter(x => x.w.includes(L));
+    if(!pool.length) return null;
+    w = pick(pool);
+  }
+  const nm = letSay(L);
+  return {
+    kind:"opts", prompt:`Toque na letra da palavra!`,
+    visual:`<span class="big-emoji">${w.e}</span>`,
+    speech:[ptT(`Olhe a palavra ${wordSay(w.w)}! Qual é a letra ${nm}? Toque nela!`)],
+    hintSpeech: ptT(`${wordSay(w.w)}... procure a letra ${nm}!`),
+    okSpeech:`${nm}! A palavra ${wordSay(w.w)} tem a letra ${nm}!`,
+    optClass:"mid-text",
+    options: w.w.split("").map(ch=>({label:ch, correct:ch===L, say:{t:letSay(ch), lang:"pt-BR"}})),
+    dkey
+  };
+}
+/* v3.23 — mesma ideia com sílabas: "Na palavra MACACO, toque no pedacinho CA!" */
+function findSylQ(syl, dkey){
+  const pool = WORDS.concat(WORDS_BIG).filter(x => x.syl.includes(syl));
+  if(!pool.length) return null;
+  const big = pool.filter(x => x.syl.length >= 3);
+  const w = pick(big.length ? big : pool);
+  return {
+    kind:"opts", prompt:`Toque no pedacinho da palavra!`,
+    visual:`<span class="big-emoji">${w.e}</span>`,
+    speech:[ptT(`A palavra ${wordSay(w.w)} tem pedacinhos! Qual é o pedacinho ${sylSay(syl)}? Toque nele!`)],
+    hintSpeech: ptT(`${sylJoinSay(w.syl)}... toque no ${sylSay(syl)}!`),
+    okSpeech:`${sylSay(syl)}! ${wordSay(w.w)} tem ${sylSay(syl)}!`,
+    optClass:"mid-text",
+    options: w.syl.map(s=>({label:s, correct:s===syl, say:{t:sylSay(s), lang:"pt-BR"}})),
+    dkey
+  };
+}
+/* v3.23 — domínio da letra em TRÊS direções (processo claro de alfabetização):
+   1) ouvir e apontar (computador fala, criança acha — receptivo)
+   2) achar a letra dentro de uma palavra de verdade (receptivo em contexto)
+   3) ler em voz alta no microfone (expressivo — mic liga sozinho)
+   Todas contam pro mesmo domínio "L:X" — não depende SÓ do microfone. */
 function letterMasteryQ(L, pool){
   const nm = letSay(L);
-  if(SR){
+  const r = Math.random();
+  if(SR && r < .4){
     return {
       kind:"mic", prompt:"Leia essa letra bem alto! 🎤",
       visual:`<div class="read-word" style="font-size:clamp(56px,14vw,96px);">${L}</div>`,
@@ -2950,8 +2996,12 @@ function letterMasteryQ(L, pool){
       dkey:"L:"+L
     };
   }
+  if(r < .7){
+    const q = findLetterQ(L, "L:"+L);
+    if(q) return q;
+  }
   return {
-    kind:"opts", prompt:"Qual é a letra?",
+    kind:"opts", prompt:"Qual é a letra? Ouça e toque!",
     visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🔤</span>`,
     speech:[ptT(`Encontre a letra ${nm}!`)],
     hintSpeech: ptT(`Procure a letra ${nm}.`),
@@ -2973,8 +3023,10 @@ function sylMicAlts(syl){
   if(s==="se") out.push("si");
   return out;
 }
+/* v3.23 — domínio da sílaba nas mesmas TRÊS direções das letras */
 function sylMasteryQ(syl, pool){
-  if(SR){
+  const r = Math.random();
+  if(SR && r < .4){
     return {
       kind:"mic", prompt:"Leia essa sílaba bem alto! 🎤",
       visual:`<div class="read-word" style="font-size:clamp(48px,12vw,80px);">${syl}</div>`,
@@ -2985,8 +3037,12 @@ function sylMasteryQ(syl, pool){
       dkey:"S:"+syl
     };
   }
+  if(r < .7){
+    const q = findSylQ(syl, "S:"+syl);
+    if(q) return q;
+  }
   return {
-    kind:"opts", prompt:"Qual é a sílaba?",
+    kind:"opts", prompt:"Qual é a sílaba? Ouça e toque!",
     visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">🧩</span>`,
     speech:[ptT(`Encontre a sílaba ${sylSay(syl)}!`)],
     hintSpeech: ptT(`${sylSay(syl)}! ${sylSay(syl)}!`),
@@ -3113,8 +3169,16 @@ function genPtCore(lv){
   }
   if(lv===13 || lv===14){ /* LER palavra → achar figura (não fala a palavra!) */
     const w = pick(WORDS);
-    /* metade das vezes: ler a palavra EM VOZ ALTA 🎤 (sem figura pra chutar) */
-    if(SR && Math.random() < .5){
+    const r = Math.random();
+    /* v3.23 — às vezes o contrário: o computador fala e a criança ACHA a letra
+       dentro da palavra ("Na palavra CASA, qual é a letra Á?") — sem mic */
+    if(r < .3){
+      const L = pick([...new Set(w.w.split(""))]);
+      const q = findLetterQ(L, null, w);
+      if(q) return q;
+    }
+    /* um terço das vezes: ler a palavra EM VOZ ALTA 🎤 (sem figura pra chutar) */
+    if(SR && r < .6){
       return {
         kind:"mic", prompt:"Leia a palavra em voz alta! 🎤",
         visual:`<div class="read-word">${w.w}</div>`,
@@ -3206,6 +3270,12 @@ function genPtCore(lv){
   }
   if(lv===21){ /* palavras grandes */
     const w = pick(WORDS_BIG);
+    /* v3.23 — achar a letra dentro da palavra grande (receptivo, sem mic) */
+    if(Math.random() < .3){
+      const L = pick([...new Set(w.w.split(""))]);
+      const q = findLetterQ(L, null, w);
+      if(q) return q;
+    }
     return {
       kind:"opts", prompt:"Leia a palavra GRANDE e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(28px,7vw,42px);">${w.w}</div>`,
@@ -4309,11 +4379,11 @@ function domainMapReport(p){
   const letDone = letters.filter(L => (p.dmast["L:"+L]||0) >= MASTERY_DEEP).length;
   const letPart = letters.filter(L => { const v=p.dmast["L:"+L]||0; return v>0 && v<MASTERY_DEEP; }).length;
   parts.push(`<div style="margin-top:12px;">
-    <b>🔤 Letras dominadas (falando o nome no microfone 3x):</b> ${letDone}/${letters.length} · parciais: ${letPart}
+    <b>🔤 Letras dominadas (3 acertos limpos — ouvindo, achando na palavra ou falando 🎤):</b> ${letDone}/${letters.length} · parciais: ${letPart}
     <div style="margin-top:6px;">${letters.map(L => unitCell(L, unitState(p,"L:"+L))).join("")}</div>
   </div>`);
   /* sílabas por família */
-  parts.push(`<div style="margin-top:12px;"><b>🧩 Sílabas dominadas (lendo em voz alta 3x):</b></div>`);
+  parts.push(`<div style="margin-top:12px;"><b>🧩 Sílabas dominadas (3 acertos limpos nas 3 direções):</b></div>`);
   const famKeys = Object.keys(SYL_FAMILIES);
   const famRows = famKeys.map(f => {
     const syls = SYL_FAMILIES[f];
@@ -4371,11 +4441,19 @@ function openParents(){
   showOverlay(`<div id="parents-card">
     <h2 style="text-align:center;color:#454a75;">ℹ️ Para os pais</h2>
     ${report}
-    <h3>🎯 Mapa de domínio (v3.14)</h3>
-    <p>Cada letra, sílaba e conta agora precisa de <b>3 acertos limpos no microfone</b> (ou digitando) pra virar dominada. Nada de passar de nível "no chute": se errar no meio, o contador daquela unidade zera. Só assim ele avança pra próxima etapa.</p>
+    <h3>🎯 Mapa de domínio (v3.23)</h3>
+    <p>Cada letra, sílaba e conta precisa de <b>3 acertos limpos</b> pra virar dominada — se errar no meio, o contador daquela unidade zera. E agora o domínio é treinado em <b>3 direções</b>, pra não depender só do microfone:</p>
+    <ul>
+      <li><b>👂 Ouvir e apontar</b> — o computador fala a letra/sílaba e a criança toca na certa.</li>
+      <li><b>🔍 Achar dentro da palavra</b> — aparece uma palavra de verdade (ex.: CASA) e o computador pergunta "qual é a letra A?". A criança toca na letra <i>dentro</i> da palavra.</li>
+      <li><b>🎤 Ler em voz alta</b> — o microfone liga <b>sozinho</b> quando a pergunta aparece (v3.22): é só falar, sem apertar nada.</li>
+    </ul>
+    <p>As três direções contam pro <b>mesmo</b> domínio. Assim, mesmo em dia de microfone ruim, ele continua progredindo de verdade.</p>
     ${p ? domainMapReport(p) : ""}
-    <h3>🔤 Missão do Alfabeto (v3.13)</h3>
-    <p>Se seu filho já passou pelas sílabas mas ainda "chutando", ele foi <b>rebaixado uma vez</b> para o começo do alfabeto (nível 3 · 6A · Vogais). O ranking, moedas e figurinhas ficam <b>preservados</b>. Ele refaz TODAS as letras (às vezes com microfone 🎤, falando o nome/som da letra) antes de voltar pras sílabas. Nas sílabas, 80% das perguntas agora <b>exigem ler em voz alta no microfone</b> — sem chute. Objetivo: quando ele juntar as letras, cada sílaba sai redondinha.</p>
+    <h3>📖 O processo de alfabetização, passo a passo</h3>
+    <p>A trilha de Português segue um caminho fônico claro: <b>1)</b> ouvir e apontar figuras (7A) → <b>2)</b> dominar cada LETRA nas 3 direções (6A) → <b>3)</b> dominar cada SÍLABA nas 3 direções (5A) → <b>4)</b> ler e montar PALAVRAS inteiras (4A/3A/2A) → <b>5)</b> sons especiais como CH, NH, LH (A) → <b>6)</b> frases (B) → <b>7)</b> pequenas histórias (C). Cada etapa só abre quando a anterior está dominada — sem pular, sem chute.</p>
+    <h3>🔢 O processo de matemática, passo a passo</h3>
+    <p>Mesmo espírito: <b>1)</b> contar quantidades → <b>2)</b> comparar (maior/menor) → <b>3)</b> somar e subtrair com domínio conta por conta (cada soma até 10 precisa de 3 acertos limpos) → <b>4)</b> dezenas e somas até 50 → <b>5)</b> tabuadas do 2, 5 e 10 → <b>6)</b> divisão → <b>7)</b> probleminhas com história. A trilha Pokémon ⚡ mistura esse mesmo caminho (contar, somar, subtrair e dividir Pokémon) com leitura e escrita de palavras em português.</p>
     <h3>🎌 Método Kumon</h3>
     <p>Micro-passos: cada nível ensina UMA coisinha nova. A criança precisa de ${GOAL} acertos para avançar (domínio antes de progresso). Errar não pune — o jogo dá dicas e sugere revisar o nível anterior quando percebe dificuldade.</p>
     <p>A trilha de Português segue as <b>etapas oficiais do Kumon</b>: <b>7A</b> ouvir e apontar → <b>6A</b> letras → <b>5A</b> sílabas → <b>4A/3A/2A</b> palavras → <b>A</b> sons especiais → <b>B</b> frases → <b>C</b> pequenas histórias. Nos níveis 🏅 (domínio de palavras) a MESMA palavra repete 3 vezes — ouvir, ler sozinho e montar — até ser dominada, exatamente como a repetição do Kumon.</p>
