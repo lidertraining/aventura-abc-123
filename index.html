@@ -1146,10 +1146,17 @@ const CUR_LEVELS = CUR_TRACK.map(l=>l.name).concat("Mestre das Curiosidades 👑
    Escrever nome de Pokémon saiu (nome próprio em inglês não casa com o som) —
    a criança lê e escreve palavras REAIS de português ligadas a cada Pokémon,
    e faz contas somando, subtraindo e repartindo Pokémon. */
+/* v3.24 — jornada COMPLETA: o mesmo caminho de alfabetização (ouvir → letras →
+   sílabas → palavras → frases) e de matemática (contar → comparar → somar →
+   subtrair → dobro → vezes → dividir → probleminhas), tudo com Pokémon.
+   Letras, sílabas e contas carregam dkey — o domínio conquistado aqui conta
+   no MESMO mapa das trilhas Português e Matemática. */
 const PK_LEVELS = [
-  "Conte os Pokémon 🔢","Primeira letra 🔤","Pokémon somam ➕","Monte a palavra 🧩",
-  "Fugiram! ➖","Copie a palavra ✏️","Leia e capture 🕵️","Reparta os Pokémon ➗",
-  "Escreva sozinho ⌨️","Mestre Pokémon 👑"
+  "Encontre o Pokémon 👂","Conte os Pokémon 🔢","Qual time tem mais? ⚖️","Ache a letra 🔤",
+  "Primeira letra 🔤","Pokémon somam ➕","Ache o pedacinho 🧩","Monte a palavra 🧩",
+  "Fugiram! ➖","Copie a palavra ✏️","O dobro! ✨","Leia e capture 🕵️",
+  "Leia pro Pokémon 🎤","Times de Pokémon ✖️","Reparta os Pokémon ➗","Escreva sozinho ⌨️",
+  "Complete a frase 📖","Probleminha do treinador 🧠","Leia a frase 📚","Mestre Pokémon 👑"
 ];
 /* [PALAVRA, sílabas, dex, Nome, frase] — palavra sem acento (teclado só tem A-Z) */
 const PK_PT = [
@@ -1304,7 +1311,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, pkv:2, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
+  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
 }
 
 function migrateProfile(p){
@@ -1338,6 +1345,15 @@ function migrateProfile(p){
     /* v3.22 — trilha Pokémon virou português+matemática: a fila de reforço
        antiga guardava perguntas com nomes em inglês — limpar uma vez */
     if(p.pkv == null){ p.pkv = 2; p.rq.pk = []; }
+    /* v3.24 — trilha Pokémon cresceu de 10 pra 20 níveis: remapear o nível
+       atual, o recorde e as lições da fila pra numeração nova (sem perder nada) */
+    if(p.pkv === 2){
+      const M = {1:2,2:5,3:6,4:8,5:9,6:10,7:12,8:15,9:16,10:20};
+      p.lv.pk = M[p.lv.pk] || p.lv.pk || 1;
+      if(p.hi && p.hi.pk) p.hi.pk = M[p.hi.pk] || p.hi.pk;
+      (p.rq.pk||[]).forEach(it=>{ if(it.q && it.q.flv) it.q.flv = M[it.q.flv] || it.q.flv; });
+      p.pkv = 3;
+    }
     /* itens antigos da fila ganham a fase de fundamento */
     TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
     if(!p.deep) p.deep = {pt:0,math:0,en:0,de:0};
@@ -2662,9 +2678,24 @@ const pkRow = (dex, n, gone=0) => `<div style="display:flex;flex-wrap:wrap;gap:4
 /* distratores numéricos vizinhos (contar/repartir fica desafiador de verdade) */
 const pkNear = (n, max) => { const s = new Set([String(n)]); for(let d=1; s.size<5 && d<=4; d++){ if(n-d>=1) s.add(String(n-d)); if(n+d<=max) s.add(String(n+d)); } return [...s]; };
 function genPk(lv){
-  if(lv>=10) lv = 1 + rand(9); /* mestre: mistura tudo */
+  if(lv>=20) lv = 1 + rand(19); /* mestre: mistura tudo */
+  const p = P() || {dmast:{}};
+  const dm = p.dmast || {};
   const W = pick(PK_PT);
-  if(lv===1){ /* contar os Pokémon */
+  if(lv===1){ /* ouvir o nome e capturar (7A: ouvir e apontar) */
+    const cands = shuffle(PK_PT).slice(0,3);
+    const w = cands[0];
+    return {
+      kind:"opts", prompt:"Escute e capture!",
+      visual:`<span class="big-emoji">👂</span>`,
+      speech:[ptT(`Encontre o ${w[3]}! ${w[4]}!`)],
+      hintSpeech: ptT(`${w[4]}! Toque no ${w[3]}!`),
+      okSpeech:`O ${w[3]}! Capturado!`,
+      optClass:"emoji-opt",
+      options: shuffle(cands.map(c=>({ label:pkImg(c[2],"clamp(56px,14vw,84px)"), correct:c===w, say:{t:`o ${c[3]}!`, lang:"pt-BR"} })))
+    };
+  }
+  if(lv===2){ /* contar os Pokémon */
     const n = 1 + rand(9);
     return {
       kind:"opts", prompt:"Quantos Pokémon tem aqui?",
@@ -2675,7 +2706,38 @@ function genPk(lv){
       options: makeOpts(String(n), pkNear(n,10), 3)
     };
   }
-  if(lv===2){ /* primeira letra da PALAVRA */
+  if(lv===3){ /* comparar: qual time tem mais */
+    const B = pick(PK_PT.filter(x=>x[2]!==W[2]));
+    let a = 2 + rand(7), b = 2 + rand(7);
+    if(a===b) b = a>=8? a-1 : a+1;
+    const win = a>b? W : B;
+    return {
+      kind:"opts", prompt:"Qual time tem MAIS Pokémon?",
+      visual:`<div style="display:flex;flex-direction:column;gap:8px;">${pkRow(W[2],a)}${pkRow(B[2],b)}</div>`,
+      speech:[ptT(`Olha os dois times: o time do ${W[3]} e o time do ${B[3]}! Conte os dois e toque no time que tem MAIS Pokémon!`)],
+      hintSpeech: ptT(`Conte o time do ${W[3]}... agora conte o time do ${B[3]}... qual número é maior?`),
+      okSpeech:`O time do ${win[3]}! ${Math.max(a,b)} é mais que ${Math.min(a,b)}!`,
+      optClass:"emoji-opt",
+      options: shuffle([[W,a],[B,b]].map(x=>({ label:pkImg(x[0][2],"clamp(56px,14vw,84px)"), correct:x[0]===win, say:{t:`o time do ${x[0][3]}!`, lang:"pt-BR"} })))
+    };
+  }
+  if(lv===4){ /* achar a letra dentro da palavra Pokémon — domínio L: */
+    const letters = [...new Set(W[0].split(""))];
+    const need = letters.filter(L => (dm["L:"+L]||0) < MASTERY_DEEP);
+    const L = pick(need.length? need : letters);
+    const nm = letSay(L);
+    return {
+      kind:"opts", prompt:"Toque na letra da palavra!",
+      visual: pkImg(W[2],"clamp(90px,26vw,140px)"),
+      speech:[ptT(`${W[4]}! Olhe a palavra ${wordSay(W[0])}: qual é a letra ${nm}? Toque nela!`)],
+      hintSpeech: ptT(`${wordSay(W[0])}... procure a letra ${nm}!`),
+      okSpeech:`${nm}! A palavra ${wordSay(W[0])} tem a letra ${nm}!`,
+      optClass:"mid-text",
+      options: W[0].split("").map(ch=>({label:ch, correct:ch===L, say:{t:letSay(ch), lang:"pt-BR"}})),
+      dkey:"L:"+L
+    };
+  }
+  if(lv===5){ /* primeira letra da PALAVRA */
     const first = W[0][0];
     const pool = shuffle([...new Set(PK_PT.map(x=>x[0][0]))]);
     return {
@@ -2687,8 +2749,10 @@ function genPk(lv){
       options: makeOpts(first, pool, 4).map(o=>Object.assign(o, {say:{t:letSay(o.label), lang:"pt-BR"}}))
     };
   }
-  if(lv===3){ /* somar Pokémon */
-    const a = 1 + rand(5), b = 1 + rand(4);
+  if(lv===6){ /* somar Pokémon — domínio por conta (M:+n, igual à trilha Matemática) */
+    const need = ["+1","+2","+3","+4"].filter(op => (dm["M:"+op]||0) < MASTERY_DEEP);
+    const b = need.length? +pick(need).slice(1) : 1 + rand(4);
+    const a = 1 + rand(5);
     const B = pick(PK_PT.filter(x=>x[2]!==W[2]));
     return {
       kind:"keypad", prompt:`${a} ${W[3]} + ${b} ${B[3]} = ?`,
@@ -2696,10 +2760,27 @@ function genPk(lv){
       speech:[ptT(`Chegaram ${a} ${W[3]} e ${b} ${B[3]}! Quantos Pokémon no total? Conte todos e digite!`)],
       hintSpeech: ptT(`Conte todos juntos: os ${W[3]} e os ${B[3]}!`),
       okSpeech:`${a+b} Pokémon!`,
-      answer:String(a+b), maxLen:2
+      answer:String(a+b), maxLen:2,
+      dkey:"M:+"+b
     };
   }
-  if(lv===4){ /* montar a palavra com sílabas */
+  if(lv===7){ /* achar o pedacinho (sílaba) na palavra Pokémon — domínio S: */
+    const big = PK_PT.filter(x=>x[1].length>=3);
+    const w = (Math.random()<.6 && big.length)? pick(big) : pick(PK_PT.filter(x=>x[1].length>=2));
+    const need = w[1].filter(s => (dm["S:"+s]||0) < MASTERY_DEEP);
+    const syl = pick(need.length? need : w[1]);
+    return {
+      kind:"opts", prompt:"Toque no pedacinho da palavra!",
+      visual: pkImg(w[2],"clamp(90px,26vw,140px)"),
+      speech:[ptT(`${w[4]}! A palavra ${wordSay(w[0])} tem pedacinhos! Qual é o pedacinho ${sylSay(syl)}? Toque nele!`)],
+      hintSpeech: ptT(`${sylJoinSay(w[1])}... toque no ${sylSay(syl)}!`),
+      okSpeech:`${sylSay(syl)}! ${wordSay(w[0])} tem ${sylSay(syl)}!`,
+      optClass:"mid-text",
+      options: w[1].map(s=>({label:s, correct:s===syl, say:{t:sylSay(s), lang:"pt-BR"}})),
+      dkey:"S:"+syl
+    };
+  }
+  if(lv===8){ /* montar a palavra com sílabas */
     const w = pick(PK_PT.filter(x=>x[1].length>=2));
     const decoys = shuffle(PK_PT.filter(x=>x!==w).flatMap(x=>x[1]).filter(s=>!w[1].includes(s))).slice(0, w[1].length>=3?3:2);
     return {
@@ -2711,7 +2792,7 @@ function genPk(lv){
       pieces: w[1], decoys, sayPieces:true, answer:w[0]
     };
   }
-  if(lv===5){ /* subtrair: Pokémon fugiram */
+  if(lv===9){ /* subtrair: Pokémon fugiram — domínio M:-n */
     const tot = 3 + rand(7), g = 1 + rand(tot-1);
     return {
       kind:"keypad", prompt:`Tinha ${tot}, fugiram ${g}. Quantos ficaram?`,
@@ -2719,10 +2800,11 @@ function genPk(lv){
       speech:[ptT(`Tinha ${tot} ${W[3]}! Mas ${g} fugiram correndo! Quantos ficaram? Digite!`)],
       hintSpeech: ptT(`Conte só os ${W[3]} coloridos — os apagadinhos fugiram!`),
       okSpeech:`${tot-g}! Esses não fugiram!`,
-      answer:String(tot-g), maxLen:1
+      answer:String(tot-g), maxLen:1,
+      dkey:"M:-"+g
     };
   }
-  if(lv===6){ /* copiar a palavra olhando */
+  if(lv===10){ /* copiar a palavra olhando */
     return {
       kind:"abc", prompt:"Copie a palavra!",
       visual:`${pkImg(W[2],"clamp(90px,26vw,140px)")}<div class="read-word" style="font-size:clamp(24px,6.5vw,38px);">${W[0]}</div>`,
@@ -2732,7 +2814,20 @@ function genPk(lv){
       answer:W[0], maxLen:W[0].length
     };
   }
-  if(lv===7){ /* ler a palavra e capturar o Pokémon certo */
+  if(lv===11){ /* dobro — domínio M:dn */
+    const need = ["d1","d2","d3","d4","d5"].filter(op => (dm["M:"+op]||0) < MASTERY_DEEP);
+    const n = need.length? +pick(need).slice(1) : 1 + rand(5);
+    return {
+      kind:"keypad", prompt:`O dobro! ${n} + ${n} = ?`,
+      visual:`<div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap;">${pkRow(W[2],n)}<span class="num-big">+</span>${pkRow(W[2],n)}</div>`,
+      speech:[ptT(`Chegou o DOBRO! ${n} ${W[3]} e mais ${n} ${W[3]}! Quantos Pokémon no total? Digite!`)],
+      hintSpeech: ptT(`Dobro é duas vezes o mesmo número: conte ${n} e depois mais ${n}!`),
+      okSpeech:`O dobro de ${n} é ${n+n}!`,
+      answer:String(n+n), maxLen:2,
+      dkey:"M:d"+n
+    };
+  }
+  if(lv===12){ /* ler a palavra e capturar o Pokémon certo */
     const cands = shuffle(PK_PT).slice(0,3);
     const w = cands[0];
     return {
@@ -2745,7 +2840,29 @@ function genPk(lv){
       options: shuffle(cands.map(c=>({ label:pkImg(c[2],"clamp(56px,14vw,84px)"), correct:c===w, say:{t:`o ${c[3]}! ${c[4]}!`, lang:"pt-BR"} })))
     };
   }
-  if(lv===8){ /* dividir: repartir entre os treinadores */
+  if(lv===13 && SR){ /* ler em voz alta pro Pokémon 🎤 (mic liga sozinho) */
+    return {
+      kind:"mic", prompt:"Leia a palavra pro Pokémon! 🎤",
+      visual:`${pkImg(W[2],"clamp(90px,26vw,140px)")}<div class="read-word" style="font-size:clamp(26px,7vw,40px);">${W[0]}</div>`,
+      speech:[ptT(`O ${W[3]} quer te ouvir! Leia a palavra bem alto no microfone!`)],
+      hintSpeech: ptT(`${W[1].map(sylSay).join("... ")}! ${wordSay(W[0])}! Fale: ${wordSay(W[0])}!`),
+      okSpeech:`${wordSay(W[0])}! O ${W[3]} adorou!`,
+      answer: W[0], accept:[wordSay(W[0])]
+    };
+  }
+  if(lv===13) return genPk(12); /* sem microfone: lê e captura */
+  if(lv===14){ /* times: multiplicação por grupos */
+    const k = 2 + rand(2), per = 2 + rand(3), n = k*per;
+    return {
+      kind:"keypad", prompt:`${k} times com ${per} Pokémon cada. Quantos no total?`,
+      visual:`<div style="display:flex;flex-direction:column;gap:6px;">${Array.from({length:k},()=>pkRow(W[2],per)).join("")}</div>`,
+      speech:[ptT(`São ${k} times, e cada time tem ${per} ${W[3]}! Quantos Pokémon no total? Conte todos e digite!`)],
+      hintSpeech: ptT(`Conte de ${per} em ${per}: ${Array.from({length:k},(_,i)=>String(per*(i+1))).join("... ")}!`),
+      okSpeech:`${k} vezes ${per} é ${n}!`,
+      answer:String(n), maxLen:2
+    };
+  }
+  if(lv===15){ /* dividir: repartir entre os treinadores */
     const k = 2 + rand(2), per = 1 + rand(4), n = k*per;
     return {
       kind:"opts", prompt:`${n} Pokémon para ${k} treinadores. Quantos pra cada?`,
@@ -2756,14 +2873,66 @@ function genPk(lv){
       options: makeOpts(String(per), pkNear(per,6), 3)
     };
   }
-  /* lv 9 — ditado: ouvir e escrever a palavra sozinho */
+  if(lv===16){ /* ditado com figura: ouvir e escrever sozinho */
+    return {
+      kind:"abc", prompt:"Escute e escreva a palavra!",
+      visual:pkImg(W[2]),
+      speech:[ptT(`${W[4]}! Escreva a palavra: ${wordSay(W[0])}!`)],
+      hintSpeech: ptT(`${W[1].map(sylSay).join("... ")}! Letra por letra: ${W[0].split("").map(letSay).join("... ")}!`),
+      okSpeech:`${wordSay(W[0])}! Mestre das palavras!`,
+      answer:W[0], maxLen:W[0].length
+    };
+  }
+  if(lv===17){ /* completar a frase com a palavra certa (ler em contexto) */
+    const pool = PK_PT.filter(x=>x[4].toLowerCase().includes(" "+x[0].toLowerCase()));
+    const w = pick(pool);
+    const gap = w[4].replace(new RegExp("\\s"+w[0]+"[a-zà-ÿ]*","i"), " ____");
+    return {
+      kind:"opts", prompt:"Leia e complete a frase!",
+      visual:`${pkImg(w[2],"clamp(80px,22vw,120px)")}<div class="read-word" style="font-size:clamp(18px,5vw,28px);line-height:1.4;">${gap}</div>`,
+      speech:[ptT("Leia a frase e escolha a palavra que está faltando!")],
+      hintSpeech: ptT(`A frase é: ${w[4].toLowerCase()}! Qual palavra completa a frase?`),
+      okSpeech:`${w[4]}!`,
+      optClass:"mid-text",
+      options: shuffle([w, ...shuffle(PK_PT.filter(x=>x!==w)).slice(0,2)]).map(c=>({label:c[0], correct:c===w, say:{t:wordSay(c[0]), lang:"pt-BR"}}))
+    };
+  }
+  if(lv===18){ /* probleminha com história (sem fileira pra contar — de cabeça!) */
+    if(Math.random() < .5){
+      const a = 2 + rand(6), b = 1 + rand(4);
+      return {
+        kind:"keypad", prompt:"Probleminha! Escute com atenção!",
+        visual:`${pkImg(W[2],"clamp(90px,26vw,140px)")}<div style="font-size:clamp(28px,8vw,42px);">🧠</div>`,
+        speech:[ptT(`O treinador tinha ${a} ${W[3]}. Ele capturou mais ${b}! Quantos ${W[3]} ele tem agora? Digite!`)],
+        hintSpeech: ptT(`Tinha ${a}... chegaram mais ${b}! Comece no ${a} e conte mais ${b} nos dedinhos!`),
+        okSpeech:`${a} mais ${b} é ${a+b}!`,
+        answer:String(a+b), maxLen:2,
+        dkey:"M:+"+b
+      };
+    }
+    const tot = 4 + rand(6), g = 1 + rand(Math.min(4, tot-1));
+    return {
+      kind:"keypad", prompt:"Probleminha! Escute com atenção!",
+      visual:`${pkImg(W[2],"clamp(90px,26vw,140px)")}<div style="font-size:clamp(28px,8vw,42px);">🧠</div>`,
+      speech:[ptT(`O treinador tinha ${tot} ${W[3]}. Mas ${g} foram passear e não voltaram! Quantos ficaram? Digite!`)],
+      hintSpeech: ptT(`Tinha ${tot}... saíram ${g}! Comece no ${tot} e volte ${g} nos dedinhos!`),
+      okSpeech:`${tot} menos ${g} é ${tot-g}!`,
+      answer:String(tot-g), maxLen:1,
+      dkey:"M:-"+g
+    };
+  }
+  /* lv 19 — ler a frase inteira e descobrir o Pokémon escondido */
+  const cands = shuffle(PK_PT).slice(0,3);
+  const w = cands[0];
+  const sentence = w[4].replace(w[3], "___");
   return {
-    kind:"abc", prompt:"Escute e escreva a palavra!",
-    visual:pkImg(W[2]),
-    speech:[ptT(`${W[4]}! Escreva a palavra: ${wordSay(W[0])}!`)],
-    hintSpeech: ptT(`${W[1].map(sylSay).join("... ")}! Letra por letra: ${W[0].split("").map(letSay).join("... ")}!`),
-    okSpeech:`${wordSay(W[0])}! Mestre das palavras!`,
-    answer:W[0], maxLen:W[0].length
+    kind:"opts", prompt:"Leia a frase e capture!",
+    visual:`<div class="read-word" style="font-size:clamp(18px,5vw,28px);line-height:1.4;">${sentence}</div>`,
+    speech:[ptT("Leia a frase sozinho e descubra qual Pokémon está escondido!")],
+    hintSpeech: ptT(`A frase diz: ${w[4].replace(w[3],"hmmm").toLowerCase()}! Qual Pokémon faz isso?`),
+    okSpeech:`${w[4]}! Capturado!`,
+    optClass:"emoji-opt",
+    options: shuffle(cands.map(c=>({ label:pkImg(c[2],"clamp(56px,14vw,84px)"), correct:c===w, say:{t:`o ${c[3]}`, lang:"pt-BR"} })))
   };
 }
 
@@ -4441,7 +4610,7 @@ function openParents(){
   showOverlay(`<div id="parents-card">
     <h2 style="text-align:center;color:#454a75;">ℹ️ Para os pais</h2>
     ${report}
-    <h3>🎯 Mapa de domínio (v3.23)</h3>
+    <h3>🎯 Mapa de domínio (v3.24)</h3>
     <p>Cada letra, sílaba e conta precisa de <b>3 acertos limpos</b> pra virar dominada — se errar no meio, o contador daquela unidade zera. E agora o domínio é treinado em <b>3 direções</b>, pra não depender só do microfone:</p>
     <ul>
       <li><b>👂 Ouvir e apontar</b> — o computador fala a letra/sílaba e a criança toca na certa.</li>
@@ -4453,7 +4622,7 @@ function openParents(){
     <h3>📖 O processo de alfabetização, passo a passo</h3>
     <p>A trilha de Português segue um caminho fônico claro: <b>1)</b> ouvir e apontar figuras (7A) → <b>2)</b> dominar cada LETRA nas 3 direções (6A) → <b>3)</b> dominar cada SÍLABA nas 3 direções (5A) → <b>4)</b> ler e montar PALAVRAS inteiras (4A/3A/2A) → <b>5)</b> sons especiais como CH, NH, LH (A) → <b>6)</b> frases (B) → <b>7)</b> pequenas histórias (C). Cada etapa só abre quando a anterior está dominada — sem pular, sem chute.</p>
     <h3>🔢 O processo de matemática, passo a passo</h3>
-    <p>Mesmo espírito: <b>1)</b> contar quantidades → <b>2)</b> comparar (maior/menor) → <b>3)</b> somar e subtrair com domínio conta por conta (cada soma até 10 precisa de 3 acertos limpos) → <b>4)</b> dezenas e somas até 50 → <b>5)</b> tabuadas do 2, 5 e 10 → <b>6)</b> divisão → <b>7)</b> probleminhas com história. A trilha Pokémon ⚡ mistura esse mesmo caminho (contar, somar, subtrair e dividir Pokémon) com leitura e escrita de palavras em português.</p>
+    <p>Mesmo espírito: <b>1)</b> contar quantidades → <b>2)</b> comparar (maior/menor) → <b>3)</b> somar e subtrair com domínio conta por conta (cada soma até 10 precisa de 3 acertos limpos) → <b>4)</b> dezenas e somas até 50 → <b>5)</b> tabuadas do 2, 5 e 10 → <b>6)</b> divisão → <b>7)</b> probleminhas com história. A trilha Pokémon ⚡ agora é uma <b>jornada completa de 20 níveis</b> que percorre esses dois caminhos inteiros dentro do mundo Pokémon: ouvir → achar letras → sílabas → montar/escrever palavras → ler frases, e contar → comparar → somar → subtrair → dobro → times (vezes) → repartir (dividir) → probleminhas. O domínio de letras, sílabas e continhas conquistado lá conta no <b>mesmo mapa de domínio</b> das trilhas Português e Matemática.</p>
     <h3>🎌 Método Kumon</h3>
     <p>Micro-passos: cada nível ensina UMA coisinha nova. A criança precisa de ${GOAL} acertos para avançar (domínio antes de progresso). Errar não pune — o jogo dá dicas e sugere revisar o nível anterior quando percebe dificuldade.</p>
     <p>A trilha de Português segue as <b>etapas oficiais do Kumon</b>: <b>7A</b> ouvir e apontar → <b>6A</b> letras → <b>5A</b> sílabas → <b>4A/3A/2A</b> palavras → <b>A</b> sons especiais → <b>B</b> frases → <b>C</b> pequenas histórias. Nos níveis 🏅 (domínio de palavras) a MESMA palavra repete 3 vezes — ouvir, ler sozinho e montar — até ser dominada, exatamente como a repetição do Kumon.</p>
