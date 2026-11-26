@@ -1142,29 +1142,41 @@ const CUR_TRACK = [
   ]}
 ];
 const CUR_LEVELS = CUR_TRACK.map(l=>l.name).concat("Mestre das Curiosidades 👑");
-/* ---- TRILHA POKÉMON (v3.21): aprender a ler e escrever com os nomes ---- */
+/* ---- TRILHA POKÉMON (v3.22): português e matemática COM os Pokémon ----
+   Escrever nome de Pokémon saiu (nome próprio em inglês não casa com o som) —
+   a criança lê e escreve palavras REAIS de português ligadas a cada Pokémon,
+   e faz contas somando, subtraindo e repartindo Pokémon. */
 const PK_LEVELS = [
-  "Ache o nome 👀","Primeira letra 🔤","Monte o nome 🧩","Nomes grandes 🧩",
-  "Copie o nome ✏️","Escreva sozinho ⌨️","Leia e ache 🕵️","Mestre Pokémon 👑"
+  "Conte os Pokémon 🔢","Primeira letra 🔤","Pokémon somam ➕","Monte a palavra 🧩",
+  "Fugiram! ➖","Copie a palavra ✏️","Leia e capture 🕵️","Reparta os Pokémon ➗",
+  "Escreva sozinho ⌨️","Mestre Pokémon 👑"
 ];
-/* [NOME, dex, sílabas] — Pokémon famosos, só letras A-Z, divididos em pedacinhos */
-const PK_WORDS = [
-  ["MEW",151,["MEW"]], ["ABRA",63,["A","BRA"]], ["ONIX",95,["O","NIX"]],
-  ["SEEL",86,["SEEL"]], ["EEVEE",133,["EE","VEE"]], ["ZUBAT",41,["ZU","BAT"]],
-  ["DITTO",132,["DIT","TO"]], ["PIDGEY",16,["PID","GEY"]], ["VULPIX",37,["VUL","PIX"]],
-  ["LAPRAS",131,["LA","PRAS"]], ["PONYTA",77,["PO","NY","TA"]], ["CUBONE",104,["CU","BO","NE"]],
-  ["MACHOP",66,["MA","CHOP"]], ["HORSEA",116,["HOR","SEA"]], ["STARYU",120,["STA","RYU"]],
-  ["MANKEY",56,["MAN","KEY"]], ["MEWTWO",150,["MEW","TWO"]], ["GENGAR",94,["GEN","GAR"]],
-  ["PIKACHU",25,["PI","KA","CHU"]], ["PSYDUCK",54,["PSY","DUCK"]], ["SNORLAX",143,["SNOR","LAX"]],
-  ["RAICHU",26,["RAI","CHU"]], ["GOLDEEN",118,["GOL","DEEN"]], ["MAGIKARP",129,["MA","GI","KARP"]],
-  ["SLOWPOKE",79,["SLOW","PO","KE"]], ["VOLTORB",100,["VOL","TORB"]], ["DRATINI",147,["DRA","TI","NI"]],
-  ["GYARADOS",130,["GYA","RA","DOS"]], ["ZAPDOS",145,["ZAP","DOS"]], ["MOLTRES",146,["MOL","TRES"]],
-  ["ARTICUNO",144,["AR","TI","CU","NO"]], ["TOGEPI",175,["TO","GE","PI"]],
-  ["LUGIA",249,["LU","GI","A"]], ["CELEBI",251,["CE","LE","BI"]], ["TORCHIC",255,["TOR","CHIC"]],
-  ["PIPLUP",393,["PI","PLUP"]], ["LUCARIO",448,["LU","CA","RIO"]], ["GRENINJA",658,["GRE","NIN","JA"]],
-  ["CHARMANDER",4,["CHAR","MAN","DER"]], ["BULBASAUR",1,["BUL","BA","SAUR"]],
-  ["SQUIRTLE",7,["SQUIR","TLE"]], ["CHARIZARD",6,["CHA","RI","ZARD"]],
-  ["FUECOCO",909,["FUE","CO","CO"]], ["SPRIGATITO",906,["SPRI","GA","TI","TO"]]
+/* [PALAVRA, sílabas, dex, Nome, frase] — palavra sem acento (teclado só tem A-Z) */
+const PK_PT = [
+  ["BOLA",["BO","LA"],25,"Pikachu","O Pikachu entra na sua Pokébola"],
+  ["FOGO",["FO","GO"],4,"Charmander","O Charmander solta fogo"],
+  ["RAIO",["RAI","O"],26,"Raichu","O Raichu solta um raio"],
+  ["FOLHA",["FO","LHA"],1,"Bulbasaur","O Bulbasaur tem uma folha"],
+  ["PEDRA",["PE","DRA"],95,"Onix","O Onix é feito de pedra"],
+  ["GELO",["GE","LO"],144,"Articuno","O Articuno faz gelo"],
+  ["GOTA",["GO","TA"],7,"Squirtle","O Squirtle solta gotas"],
+  ["MAR",["MAR"],131,"Lapras","O Lapras nada no mar"],
+  ["SONO",["SO","NO"],143,"Snorlax","O Snorlax está com sono"],
+  ["PATO",["PA","TO"],54,"Psyduck","O Psyduck é um pato"],
+  ["ASA",["A","SA"],16,"Pidgey","O Pidgey bate a asa"],
+  ["SUSTO",["SUS","TO"],94,"Gengar","O Gengar dá susto"],
+  ["PEIXE",["PEI","XE"],129,"Magikarp","O Magikarp é um peixe"],
+  ["CAVALO",["CA","VA","LO"],77,"Ponyta","O Ponyta é um cavalo"],
+  ["MACACO",["MA","CA","CO"],56,"Mankey","O Mankey é um macaco"],
+  ["COBRA",["CO","BRA"],23,"Ekans","O Ekans é uma cobra"],
+  ["LUTA",["LU","TA"],66,"Machop","O Machop adora uma luta"],
+  ["OVO",["O","VO"],175,"Togepi","O Togepi mora num ovo"],
+  ["ESTRELA",["ES","TRE","LA"],120,"Staryu","O Staryu é uma estrela"],
+  ["FADA",["FA","DA"],35,"Clefairy","A Clefairy é uma fada"],
+  ["VENTO",["VEN","TO"],145,"Zapdos","O Zapdos voa no vento"],
+  ["PULO",["PU","LO"],658,"Greninja","O Greninja dá um pulo"],
+  ["CANTO",["CAN","TO"],39,"Jigglypuff","O Jigglypuff solta um canto"],
+  ["AMIGO",["A","MI","GO"],133,"Eevee","O Eevee é seu amigo"]
 ];
 
 const TRACKS = {
@@ -1292,7 +1304,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog
 
 function newProfile(name, avatar){
   const t = freshTrackState();
-  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
+  return { name, avatar, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, pkv:2, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
 }
 
 function migrateProfile(p){
@@ -1323,6 +1335,9 @@ function migrateProfile(p){
     if(!p.rq.de) p.rq.de = [];
     if(!p.rq.cur) p.rq.cur = [];
     if(!p.rq.pk) p.rq.pk = [];
+    /* v3.22 — trilha Pokémon virou português+matemática: a fila de reforço
+       antiga guardava perguntas com nomes em inglês — limpar uma vez */
+    if(p.pkv == null){ p.pkv = 2; p.rq.pk = []; }
     /* itens antigos da fila ganham a fase de fundamento */
     TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
     if(!p.deep) p.deep = {pt:0,math:0,en:0,de:0};
@@ -1667,7 +1682,7 @@ function updateGameHUD(){
 }
 
 function nextQuestion(){
-  state.lock = false; state.qWrong = 0; state.typed = ""; state.micFails = 0; state.micNoSpeech = 0; state.q = null; state.reinf = null;
+  state.lock = false; state.qWrong = 0; state.typed = ""; state.micFails = 0; state.micAuto = 0; state.q = null; state.reinf = null;
   stopMic();
   $("#feedback").textContent = ""; $("#feedback").className = "";
   let q;
@@ -1800,9 +1815,12 @@ function renderQ(q){
     const mb = document.createElement("button");
     mb.id = "mic-btn"; mb.textContent = "🎤";
     const heard = document.createElement("div");
-    heard.id = "mic-heard"; heard.textContent = "Toque no microfone e fale!";
+    heard.id = "mic-heard"; heard.textContent = "Já vou te ouvir... 👂";
     ans.appendChild(mb); ans.appendChild(heard);
+    /* v3.22 — o botão continua funcionando (religa na hora), mas o microfone
+       liga SOZINHO assim que o jogo termina de falar o enunciado */
     mb.onclick = ()=>startMic(q, mb, heard);
+    autoMic(q, mb, heard);
   }
 
   $("#speak-again").style.display = q.speech ? "" : "none";
@@ -1932,12 +1950,29 @@ function micMatch(alts, q){
   });
 }
 
+/* v3.22 — liga o microfone SOZINHO quando a pergunta 🎤 aparece: espera o jogo
+   terminar de falar o enunciado (senão ele ouviria a própria voz) e chama
+   startMic. Se a criança trocar de pergunta nesse meio tempo, desiste. */
+function autoMic(q, mb, heard){
+  let waited = 0;
+  const tryStart = ()=>{
+    if(state.lock || state.q !== q) return;             /* já saiu da pergunta */
+    if(speechSynthesis.speaking || speechSynthesis.pending){
+      waited += 300;
+      if(waited < 15000) setTimeout(tryStart, 300);     /* TTS ainda falando */
+      else startMic(q, mb, heard);                      /* trava? liga mesmo assim */
+      return;
+    }
+    startMic(q, mb, heard);
+  };
+  setTimeout(tryStart, 500);
+}
+
 function startMic(q, mb, heard){
-  if(state.lock) return;
+  if(state.lock || state.q !== q) return;
   stopMic();
-  heard.textContent = "Preparando o microfone...";
   ensureMicPermission().then(allowed=>{
-    if(state.lock) return;
+    if(state.lock || state.q !== q) return;
     if(!allowed){
       mb.classList.remove("listening");
       heard.textContent = micBlockMsg();
@@ -1950,70 +1985,70 @@ function startMic(q, mb, heard){
     /* v3.18 — interimResults: as PRIMEIRAS hipóteses do reconhecimento muitas
        vezes contêm a vogal pura ("i") antes do modelo de linguagem "corrigir"
        pra uma palavra ("aí"). Testamos TODAS as hipóteses parciais e todas as
-       10 alternativas — e só marcamos erro quando chega o resultado FINAL. */
-    rec.interimResults = true; rec.maxAlternatives = 10;
+       10 alternativas — e só marcamos erro quando chega o resultado FINAL.
+       v3.22 — continuous: a escuta não desliga depois da primeira frase; a
+       criança pode tentar quantas vezes quiser sem apertar nada. */
+    rec.interimResults = true; rec.maxAlternatives = 10; rec.continuous = true;
     mb.classList.add("listening");
-    heard.textContent = "Estou ouvindo... fale agora!";
-    speechSynthesis.cancel();
-    let got = false, done = false, lastTxt = "";
+    heard.textContent = "Estou ouvindo... fale agora! 👂";
+    let matched = false, fatal = false, lastTxt = "";
     rec.onresult = ev=>{
-      if(done) return;
-      got = true;
+      if(matched || state.rec !== rec) return;
+      if(speechSynthesis.speaking) return;              /* não ouvir a si mesmo */
       const results = [...ev.results];
       const alts = results.flatMap(res=>[...res].map(r=>norm(r.transcript))).filter(Boolean);
       const last = results[results.length-1];
       lastTxt = (last[0].transcript||"").trim() || lastTxt;
       if(micMatch(alts, q)){
-        done = true;
+        matched = true;
         try{ rec.stop(); }catch(e){}
         mb.classList.remove("listening");
         onCorrect();
         return;
       }
       if(last.isFinal){
-        done = true;
-        mb.classList.remove("listening");
-        heard.textContent = `Eu ouvi: "${lastTxt}" 🤔 Toque e tente de novo!`;
+        heard.textContent = `Eu ouvi: "${lastTxt}" 🤔 Fale de novo!`;
         state.micFails++;
-        onWrong();
+        onWrong();                                      /* mic não trava: só encoraja */
         if(state.micFails >= 2) showMicSkip();
+        try{ rec.stop(); }catch(e){}                    /* religa limpo via onend */
       } else if(lastTxt){
         heard.textContent = `Ouvindo: "${lastTxt}"...`;
       }
     };
     rec.onerror = ev=>{
-      mb.classList.remove("listening");
-      if(done || got) return;
       const err = ev && ev.error;
+      if(err === "aborted" || err === "no-speech") return;  /* onend religa */
       if(err==="not-allowed" || err==="service-not-allowed"){
+        fatal = true;
         micReady = false; if(!micBlock) micBlock = "denied";
+        mb.classList.remove("listening");
         heard.textContent = micBlockMsg();
         showMicSkip("👉 Pular esta palavra");
       } else if(err==="network"){
+        fatal = true;
+        mb.classList.remove("listening");
         heard.textContent = "O microfone precisa de internet 😢 Pule esta palavra!";
         showMicSkip("👉 Pular esta palavra");
-      } else if(err==="no-speech"){
-        /* v3.18 — não ouviu nada: religa o microfone sozinho (até 2 vezes),
-           sem contar como erro da criança */
-        state.micNoSpeech = (state.micNoSpeech||0) + 1;
-        if(state.micNoSpeech <= 2 && !state.lock){
-          heard.textContent = "Não ouvi nada... fale BEM alto! 🔊";
-          setTimeout(()=>{ if(!state.lock && state.rec === rec) startMic(q, mb, heard); }, 350);
-        } else {
-          heard.textContent = "Não ouvi nada... toque no microfone e fale bem alto!";
-          showMicSkip();
-        }
-      } else {
-        heard.textContent = "Não deu certo... toque e tente de novo!";
-        state.micFails++;
-        if(state.micFails >= 2) showMicSkip();
       }
+      /* outros erros: onend religa sozinho */
     };
     rec.onend = ()=>{
-      mb.classList.remove("listening");
-      if(done) return;
-      if(got && lastTxt) heard.textContent = `Eu ouvi: "${lastTxt}" 🤔 Toque e tente de novo!`;
-      else if(heard.textContent.startsWith("Estou")) heard.textContent = "Não ouvi... toque e tente de novo!";
+      if(matched || fatal || state.lock || state.rec !== rec || state.q !== q){
+        mb.classList.remove("listening");
+        return;
+      }
+      /* religa SOZINHO — a criança nunca precisa tocar no botão */
+      state.micAuto = (state.micAuto||0) + 1;
+      if(state.micAuto > 40){                           /* ficou tempo demais parado */
+        mb.classList.remove("listening");
+        heard.textContent = "Toque no 🎤 quando quiser falar!";
+        showMicSkip();
+        return;
+      }
+      setTimeout(()=>{
+        if(!state.lock && state.rec === rec && state.q === q) startMic(q, mb, heard);
+      }, 250);
     };
     try{ rec.start(); }catch(e){ heard.textContent = "Microfone indisponível 😢"; showMicSkip("👉 Pular esta palavra"); }
   });
@@ -2618,82 +2653,117 @@ function lessonPending(track, lv){
 }
 
 /* =============== GERADORES DE PERGUNTAS =============== */
-/* ============ TRILHA POKÉMON ⚡ — ler e escrever com os nomes ============ */
-const pkImg = (w, size) => `<img src="${POKE_IMG(w[1])}" alt="${w[0]}" style="width:${size||"clamp(110px,32vw,170px)"};height:${size||"clamp(110px,32vw,170px)"};object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));">`;
-const pkSay = w => w[0].charAt(0) + w[0].slice(1).toLowerCase();
+/* ===== TRILHA POKÉMON ⚡ — português e matemática com os Pokémon (v3.22) ===== */
+const pkImg = (dex, size) => `<img src="${POKE_IMG(dex)}" alt="" style="width:${size||"clamp(110px,32vw,170px)"};height:${size||"clamp(110px,32vw,170px)"};object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));">`;
+/* fileira de n Pokémon pequenos; os últimos `gone` aparecem apagadinhos (fugiram) */
+const pkRow = (dex, n, gone=0) => `<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;max-width:min(92vw,360px);margin:0 auto;">${
+  Array.from({length:n}, (_,i)=> `<span style="display:inline-block;${i>=n-gone?"opacity:.22;filter:grayscale(1);":""}">${pkImg(dex,"clamp(42px,11vw,64px)")}</span>`).join("")
+}</div>`;
+/* distratores numéricos vizinhos (contar/repartir fica desafiador de verdade) */
+const pkNear = (n, max) => { const s = new Set([String(n)]); for(let d=1; s.size<5 && d<=4; d++){ if(n-d>=1) s.add(String(n-d)); if(n+d<=max) s.add(String(n+d)); } return [...s]; };
 function genPk(lv){
-  if(lv>=8) lv = 1 + Math.floor(Math.random()*7); /* mestre: mistura tudo */
-  if(lv===1){ /* ver o Pokémon, ouvir e achar o nome */
-    const w = pick(PK_WORDS.filter(x=>x[0].length<=8));
-    const pool = PK_WORDS.map(x=>x[0]);
+  if(lv>=10) lv = 1 + rand(9); /* mestre: mistura tudo */
+  const W = pick(PK_PT);
+  if(lv===1){ /* contar os Pokémon */
+    const n = 1 + rand(9);
     return {
-      kind:"opts", prompt:"Ache o nome desse Pokémon!",
-      visual:pkImg(w),
-      speech:[ptT(`Esse é o ${pkSay(w)}! Ache o nome ${pkSay(w)}!`)],
-      hintSpeech: ptT(`Procure ${pkSay(w)}! Começa com a letra ${letSay(w[0][0])}!`),
-      okSpeech:`${pkSay(w)}! Você conhece os Pokémon!`,
-      optClass:"mid-text",
-      options: makeOpts(w[0], pool, 3)
+      kind:"opts", prompt:"Quantos Pokémon tem aqui?",
+      visual: pkRow(W[2], n),
+      speech:[ptT(`Olha quantos ${W[3]}! Conte com o dedinho: quantos Pokémon tem aqui?`)],
+      hintSpeech: ptT("Conte um por um, apontando com o dedinho!"),
+      okSpeech:`${n} Pokémon!`,
+      options: makeOpts(String(n), pkNear(n,10), 3)
     };
   }
-  if(lv===2){ /* primeira letra do nome */
-    const w = pick(PK_WORDS);
-    const first = w[0][0];
-    const pool = shuffle([...new Set(PK_WORDS.map(x=>x[0][0]))]);
+  if(lv===2){ /* primeira letra da PALAVRA */
+    const first = W[0][0];
+    const pool = shuffle([...new Set(PK_PT.map(x=>x[0][0]))]);
     return {
       kind:"opts", prompt:"Com que letra começa?",
-      visual:`${pkImg(w)}<div class="read-word" style="font-size:clamp(26px,7vw,40px);">${w[0]}</div>`,
-      speech:[ptT(`${pkSay(w)}! Com que letra começa ${pkSay(w)}?`)],
-      hintSpeech: ptT(`${pkSay(w)} começa com a letra ${letSay(first)}!`),
-      okSpeech:`Letra ${letSay(first)}! ${pkSay(w)}!`,
+      visual:`${pkImg(W[2])}<div class="read-word" style="font-size:clamp(26px,7vw,40px);">${W[0]}</div>`,
+      speech:[ptT(`${W[4]}! Com que letra começa ${wordSay(W[0])}?`)],
+      hintSpeech: ptT(`${wordSay(W[0])} começa com a letra ${letSay(first)}!`),
+      okSpeech:`Letra ${letSay(first)}! ${wordSay(W[0])}!`,
       options: makeOpts(first, pool, 4).map(o=>Object.assign(o, {say:{t:letSay(o.label), lang:"pt-BR"}}))
     };
   }
-  if(lv===3 || lv===4){ /* montar o nome com os pedacinhos */
-    const w = pick(PK_WORDS.filter(x=> lv===3 ? x[2].length===2 : x[2].length>=3));
-    const decoys = shuffle(PK_WORDS.filter(x=>x!==w).map(x=>x[2]).flat().filter(s=>!w[2].includes(s))).slice(0, lv===3?2:3);
+  if(lv===3){ /* somar Pokémon */
+    const a = 1 + rand(5), b = 1 + rand(4);
+    const B = pick(PK_PT.filter(x=>x[2]!==W[2]));
     return {
-      kind:"tiles", prompt: lv===3? "Monte o nome do Pokémon!" : "Nome grande! Monte os pedacinhos!",
-      visual:pkImg(w),
-      speech:[ptT(`Monte o nome ${pkSay(w)}!`)],
-      hintSpeech: ptT(`${w[2].join("... ")}! ${pkSay(w)}!`),
-      okSpeech:`${pkSay(w)}! Capturado!`,
-      pieces: w[2], decoys, sayPieces:false, answer:w[0]
+      kind:"keypad", prompt:`${a} ${W[3]} + ${b} ${B[3]} = ?`,
+      visual:`<div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap;">${pkRow(W[2],a)}<span class="num-big">+</span>${pkRow(B[2],b)}</div>`,
+      speech:[ptT(`Chegaram ${a} ${W[3]} e ${b} ${B[3]}! Quantos Pokémon no total? Conte todos e digite!`)],
+      hintSpeech: ptT(`Conte todos juntos: os ${W[3]} e os ${B[3]}!`),
+      okSpeech:`${a+b} Pokémon!`,
+      answer:String(a+b), maxLen:2
     };
   }
-  if(lv===5){ /* copiar o nome olhando */
-    const w = pick(PK_WORDS.filter(x=>x[0].length<=7));
+  if(lv===4){ /* montar a palavra com sílabas */
+    const w = pick(PK_PT.filter(x=>x[1].length>=2));
+    const decoys = shuffle(PK_PT.filter(x=>x!==w).flatMap(x=>x[1]).filter(s=>!w[1].includes(s))).slice(0, w[1].length>=3?3:2);
     return {
-      kind:"abc", prompt:"Copie o nome do Pokémon!",
-      visual:`${pkImg(w,"clamp(90px,26vw,140px)")}<div class="read-word" style="font-size:clamp(24px,6.5vw,38px);">${w[0]}</div>`,
-      speech:[ptT(`Copie o nome ${pkSay(w)}, letra por letra!`)],
-      hintSpeech: ptT(`Olhe o nome escrito e copie: ${w[0].split("").map(letSay).join("... ")}!`),
-      okSpeech:`${pkSay(w)}! Você escreveu!`,
-      answer:w[0], maxLen:w[0].length
+      kind:"tiles", prompt:"Monte a palavra!",
+      visual:pkImg(w[2]),
+      speech:[ptT(`${w[4]}! Monte a palavra ${wordSay(w[0])}!`)],
+      hintSpeech: ptT(`${w[1].map(sylSay).join("... ")}! ${wordSay(w[0])}!`),
+      okSpeech:`${wordSay(w[0])}! Capturada!`,
+      pieces: w[1], decoys, sayPieces:true, answer:w[0]
     };
   }
-  if(lv===6){ /* escrever sozinho (só figura + voz) */
-    const w = pick(PK_WORDS.filter(x=>x[0].length<=6));
+  if(lv===5){ /* subtrair: Pokémon fugiram */
+    const tot = 3 + rand(7), g = 1 + rand(tot-1);
     return {
-      kind:"abc", prompt:"Escreva o nome sozinho!",
-      visual:pkImg(w),
-      speech:[ptT(`Escreva o nome desse Pokémon: ${pkSay(w)}!`)],
-      hintSpeech: ptT(`${w[2].join("... ")}! Letra por letra: ${w[0].split("").map(letSay).join("... ")}!`),
-      okSpeech:`${pkSay(w)}! Mestre das palavras!`,
-      answer:w[0], maxLen:w[0].length
+      kind:"keypad", prompt:`Tinha ${tot}, fugiram ${g}. Quantos ficaram?`,
+      visual: pkRow(W[2], tot, g),
+      speech:[ptT(`Tinha ${tot} ${W[3]}! Mas ${g} fugiram correndo! Quantos ficaram? Digite!`)],
+      hintSpeech: ptT(`Conte só os ${W[3]} coloridos — os apagadinhos fugiram!`),
+      okSpeech:`${tot-g}! Esses não fugiram!`,
+      answer:String(tot-g), maxLen:1
     };
   }
-  /* lv 7 — ler o nome e achar o Pokémon certo */
-  const cands = shuffle(PK_WORDS).slice(0,3);
-  const w = cands[0];
+  if(lv===6){ /* copiar a palavra olhando */
+    return {
+      kind:"abc", prompt:"Copie a palavra!",
+      visual:`${pkImg(W[2],"clamp(90px,26vw,140px)")}<div class="read-word" style="font-size:clamp(24px,6.5vw,38px);">${W[0]}</div>`,
+      speech:[ptT(`${W[4]}! Copie a palavra ${wordSay(W[0])}, letra por letra!`)],
+      hintSpeech: ptT(`Olhe a palavra escrita e copie: ${W[0].split("").map(letSay).join("... ")}!`),
+      okSpeech:`${wordSay(W[0])}! Você escreveu!`,
+      answer:W[0], maxLen:W[0].length
+    };
+  }
+  if(lv===7){ /* ler a palavra e capturar o Pokémon certo */
+    const cands = shuffle(PK_PT).slice(0,3);
+    const w = cands[0];
+    return {
+      kind:"opts", prompt:"Leia e capture o Pokémon certo!",
+      visual:`<div class="read-word" style="font-size:clamp(28px,8vw,46px);">${w[0]}</div>`,
+      speech:[ptT("Leia a palavra e capture o Pokémon certo!")],
+      hintSpeech: ptT(`Está escrito ${wordSay(w[0])}! ${w[4]}!`),
+      okSpeech:`${wordSay(w[0])}! ${w[4]}! Capturado!`,
+      optClass:"emoji-opt",
+      options: shuffle(cands.map(c=>({ label:pkImg(c[2],"clamp(56px,14vw,84px)"), correct:c===w, say:{t:`o ${c[3]}! ${c[4]}!`, lang:"pt-BR"} })))
+    };
+  }
+  if(lv===8){ /* dividir: repartir entre os treinadores */
+    const k = 2 + rand(2), per = 1 + rand(4), n = k*per;
+    return {
+      kind:"opts", prompt:`${n} Pokémon para ${k} treinadores. Quantos pra cada?`,
+      visual:`${pkRow(W[2], n)}<div style="font-size:clamp(30px,9vw,44px);margin-top:8px;letter-spacing:8px;">${"🧒".repeat(k)}</div>`,
+      speech:[ptT(`${n} ${W[3]} para ${k} treinadores repartirem igualzinho! Quantos Pokémon cada treinador leva?`)],
+      hintSpeech: ptT(`Dê um ${W[3]} pra cada treinador, de novo e de novo, até acabar!`),
+      okSpeech:`${per} pra cada! Repartiu igualzinho!`,
+      options: makeOpts(String(per), pkNear(per,6), 3)
+    };
+  }
+  /* lv 9 — ditado: ouvir e escrever a palavra sozinho */
   return {
-    kind:"opts", prompt:"Leia o nome e ache o Pokémon!",
-    visual:`<div class="read-word" style="font-size:clamp(28px,8vw,46px);">${w[0]}</div>`,
-    speech:[ptT(`Leia o nome escrito e toque no Pokémon certo!`)],
-    hintSpeech: ptT(`Está escrito ${pkSay(w)}! Ache o ${pkSay(w)}!`),
-    okSpeech:`${pkSay(w)}! Você leu sozinho!`,
-    optClass:"emoji-opt",
-    options: shuffle(cands.map(c=>({ label:pkImg(c,"clamp(56px,14vw,84px)"), correct:c===w, say:{t:`Esse é o ${pkSay(c)}!`, lang:"pt-BR"} })))
+    kind:"abc", prompt:"Escute e escreva a palavra!",
+    visual:pkImg(W[2]),
+    speech:[ptT(`${W[4]}! Escreva a palavra: ${wordSay(W[0])}!`)],
+    hintSpeech: ptT(`${W[1].map(sylSay).join("... ")}! Letra por letra: ${W[0].split("").map(letSay).join("... ")}!`),
+    okSpeech:`${wordSay(W[0])}! Mestre das palavras!`,
+    answer:W[0], maxLen:W[0].length
   };
 }
 
