@@ -1006,48 +1006,126 @@ const RAR_CODE = {c:"comum", r:"raro", e:"epico", l:"lendario"};
 /* formato de figurinha: [emoji, Nome, raridade, dex, temporada] */
 const POKEMON_STICKERS = POKE_DB.map(([nm,gen,r,emo],i)=>[emo,nm,RAR_CODE[r],i+1,gen]);
 const POKE_IMG = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-/* desenho da figurinha: imagem real do Pokémon (quando tem dex) ou o emoji */
+/* desenho da figurinha: st[3] string = caminho da imagem do personagem (v3.27),
+   st[3] número = dex do Pokémon; sem st[3] = emoji. onerror cai pro emoji. */
 function stickerFace(st){
-  const [emo, nm, , dex] = st;
-  if(dex) return `<span class="emo poke"><img src="${POKE_IMG(dex)}" alt="${nm}" loading="lazy" onerror="this.parentNode.textContent='${emo}'"></span>`;
+  const [emo, nm, , img] = st;
+  if(typeof img === "string") return `<span class="emo poke"><img src="${img}" alt="${nm}" loading="lazy" onerror="this.parentNode.textContent='${emo}'"></span>`;
+  if(img) return `<span class="emo poke"><img src="${POKE_IMG(img)}" alt="${nm}" loading="lazy" onerror="this.parentNode.textContent='${emo}'"></span>`;
   return `<span class="emo">${emo}</span>`;
 }
-/* ---- v3.26 — COLEÇÕES NOVAS (ele já comprou todos os emojis!) ----
-   Mesmo formato clássico [emoji, nome, raridade] — sem dex, então o
-   stickerFace usa o emoji. Pagas com 🪙 moedas normais (só Pokémon usa ⚡).
-   Nomes são ÚNICOS entre todos os conjuntos (o álbum guarda só o nome). */
+/* ---- v3.26/v3.27 — COLEÇÕES NOVAS com as FIGURAS DE VERDADE ----
+   Formato [emoji, Nome, raridade, caminhoDaImagem] — o 4º campo string faz
+   o stickerFace mostrar a imagem real do personagem (emoji é só fallback).
+   Pagas com 🪙 moedas normais (só Pokémon usa ⚡). Nomes ÚNICOS entre todos
+   os conjuntos (o álbum guarda só o nome). A pedido do papai, estas 4
+   coleções são BEM CARAS: só épico (🪙800) e lendário (🪙2000). */
+const SIMG = n => `img/stickers/${n}.webp`;
 const GABBY_STICKERS = [
-  ["😺","Miauzinho","comum"],["🎨","Gato Artista","comum"],["🍪","Biscoito Miau","comum"],
-  ["🧶","Novelo de Lã","comum"],["🌸","Florzinha da Gabby","comum"],["🎂","Festa dos Gatinhos","comum"],
-  ["✨","Varinha da Gabby","comum"],
-  ["🎧","DJ Miau","raro"],["🏎️","Carlita","raro"],["🧜","Gata Sereia","raro"],
-  ["🐭","Gatorrato","raro"],["📦","Caixa Surpresa","raro"],
-  ["🐼","Pandy Patas","epico"],["🧁","Bolinho da Gabby","epico"],["🧚","Gatinha Fada","epico"],
-  ["🎀","Gabby","lendario"],["🏠","Casa de Bonecas","lendario"]
+  ["🐭","Gatorrato","epico",SIMG("gabby-catrat")],["🧜","Gata Sereia","epico",SIMG("gabby-mercat")],
+  ["🎧","DJ Miau","epico",SIMG("gabby-dj-catnip")],["🏎️","Carlita","epico",SIMG("gabby-carlita")],
+  ["😺","Gata Travesseiro","epico",SIMG("gabby-pillow-cat")],["👶","Bebê Caixa","epico",SIMG("gabby-baby-box")],
+  ["📦","Mamãe Caixa","epico",SIMG("gabby-mama-box")],["🐶","Doozie","epico",SIMG("gabby-doozie")],
+  ["🐱","Floyd","epico",SIMG("gabby-floyd")],["🎉","Marty Festeiro","epico",SIMG("gabby-marty")],
+  ["🦄","Kico Gaticórnio","epico",SIMG("gabby-kico")],["🎁","Família Caixa","epico",SIMG("gabby-box-family")],
+  ["🐼","Pandy Patas","lendario",SIMG("gabby-pandy")],["🧁","Bolinho da Gabby","lendario",SIMG("gabby-cakey")],
+  ["🧚","Gatinha Fada","lendario",SIMG("gabby-kitty-fairy")],["🎀","Gabby","lendario",SIMG("gabby-gabby")],
+  ["🏠","Casa de Bonecas","lendario",SIMG("gabby-dollhouse")]
 ];
 const TSUBASA_STICKERS = [
-  ["⚽","Bola do Estádio","comum"],["🏟️","Estádio Lotado","comum"],["📣","Torcida Animada","comum"],
-  ["🧃","Lanche do Time","comum"],["🏳️","Bandeirinha","comum"],["🧦","Meião do Time","comum"],
-  ["🇧🇷","Roberto Hongo","raro"],["🦵","Bicicleta Dupla","raro"],["🥅","Defesa Incrível","raro"],
-  ["👟","Chuteira de Ouro","raro"],["🏃","Bruce Harper","raro"],
-  ["🧤","Benji Price","epico"],["🔥","Steve Hyuga","epico"],["🎯","Tom Misaki","epico"],["🌀","Drive Shot","epico"],
-  ["⚽","Oliver Tsubasa","lendario"],["🐯","Chute do Tigre","lendario"]
+  ["🏃","Bruce Harper","epico",SIMG("tsubasa-harper")],["🥋","Richard Tex Tex","epico",SIMG("tsubasa-textex")],
+  ["🎩","Julian Ross","epico",SIMG("tsubasa-julian")],["🧊","Philip Callahan","epico",SIMG("tsubasa-callahan")],
+  ["📣","Patty","epico",SIMG("tsubasa-patty")],["🌟","Shingo Aoi","epico",SIMG("tsubasa-shingo")],
+  ["🇧🇷","Carlos Santana","epico",SIMG("tsubasa-santana")],["🇸🇪","Stefan Levin","epico",SIMG("tsubasa-levin")],
+  ["🇩🇪","Kaltz","epico",SIMG("tsubasa-kaltz")],["🧤","Gino Hernandez","epico",SIMG("tsubasa-gino")],
+  ["🇫🇷","Pierre","epico",SIMG("tsubasa-pierre")],
+  ["🥅","Benji Price","lendario",SIMG("tsubasa-benji")],["🔥","Steve Hyuga","lendario",SIMG("tsubasa-hyuga")],
+  ["🎯","Tom Misaki","lendario",SIMG("tsubasa-misaki")],["🧢","Roberto Hongo","lendario",SIMG("tsubasa-roberto")],
+  ["🦅","Schneider","lendario",SIMG("tsubasa-schneider")],["⚽","Oliver Tsubasa","lendario",SIMG("tsubasa-tsubasa")]
 ];
 const DBZ_STICKERS = [
-  ["📡","Radar do Dragão","comum"],["🫘","Semente Senzu","comum"],["🐷","Oolong","comum"],
-  ["🥢","Festa do Goku","comum"],["🏔️","Montanha Paozu","comum"],["🥊","Torneio de Luta","comum"],
-  ["🔧","Bulma","raro"],["🟠","Esfera de 4 Estrelas","raro"],["👴","Mestre Kame","raro"],
-  ["🧑‍🦲","Kuririn","raro"],["⚔️","Trunks","raro"],["☁️","Nuvem Voadora","raro"],
-  ["💪","Vegeta","epico"],["🟢","Piccolo","epico"],["🌊","Kame-Hame-Ha","epico"],["👦","Gohan","epico"],
-  ["🐉","Shen Long","lendario"],["🥋","Goku","lendario"]
+  ["🧑‍🦲","Kuririn","epico",SIMG("dbz-kuririn")],["🔧","Bulma","epico",SIMG("dbz-bulma")],
+  ["👴","Mestre Kame","epico",SIMG("dbz-roshi")],["⚔️","Trunks","epico",SIMG("dbz-trunks")],
+  ["👦","Goten","epico",SIMG("dbz-goten")],["🍜","Chi-Chi","epico",SIMG("dbz-chichi")],
+  ["💛","Androide 18","epico",SIMG("dbz-androide18")],["🐝","Cell","epico",SIMG("dbz-cell")],
+  ["🍬","Majin Boo","epico",SIMG("dbz-majinboo")],["🐺","Yamcha","epico",SIMG("dbz-yamcha")],
+  ["👁️","Tenshinhan","epico",SIMG("dbz-tenshinhan")],["🐈","Bills","epico",SIMG("dbz-bills")],
+  ["💪","Vegeta","lendario",SIMG("dbz-vegeta")],["🟢","Piccolo","lendario",SIMG("dbz-piccolo")],
+  ["👦🏻","Gohan","lendario",SIMG("dbz-gohan")],["❄️","Freeza","lendario",SIMG("dbz-freeza")],
+  ["🐉","Shen Long","lendario",SIMG("dbz-shenron")],["🥋","Goku","lendario",SIMG("dbz-goku")]
 ];
 const CDZ_STICKERS = [
-  ["✨","Cosmo","comum"],["🏛️","Santuário","comum"],["⭐","Constelação","comum"],
-  ["🥉","Armadura de Bronze","comum"],["🌌","Céu das Constelações","comum"],["🎽","Treino no Santuário","comum"],
-  ["☄️","Meteoro de Pégaso","raro"],["🌊","Cólera do Dragão","raro"],["❄️","Pó de Diamante","raro"],
-  ["🦅","Marin de Águia","raro"],["🕊️","Ave Fênix","raro"],
-  ["🔥","Ikki de Fênix","epico"],["🐲","Shiryu de Dragão","epico"],["🦢","Hyoga de Cisne","epico"],["⛓️","Shun de Andrômeda","epico"],
-  ["🐴","Seiya de Pégaso","lendario"],["🛡️","Atena","lendario"]
+  ["🦅","Marin de Águia","epico",SIMG("cdz-marin")],["🐍","Shina de Cobra","epico",SIMG("cdz-shina")],
+  ["🦁","Aiolia de Leão","epico",SIMG("cdz-aiolia")],["🐏","Mu de Áries","epico",SIMG("cdz-mu")],
+  ["🐂","Aldebaran de Touro","epico",SIMG("cdz-aldebaran")],["👥","Saga de Gêmeos","epico",SIMG("cdz-saga")],
+  ["🧘","Shaka de Virgem","epico",SIMG("cdz-shaka")],["🦂","Milo de Escorpião","epico",SIMG("cdz-milo")],
+  ["🧊","Camus de Aquário","epico",SIMG("cdz-camus")],["⚖️","Dohko de Libra","epico",SIMG("cdz-dohko")],
+  ["🌹","Afrodite de Peixes","epico",SIMG("cdz-afrodite")],
+  ["🔥","Ikki de Fênix","lendario",SIMG("cdz-ikki")],["🐲","Shiryu de Dragão","lendario",SIMG("cdz-shiryu")],
+  ["🦢","Hyoga de Cisne","lendario",SIMG("cdz-hyoga")],["⛓️","Shun de Andrômeda","lendario",SIMG("cdz-shun")],
+  ["🐴","Seiya de Pégaso","lendario",SIMG("cdz-seiya")],["🛡️","Atena","lendario",SIMG("cdz-atena")]
+];
+/* ---- v3.27 — DISNEY: personagens de todos os filmes com a figura real,
+   TODOS raros (🪙300) — são mais de 100, completar gasta MUITA moeda. */
+const DISNEY_STICKERS = [
+  /* turma do Mickey */
+  ["🐭","Mickey Mouse","raro",SIMG("disney-mickey")],["🎀","Minnie Mouse","raro",SIMG("disney-minnie")],
+  ["🦆","Pato Donald","raro",SIMG("disney-donald")],["🌼","Margarida","raro",SIMG("disney-margarida")],
+  ["🐶","Pluto","raro",SIMG("disney-pluto")],["🤠","Pateta","raro",SIMG("disney-pateta")],
+  ["🐿️","Tico e Teco","raro",SIMG("disney-tico-teco")],
+  /* clássicos */
+  ["👸","Branca de Neve","raro",SIMG("disney-branca-de-neve")],["🪞","Rainha Má","raro",SIMG("disney-rainha-ma")],
+  ["😴","Soneca","raro",SIMG("disney-soneca")],["⛏️","Zangado","raro",SIMG("disney-zangado")],
+  ["🤥","Pinóquio","raro",SIMG("disney-pinoquio")],["🦗","Grilo Falante","raro",SIMG("disney-grilo")],
+  ["👴","Gepeto","raro",SIMG("disney-gepeto")],["🐘","Dumbo","raro",SIMG("disney-dumbo")],
+  ["🦌","Bambi","raro",SIMG("disney-bambi")],["🐇","Tambor","raro",SIMG("disney-tambor")],
+  ["👠","Cinderela","raro",SIMG("disney-cinderela")],["🧚","Fada Madrinha","raro",SIMG("disney-fada-madrinha")],
+  ["👧","Alice","raro",SIMG("disney-alice")],["🐰","Coelho Branco","raro",SIMG("disney-coelho-branco")],
+  ["😼","Gato de Cheshire","raro",SIMG("disney-cheshire")],["🎩","Chapeleiro Maluco","raro",SIMG("disney-chapeleiro")],
+  ["🧒","Peter Pan","raro",SIMG("disney-peter-pan")],["🧚‍♀️","Sininho","raro",SIMG("disney-sininho")],
+  ["🏴‍☠️","Capitão Gancho","raro",SIMG("disney-gancho")],["🌹","Aurora","raro",SIMG("disney-aurora")],
+  ["🦹","Malévola","raro",SIMG("disney-malevola")],["🐕","Pongo","raro",SIMG("disney-pongo")],
+  ["🖤","Cruella de Vil","raro",SIMG("disney-cruella")],["👦","Mogli","raro",SIMG("disney-mogli")],
+  ["🐻","Balu","raro",SIMG("disney-balu")],["🐯","Shere Khan","raro",SIMG("disney-shere-khan")],
+  ["🐍","Kaa","raro",SIMG("disney-kaa")],["🐱","Duquesa","raro",SIMG("disney-duquesa")],
+  ["🦊","Robin Hood","raro",SIMG("disney-robin-hood")],
+  /* renascimento */
+  ["🧜‍♀️","Ariel","raro",SIMG("disney-ariel")],["🦀","Sebastião","raro",SIMG("disney-sebastiao")],
+  ["🐟","Linguado","raro",SIMG("disney-linguado")],["🐙","Úrsula","raro",SIMG("disney-ursula")],
+  ["🌹","Bela","raro",SIMG("disney-bela")],["🥀","Fera","raro",SIMG("disney-fera")],
+  ["🕯️","Lumière","raro",SIMG("disney-lumiere")],["🪔","Aladdin","raro",SIMG("disney-aladdin")],
+  ["👸","Jasmine","raro",SIMG("disney-jasmine")],["🧞","Gênio do Aladdin","raro",SIMG("disney-genio")],
+  ["🐒","Abu","raro",SIMG("disney-abu")],["🦜","Iago","raro",SIMG("disney-iago")],
+  ["🐍","Jafar","raro",SIMG("disney-jafar")],["🦁","Simba","raro",SIMG("disney-simba")],
+  ["👑","Mufasa","raro",SIMG("disney-mufasa")],["😾","Scar","raro",SIMG("disney-scar")],
+  ["🐗","Pumba","raro",SIMG("disney-pumba")],["🐒","Timão","raro",SIMG("disney-timao")],
+  ["🐵","Rafiki","raro",SIMG("disney-rafiki")],["🍃","Pocahontas","raro",SIMG("disney-pocahontas")],
+  ["💪","Hércules","raro",SIMG("disney-hercules")],["🔥","Hades","raro",SIMG("disney-hades")],
+  ["⚔️","Mulan","raro",SIMG("disney-mulan")],["🐉","Mushu","raro",SIMG("disney-mushu")],
+  ["🦍","Tarzan","raro",SIMG("disney-tarzan")],
+  /* Pixar */
+  ["🤠","Woody","raro",SIMG("disney-woody")],["🚀","Buzz Lightyear","raro",SIMG("disney-buzz")],
+  ["👧","Jessie","raro",SIMG("disney-jessie")],["👁️","Mike Wazowski","raro",SIMG("disney-mike")],
+  ["👹","Sulley","raro",SIMG("disney-sulley")],["🐠","Nemo","raro",SIMG("disney-nemo")],
+  ["🐟","Dory","raro",SIMG("disney-dory")],["🦸","Sr. Incrível","raro",SIMG("disney-sr-incrivel")],
+  ["🦸‍♀️","Mulher Elástica","raro",SIMG("disney-mulher-elastica")],["🏎️","Relâmpago McQueen","raro",SIMG("disney-mcqueen")],
+  ["🚜","Mate","raro",SIMG("disney-mate")],["🐀","Remy","raro",SIMG("disney-remy")],
+  ["🤖","Wall-E","raro",SIMG("disney-walle")],["🎈","Carl Fredricksen","raro",SIMG("disney-carl")],
+  ["🐕","Dug","raro",SIMG("disney-dug")],["🧒","Russell","raro",SIMG("disney-russell")],
+  ["😊","Alegria","raro",SIMG("disney-alegria")],["😢","Tristeza","raro",SIMG("disney-tristeza")],
+  ["😡","Raiva","raro",SIMG("disney-raiva")],
+  /* era moderna */
+  ["🐸","Tiana","raro",SIMG("disney-tiana")],["☀️","Rapunzel","raro",SIMG("disney-rapunzel")],
+  ["🦎","Pascal","raro",SIMG("disney-pascal")],["🏹","Merida","raro",SIMG("disney-merida")],
+  ["❄️","Elsa","raro",SIMG("disney-elsa")],["👧","Anna","raro",SIMG("disney-anna")],
+  ["⛄","Olaf","raro",SIMG("disney-olaf")],["🦌","Sven","raro",SIMG("disney-sven")],
+  ["🤍","Baymax","raro",SIMG("disney-baymax")],["🐰","Judy Hopps","raro",SIMG("disney-judy")],
+  ["🦊","Nick Wilde","raro",SIMG("disney-nick")],["🌊","Moana","raro",SIMG("disney-moana")],
+  ["💪","Maui","raro",SIMG("disney-maui")],["🐔","Hei Hei","raro",SIMG("disney-heihei")],
+  ["🎸","Miguel","raro",SIMG("disney-miguel")],["🐕","Dante","raro",SIMG("disney-dante")],
+  ["🐉","Sisu","raro",SIMG("disney-sisu")],["🐟","Luca","raro",SIMG("disney-luca")],
+  ["🦋","Mirabel","raro",SIMG("disney-mirabel")],["🌺","Isabela Madrigal","raro",SIMG("disney-isabela")],
+  ["🌺","Lilo","raro",SIMG("disney-lilo")],["👽","Stitch","raro",SIMG("disney-stitch")]
 ];
 /* conjuntos de figurinhas — o botão da loja/álbum alterna entre eles */
 const STICKER_SETS = {
@@ -1056,7 +1134,8 @@ const STICKER_SETS = {
   gabby:   { label:"Gabby",       icon:"🎀", stickers:GABBY_STICKERS },
   tsubasa: { label:"Tsubasa",     icon:"⚽", stickers:TSUBASA_STICKERS },
   dbz:     { label:"Dragon Ball", icon:"🐉", stickers:DBZ_STICKERS },
-  cdz:     { label:"Cavaleiros",  icon:"🛡️", stickers:CDZ_STICKERS }
+  cdz:     { label:"Cavaleiros",  icon:"🛡️", stickers:CDZ_STICKERS },
+  disney:  { label:"Disney",      icon:"🏰", stickers:DISNEY_STICKERS }
 };
 function activeSet(){ const p=P(); const s=(p&&p.stickerSet)||"classic"; return STICKER_SETS[s]?s:"classic"; }
 function setStickers(){ return STICKER_SETS[activeSet()].stickers; }
@@ -4786,6 +4865,7 @@ function openParents(){
     <h3>🪙 Economia de moedas</h3>
     <p>Acertos valem moedas (níveis altos valem mais; escrever/falar vale 50% a mais). Figurinhas lendárias custam 2000 moedas — incentivo para treinar níveis antigos na Jornada (repetição espaçada, como no Kumon).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.26:</b> a loja e o álbum ganharam uma <b>busca de Pokémon por nome</b> (procura em todas as temporadas enquanto digita) e <b>4 coleções novas</b> de figurinhas: 🎀 Gabby, ⚽ Tsubasa, 🐉 Dragon Ball e 🛡️ Cavaleiros do Zodíaco — pagas com as moedas 🪙 normais.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.27:</b> as coleções agora mostram as <b>figuras de verdade dos personagens</b> (imagens reais, como os Pokémon) e chegou a coleção 🏰 <b>Disney</b> com 102 personagens de todos os filmes — todos <b>raros</b> (300 🪙). Gabby, Tsubasa, Dragon Ball e Cavaleiros continuam bem caros (épicos e lendários).</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
