@@ -561,12 +561,20 @@ const SYL_UNITS_PT = {
 const UNIT_GOAL = { 3:5, 4:5, 5:6, 6:15, 7:8, 8:5, 9:15, 10:20 };
 
 /* Math: operações fixas por nível base — cada uma precisa ser dominada */
+/* v3.28 — DECORAR a tabuada inteira: cada conta (ex. 7×8) é uma unidade de
+   domínio própria ("x7:8") que precisa de 3 acertos limpos. Fáceis primeiro
+   (2, 5, 10), depois 3, 4, 6, 7, 8, 9 e por fim as contas mais difíceis. */
+const TAB_OPS = m => Array.from({length:10}, (_,i)=>`x${m}:${i+1}`);
 const MATH_OPS = {
   8:  ["+1","+2","+3","+4"],
   9:  ["+5","+6","+7","+8","+9"],
   10: ["d1","d2","d3","d4","d5","c1","c2","c3","c4"], /* dobros + complementos do 10 */
   17: ["-1","-2","-3","-4"],
-  18: ["-5","-6","-7","-8","-9"]
+  18: ["-5","-6","-7","-8","-9"],
+  30: TAB_OPS(2),  31: TAB_OPS(5),  32: TAB_OPS(10),
+  33: TAB_OPS(3),  34: TAB_OPS(4),  35: TAB_OPS(6),
+  36: TAB_OPS(7),  37: TAB_OPS(8),  38: TAB_OPS(9),
+  39: ["x6:7","x6:8","x6:9","x7:7","x7:8","x7:9","x8:8","x8:9","x9:9","x4:8"] /* Mestre da Tabuada: as mais difíceis */
 };
 /* fala de sílabas: E/O finais átonos viram "i"/"u" no TTS pt-BR ("ME" soa "mi").
    Circunflexo força a vogal clara SÓ na fala; a escrita na tela fica normal.
@@ -1150,7 +1158,25 @@ const WG1 = [ /* curtinhas */
   { w:"REI", e:"🤴", syl:["REI"] },    { w:"ASA", e:"🪽", syl:["A","SA"] }
 ];
 const WG2 = WORDS.filter(x=>["GATO","BOLA","CASA","PATO","VACA","SAPO","RATO","LOBO","DADO","PIPA","MOTO","MALA"].includes(x.w));
-const WG3 = WORDS_BIG;
+/* v3.28 — fases por estrutura da sílaba (pedido do papai): 2 sílabas de 2 letras →
+   2 sílabas com sílaba de 3 letras → 3 sílabas de 2 letras → 3 sílabas com sílaba grande */
+const WG2B = [ /* 2 sílabas, uma delas com 3 letras */
+  { w:"PORTA", e:"🚪", syl:["POR","TA"] }, { w:"FESTA", e:"🎉", syl:["FES","TA"] },
+  { w:"BARCO", e:"⛵", syl:["BAR","CO"] }, { w:"CIRCO", e:"🎪", syl:["CIR","CO"] },
+  { w:"PONTE", e:"🌉", syl:["PON","TE"] }, { w:"DENTE", e:"🦷", syl:["DEN","TE"] },
+  { w:"VENTO", e:"🌬️", syl:["VEN","TO"] }, { w:"PINTO", e:"🐤", syl:["PIN","TO"] },
+  { w:"BOLSA", e:"👜", syl:["BOL","SA"] }, { w:"CESTA", e:"🧺", syl:["CES","TA"] },
+  { w:"CARTA", e:"✉️", syl:["CAR","TA"] }, { w:"GARFO", e:"🍴", syl:["GAR","FO"] }
+];
+/* 3 sílabas, todas de 2 letras (CV-CV-CV puro) */
+const WG3 = WORDS_BIG.filter(x => x.syl.length===3 && x.syl.every(s=>s.length<=2));
+const WG3B = [ /* 3 sílabas com sílaba de 3 letras */
+  { w:"CENOURA", e:"🥕", syl:["CE","NOU","RA"] },  { w:"CASTELO", e:"🏰", syl:["CAS","TE","LO"] },
+  { w:"FORMIGA", e:"🐜", syl:["FOR","MI","GA"] },  { w:"LAGARTO", e:"🦎", syl:["LA","GAR","TO"] },
+  { w:"CANGURU", e:"🦘", syl:["CAN","GU","RU"] },  { w:"VESTIDO", e:"👗", syl:["VES","TI","DO"] },
+  { w:"SORVETE", e:"🍦", syl:["SOR","VE","TE"] },  { w:"BISCOITO", e:"🍪", syl:["BIS","COI","TO"] },
+  { w:"FANTASMA", e:"👻", syl:["FAN","TAS","MA"] },{ w:"MARTELO", e:"🔨", syl:["MAR","TE","LO"] }
+];
 const WG4 = DIGRAPH_WORDS;
 const WG5 = [ /* encontros consonantais */
   { w:"TREM", e:"🚂", syl:["TREM"] },      { w:"PRATO", e:"🍽️", syl:["PRA","TO"] },
@@ -1166,7 +1192,7 @@ const WG6 = [ /* gigantes */
   { w:"FOGUETE", e:"🚀", syl:["FO","GUE","TE"] },        { w:"PIRULITO", e:"🍭", syl:["PI","RU","LI","TO"] },
   { w:"CACHORRO", e:"🐶", syl:["CA","CHOR","RO"] },      { w:"ESTRELA", e:"⭐", syl:["ES","TRE","LA"] }
 ];
-const WORD_GRADES = [WG1, WG2, WG3, WG4, WG5, WG6];
+const WORD_GRADES = [WG1, WG2, WG2B, WG3, WG3B, WG4, WG5, WG6];
 
 /* ---- HISTORINHAS (etapa C do Kumon: ler e compreender) ---- */
 const STORIES = [
@@ -1190,19 +1216,21 @@ const PT_LEVELS = [
   "7A · Ouvir e achar","7A · Ouvir e achar PRO",
   "6A · Vogais","6A · Mais vogais","6A · Letras amigas","6A · Todas as letras","6A · Letras parecidas",
   "5A · Família do M","5A · Famílias M, P e B","5A · Todas as sílabas","5A · Primeira letra","5A · Primeira letra PRO","5A · Segunda letra","5A · Primeira sílaba",
-  "4A · Palavras curtinhas 🏅","4A · Ler palavras","4A · Ler palavras PRO","4A · Minhas palavras 🏅",
-  "3A · Palavras parecidas","3A · Montar com sílabas","3A · Montar com letras","3A · Palavras de 3 pedaços 🏅",
+  "4A · Palavras curtinhas 🏅","4A · Ler palavras","4A · Ler palavras PRO","4A · Minhas palavras 🏅","4A · Sílaba grande 🏅",
+  "3A · Palavras parecidas","3A · Montar com sílabas","3A · Montar com letras","3A · Palavras de 3 pedaços 🏅","3A · 3 pedaços com sílaba grande 🏅",
   "2A · Escrever palavras","2A · Ditado 🎧","2A · Ler em voz alta 🎤","2A · Ler palavras grandes","2A · Montar palavras grandes",
   "A · CH, LH e NH","A · Palavras especiais 🏅","A · TR, BR e FL","A · Palavras com R e L 🏅",
   "B · Ler frases","B · Palavras gigantes 🏅","B · Ditado difícil 🎧",
   "C · Pequenas histórias 📖","Mestre da Leitura 👑"
 ];
-/* nível novo → grau de palavras (modo domínio) */
-const PT_MASTERY = { 15:0, 18:1, 22:2, 29:3, 31:4, 33:5 };
+/* nível novo → grau de palavras (modo domínio) — v3.28: fases silábicas 19 e 24 */
+const PT_MASTERY = { 15:0, 18:1, 19:2, 23:3, 24:4, 31:5, 33:6, 35:7 };
 /* nível novo → gerador antigo */
-const PT_OLD = { 3:1,4:2,5:3,6:4,7:5,8:6,9:7,10:8,11:9,12:10,13:11,14:12,16:13,17:14,19:15,20:16,21:17,23:18,24:19,25:20,26:21,27:22,28:23,30:24,32:25 };
-/* migração: numeração antiga (26 níveis) → nova (36) */
-const PT_REMAP = { 1:3,2:4,3:5,4:6,5:7,6:8,7:9,8:10,9:11,10:12,11:13,12:14,13:16,14:17,15:19,16:20,17:21,18:23,19:24,20:25,21:26,22:27,23:28,24:30,25:32,26:36 };
+const PT_OLD = { 3:1,4:2,5:3,6:4,7:5,8:6,9:7,10:8,11:9,12:10,13:11,14:12,16:13,17:14,20:15,21:16,22:17,25:18,26:19,27:20,28:21,29:22,30:23,32:24,34:25 };
+/* migração: numeração antiga (26 níveis) → nova (38, já com as fases silábicas da v3.28) */
+const PT_REMAP = { 1:3,2:4,3:5,4:6,5:7,6:8,7:9,8:10,9:11,10:12,11:13,12:14,13:16,14:17,15:20,16:21,17:22,18:25,19:26,20:27,21:28,22:29,23:30,24:32,25:34,26:38 };
+/* migração v3.28: numeração v3 (36 níveis) → v4 (38) — duas fases silábicas novas (19 e 24) */
+const PT_SHIFT = v => v>=23 ? v+2 : (v>=19 ? v+1 : v);
 const MATH_LEVELS = [
   "7A · Contar até 3","7A · Contar até 5","6A · Contar até 10","6A · Achar o número","5A · Vem depois",
   "5A · Vem antes","4A · Maior ou menor","3A · Somar até 5","3A · Somar até 10","3A · Somar de cabeça",
@@ -1210,8 +1238,9 @@ const MATH_LEVELS = [
   "2A · Somar 3 números","A · Tirar até 5","A · Subtração até 10","A · Digitar soma até 20","A · Digitar a subtração",
   "A · Dezenas","A · Somar dezenas","A · Contas grandes","A · Subtração até 20","A · O dobro",
   "B · A metade","B · Dezena + unidade","B · Somar até 50","B · Subtrair até 50","B · Tabuada do 2",
-  "B · Tabuada do 5","B · Tabuada do 10","C · Dividir entre amigos","C · Ditado até 100 🎧","C · Probleminhas 📖",
-  "Mestre da Matemática 👑"
+  "B · Tabuada do 5","B · Tabuada do 10","B · Tabuada do 3","B · Tabuada do 4","C · Tabuada do 6",
+  "C · Tabuada do 7","C · Tabuada do 8","C · Tabuada do 9","C · Mestre da Tabuada 🏅","C · Dividir entre amigos",
+  "C · Ditado até 100 🎧","C · Probleminhas 📖","Mestre da Matemática 👑"
 ];
 const EN_LEVELS = [
   "Colors","More colors","Numbers 1-5","Numbers 1-10","Animals",
@@ -1448,7 +1477,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog
 
 function newProfile(name, avatar, bday){
   const t = freshTrackState();
-  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:3, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
+  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
 }
 
 /* v3.25 — idade do perfil pela data de nascimento (null = não informada).
@@ -1478,10 +1507,19 @@ function migrateProfile(p){
     if(!p.stats.pk) p.stats.pk = {a:0,e:0};
     if(!p.lv.pk) p.lv.pk = 1;
     if(p.prog.pk==null) p.prog.pk = 0;
-    if(p.pv !== 3){
-      /* renumerar nível PT da versão de 26 níveis para a trilha Kumon de 36 */
-      p.lv.pt = p.lv.pt > 26 ? maxOf("pt") : (PT_REMAP[p.lv.pt] || p.lv.pt);
-      p.pv = 3;
+    if(p.pv !== 4){
+      if(p.pv === 3){
+        /* v3.28 — duas fases silábicas novas (19 e 24): shift na numeração */
+        p.lv.pt = PT_SHIFT(p.lv.pt);
+        if(p.hi && p.hi.pt) p.hi.pt = PT_SHIFT(p.hi.pt);
+        ((p.rq && p.rq.pt)||[]).forEach(it=>{ if(it.q && it.q.flv) it.q.flv = PT_SHIFT(it.q.flv); });
+        if(p.les && p.les.pt) p.les.pt = PT_SHIFT(p.les.pt);
+        if(p.deep && p.deep.pt) p.deep.pt = PT_SHIFT(p.deep.pt);
+      } else {
+        /* renumerar nível PT da versão de 26 níveis para a trilha atual */
+        p.lv.pt = p.lv.pt > 26 ? maxOf("pt") : (PT_REMAP[p.lv.pt] || p.lv.pt);
+      }
+      p.pv = 4;
     }
     if(!p.mast) p.mast = {};
     /* v3.25 — data de nascimento (ajusta dificuldade pros pequenos) */
@@ -1505,6 +1543,17 @@ function migrateProfile(p){
       if(p.hi && p.hi.pk) p.hi.pk = M[p.hi.pk] || p.hi.pk;
       (p.rq.pk||[]).forEach(it=>{ if(it.q && it.q.flv) it.q.flv = M[it.q.flv] || it.q.flv; });
       p.pkv = 3;
+    }
+    /* v3.28 — tabuadas novas (33-39): shift +7 nos níveis ≥33; quem já tinha
+       passado das tabuadas volta pro 33 pra decorar as novas (hi preservado) */
+    if(p.mv == null){
+      const f = v => v>=33 ? v+7 : v;
+      if(p.hi && p.hi.math) p.hi.math = f(p.hi.math);
+      ((p.rq && p.rq.math)||[]).forEach(it=>{ if(it.q && it.q.flv) it.q.flv = f(it.q.flv); });
+      if(p.deep && p.deep.math) p.deep.math = f(p.deep.math);
+      if((p.lv.math||1) >= 33){ p.lv.math = 33; p.prog.math = 0; }
+      if(p.les && (p.les.math||0) >= 33) p.les.math = 32;
+      p.mv = 1;
     }
     /* itens antigos da fila ganham a fase de fundamento */
     TRACK_KEYS.forEach(t=>{ (p.rq[t]||[]).forEach(it=>{ if(it.fleft==null) it.fleft = FUND_HITS; }); });
@@ -2586,51 +2635,57 @@ function ptLesson(lv){
     case 18: return [
       sc(lsRow(lsE("🏅")+lsWord("BOLA","⚽")), "Palavras novas pra dominar!", "Mais palavras pra colecionar! Lembre: cada uma aparece três vezes. Na terceira, ela é sua! Leia sempre em voz alta!")];
     case 19: return [
+      sc(lsTiles(["POR","TA"],null,.4), "A sílaba cresceu: POR!", "Olha que novidade: a sílaba cresceu! POR tem TRÊS letras! A consoante gruda no finalzinho: PORRR!"),
+      sc(lsWord("PORTA","🚪"), "POR + TA = PORTA!", "POR... TA... PORTA! Duas palmas, mas a primeira sílaba é grandona! FES-TA! DEN-TE! Fale esticando o fim da sílaba!")];
+    case 20: return [
       sc(lsRow(lsHl("GATO",0,1)+lsHl("PATO",0,1)+lsHl("RATO",0,1)), "GATO, PATO, RATO!", "Olha que engraçado: GATO, PATO, RATO! Quase iguais! Só a PRIMEIRA letra muda!"),
       sc(lsRow(lsE("🐱")+lsE("🦆",.3)+lsE("🐭",.6)), "Leia o comecinho com atenção!", "Uma letrinha muda o bicho inteiro! Leia o comecinho com muita atenção antes de escolher!")];
-    case 20: return [
+    case 21: return [
       sc(lsTiles(["TO","GA"],null,.4), "Os pedaços embaralharam!", "Os pedacinhos da palavra se embaralharam! Sua missão: colocar na ordem certa!"),
       sc(lsTiles(["GA","TO"],"gold",.4), "Fale devagar: GA... TO!", "O truque: fale a palavra bem devagar: GA... TÔ! O pedaço que você fala PRIMEIRO vem primeiro! GA, depois TÔ!")];
-    case 21: return [
+    case 22: return [
       sc(lsTiles(["G","A","T","O"],null,.35), "Agora letra por letra!", "Agora é letra por letra! Fale a palavra beeem devagar esticando cada som: G... A... T... O!"),
       sc(lsRow(lsE("🗣️")+lsE("🧩",.4)), "Cada som, uma letra!", "Cada sonzinho que sua boca faz é uma letra no lugar certo! Monte com calma, som por som!")];
-    case 22: return [
+    case 23: return [
       sc(lsTiles(["MA","CA","CO"],null,.5), "Três palmas: MA-CA-CO!", "Palavras de três pedaços! Bata palma: MA! CA! CÔ! Três palmas, três pedaços: MACACO!"),
       sc(lsWord("MACACO","🐒"), "Pedacinho por pedacinho!", "Palavra grande não assusta: é só ler um pedacinho de cada vez e emendar no final! MA-CA-CO... MACACO!")];
-    case 23: return [
+    case 24: return [
+      sc(lsTiles(["CAS","TE","LO"],null,.5), "Três pedaços, um deles grandão!", "Agora as palavras de três pedaços têm uma sílaba GRANDONA! CAS-TE-LO! A primeira tem três letras!"),
+      sc(lsWord("CASTELO","🏰"), "CAS + TE + LO = CASTELO!", "FOR-MI-GA! SOR-VE-TE! Bata as três palmas e capriche na sílaba grande! Você já lê qualquer pedaço!")];
+    case 25: return [
       sc(lsRow(lsB("G")+lsB("A")+lsE("✍️",.5)), "Escreva falando o som!", "Agora você escreve! O segredo: fale a palavra devagar e escreva o som que escutar: G... A... T... O!"),
       sc(lsE("🗣️"), "Sua boca sabe a resposta!", "Se ficar difícil, fale a palavra de novo bem devagarinho. Sua boca sempre sabe qual é a próxima letra!")];
-    case 24: return [
+    case 26: return [
       sc(lsRow(lsE("🎧")+lsE("✍️",.4)), "Ditado: escute, repita, escreva!", "Ditado! Não tem palavra na tela: só o som! Escute com atenção, repita baixinho pra você mesmo, e escreva pedacinho por pedacinho!")];
-    case 25: return [
+    case 27: return [
       sc(lsRow(lsE("🎤")+lsWord("LUA","🌙")), "Leia BEM ALTO no microfone!", "Agora é você que fala! Leia a palavra com o dedinho embaixo e fale BEM ALTO no microfone: LUUUA!"),
       sc(lsE("🗣️"), "Pode falar devagar e forte!", "Fale perto do celular, devagar e forte! Se não der certo, respire fundo e tente de novo com mais força!")];
-    case 26: return [
-      sc(lsWord("SAPATO","👟"), "Palavras grandes, sem pressa!", "Palavras grandes! Sem pressa: SA... PA... TÔ! Quanto mais pedaços, mais palmas — e mais moedas!")];
-    case 27: return [
-      sc(lsTiles(["BA","NA","NA"],null,.5), "Monte os três pedaços na ordem!", "Montar palavra grande é igual: fale devagar, BA-NA-NA, e coloque os pedaços na ordem que a boca fala!")];
     case 28: return [
+      sc(lsWord("SAPATO","👟"), "Palavras grandes, sem pressa!", "Palavras grandes! Sem pressa: SA... PA... TÔ! Quanto mais pedaços, mais palmas — e mais moedas!")];
+    case 29: return [
+      sc(lsTiles(["BA","NA","NA"],null,.5), "Monte os três pedaços na ordem!", "Montar palavra grande é igual: fale devagar, BA-NA-NA, e coloque os pedaços na ordem que a boca fala!")];
+    case 30: return [
       sc(lsRow(lsMerge("C","H")), "C + H de mãos dadas!", "Olha que legal: o C e o H andam de mãos dadas! Juntos eles fazem um som NOVO: chhhh!"),
       sc(lsWord("CHUVA","🌧️"), "CH faz chhh... CHUVA!", "CHHH-UVA! CHUVA! E tem mais dupla: o L com H faz lhhh de MILHO! O N com H faz nhhh de NINHO!"),
       sc(lsRow(lsE("🌽")+lsE("🪺",.4)), "Duas letras, UM som novo!", "Lembre: quando você vir CH, LH ou NH, são duas letras fazendo UM som só! Elas nunca se separam!")];
-    case 29: return [
+    case 31: return [
       sc(lsRow(lsE("🏅")+lsWord("ABELHA","🐝")), "Palavras especiais pra dominar!", "Palavras com os sons novos! A-BE-LHA! GA-LI-NHA! Leia com calma e domine cada uma três vezes!")];
-    case 30: return [
+    case 32: return [
       sc(lsRow(lsMerge("T","R")), "T e R juntinhos: TRRRR!", "Agora o T e o R aparecem coladinhos: TRRR de TREM! Fala os dois sons bem rapidinho: trrrem!"),
       sc(lsRow(lsWord("ZEBRA","🦓")), "BR de ZEBRA, FL de FLOR!", "O B com R faz brrr: ZEBRA! O F com L faz fl: FLOR! São dois sons falados juntinhos, sem parar no meio!")];
-    case 31: return [
+    case 33: return [
       sc(lsRow(lsE("🏅")+lsWord("TIGRE","🐯")), "Domine as palavras com R e L!", "Palavras com R e L no meio! TI-GRE, LI-VRO, PRA-TO! Fale os dois sons colados e domine cada palavra!")];
-    case 32: return [
+    case 34: return [
       sc(lsTiles(["O","GATO","BEBE","LEITE"],null,.55), "Frase: um trenzinho de palavras!", "Agora você vai ler FRASES! Uma frase é um trenzinho de palavras: O... GATO... BEBE... LEITE!"),
       sc(lsRow(lsE("🐱")+lsE("🥛",.4)), "Leu? Pergunte: o que aconteceu?", "Leia com o dedinho, palavra por palavra. No final, pergunte pra você: o que a frase contou? O gato bebeu leite!")];
-    case 33: return [
-      sc(lsRow(lsE("🏅")+lsWord("BORBOLETA","🦋")), "Palavras gigantes!", "Palavras GIGANTES! BOR-BO-LE-TA! Quatro palmas! Não tenha pressa: pedacinho por pedacinho você lê qualquer palavra do mundo!")];
-    case 34: return [
-      sc(lsRow(lsE("🎧")+lsE("💪",.4)), "Ditado de gente grande!", "Ditado difícil! Palavra grande no ouvido? Repita ela baixinho e escreva um pedacinho de cada vez: MA... CA... CÔ!")];
     case 35: return [
+      sc(lsRow(lsE("🏅")+lsWord("BORBOLETA","🦋")), "Palavras gigantes!", "Palavras GIGANTES! BOR-BO-LE-TA! Quatro palmas! Não tenha pressa: pedacinho por pedacinho você lê qualquer palavra do mundo!")];
+    case 36: return [
+      sc(lsRow(lsE("🎧")+lsE("💪",.4)), "Ditado de gente grande!", "Ditado difícil! Palavra grande no ouvido? Repita ela baixinho e escreva um pedacinho de cada vez: MA... CA... CÔ!")];
+    case 37: return [
       sc(lsRow(lsE("📖")+lsE("🔎",.4)), "Historinhas! A resposta está no texto!", "Agora você lê historinhas de verdade! Leia com calma. Depois vem uma pergunta — e a resposta está ESCONDIDA no texto!"),
       sc(lsE("🕵️"), "Vamos caçar a resposta!", "Se não souber a resposta, volte e leia de novo só o pedacinho que fala daquilo! É como caçar um tesouro no texto!")];
-    case 36: return [
+    case 38: return [
       sc(lsRow(lsE("👑")+lsE("🦉",.4)), "Você chegou ao topo!", "Uau! Você chegou no último nível! Aqui mistura TUDO que você aprendeu: sons, sílabas, palavras, frases e histórias!"),
       sc(lsE("🚀"), "Confie em você!", "Confie em você: leia com o dedinho, cole os sons, bata palmas nos pedaços. Você virou um leitor de verdade! Vamos!")];
   }
@@ -2715,14 +2770,35 @@ function mathLesson(lv){
     case 32: return [
       sc(lsRow(lsTiles(["3"])+lsB("×")+lsTiles(["10"])+lsB("=")+lsTiles(["30"],"gold")), "Tabuada do 10: põe um ZERO!", "A tabuada do DEZ é a mais fácil do mundo: é só colocar um ZERO do lado! Três vezes dez? Três... com zero: TRINTA!")];
     case 33: return [
+      sc(lsTiles(["3","6","9","12"],null,.4), "Tabuada do 3: pule de 3 em 3!", "Tabuada do TRÊS! Pule de três em três: três, seis, nove, doze, quinze!"),
+      sc(lsRow(lsTiles(["3","×","4"],null,.3)+lsB("=")+lsTiles(["12"],"gold")), "O dobro... mais um grupinho!", "Truque: três vezes quatro é o DOBRO de quatro... mais quatro! Oito mais quatro: DOZE!")];
+    case 34: return [
+      sc(lsRow(lsTiles(["4","×","3"],null,.3)+lsB("=")+lsTiles(["12"],"gold")), "Tabuada do 4: dobre DUAS vezes!", "Tabuada do QUATRO tem um truque mágico: dobre... e dobre DE NOVO! Quatro vezes três? Dobro de três: seis! Dobro de seis: DOZE!"),
+      sc(lsTiles(["4","8","12","16"],null,.4), "4, 8, 12, 16!", "E dá pra pular de quatro em quatro: quatro, oito, doze, dezesseis, vinte!")];
+    case 35: return [
+      sc(lsRow(lsTiles(["6","×","4"],null,.3)+lsB("=")+lsTiles(["24"],"gold")), "Tabuada do 6: a amiga do 5!", "Tabuada do SEIS: use a amiga do cinco! Seis vezes quatro? Cinco vezes quatro é vinte... mais um quatro: VINTE E QUATRO!"),
+      sc(lsTiles(["6","12","18","24"],null,.4), "6, 12, 18, 24!", "Ou pule de seis em seis: seis, doze, dezoito, vinte e quatro, trinta!")];
+    case 36: return [
+      sc(lsTiles(["5","6","7","8"],"gold",.35), "5, 6, 7, 8... o segredo do 56!", "Tabuada do SETE! Olha o segredo mais famoso: cinco, seis, sete, oito... CINQUENTA E SEIS é SETE vezes OITO! 56 = 7 × 8!"),
+      sc(lsTiles(["7","14","21","28"],null,.4), "7, 14, 21, 28!", "E pra treinar: pule de sete em sete! Sete, catorze, vinte e um, vinte e oito, trinta e cinco!")];
+    case 37: return [
+      sc(lsRow(lsTiles(["8","×","3"],null,.3)+lsB("=")+lsTiles(["24"],"gold")), "Tabuada do 8: dobre TRÊS vezes!", "Tabuada do OITO: dobre TRÊS vezes! Oito vezes três? Dobro de três: seis! De novo: doze! De novo: VINTE E QUATRO!"),
+      sc(lsTiles(["8","16","24","32"],null,.4), "8, 16, 24, 32!", "De oito em oito: oito, dezesseis, vinte e quatro, trinta e dois, quarenta!")];
+    case 38: return [
+      sc(lsRow(lsTiles(["9","×","6"],null,.3)+lsB("=")+lsTiles(["54"],"gold")), "Tabuada do 9: o 10 menos um!", "Tabuada do NOVE: use a tabuada do DEZ e tire um grupinho! Nove vezes seis? Dez vezes seis é sessenta... menos seis: CINQUENTA E QUATRO!"),
+      sc(lsTiles(["9","18","27","36"],null,.4), "Os dois lados somam 9!", "E olha a mágica do nove: dezoito... um mais oito é NOVE! Vinte e sete... dois mais sete é NOVE! A resposta sempre conta o segredo!")];
+    case 39: return [
+      sc(lsRow(lsE("🏅")+lsTiles(["7","×","8"],null,.35)+lsB("=")+lsTiles(["56"],"gold")), "As contas mais difíceis do mundo!", "Mestre da Tabuada! Aqui moram as contas mais FAMOSAS e difíceis: sete vezes oito, oito vezes nove, nove vezes nove!"),
+      sc(lsE("🧠"), "Agora é decorar de vez!", "Você já conhece os truques de cada tabuada. Agora é treinar até a resposta pular da boca sozinha! Vamos decorar!")];
+    case 40: return [
       sc(lsRow(lsE("🍬")+lsE("🧒",.3)+lsE("🧒",.5)), "Dividir é repartir igualzinho!", "Dividir é repartir IGUALZINHO! Seis balas pra dois amigos: uma pra você, uma pra você... até acabar!"),
       sc(lsRow(lsCount(3,"🍬",.3)+lsB("|")+lsCount(3,"🍬",.3)), "Três pra cada!", "Acabou! Ficou três pra cada um! Ninguém sai triste quando reparte igualzinho!")];
-    case 34: return [
+    case 41: return [
       sc(lsRow(lsE("🎧")+lsTiles(["87"],"gold")), "Números gigantes no ouvido!", "Ditado até cem! OITENTA E SETE: primeiro o oitenta... e o sete entra no lugar do zero: 87!")];
-    case 35: return [
+    case 42: return [
       sc(lsRow(lsE("📖")+lsE("🧠",.4)), "Desenhe a história na cabeça!", "Probleminhas! Escute a historinha e DESENHE ela na sua cabeça!"),
       sc(lsRow(lsB("+","ls-pulse")+lsB("−","ls-pulse")), "Juntou = mais! Tirou = menos!", "Aí pergunte: a história JUNTOU coisas? Conta de MAIS! Alguém TIROU, comeu, perdeu? Conta de MENOS!")];
-    case 36: return [
+    case 43: return [
       sc(lsRow(lsE("👑")+lsE("🔢",.4)), "Mestre da Matemática!", "Você chegou no topo da matemática! Aqui mistura tudo: contar, somar, subtrair, tabuada e dividir!"),
       sc(lsE("🚀"), "Use todos os truques!", "Use seus truques: maior na cabeça, passinhos pra trás, pacotinhos de dez e o zero da tabuada do dez! Vamos!")];
   }
@@ -3418,7 +3494,7 @@ function genPt(lv){
     return sylMasteryQ(syl, pool);
   }
   if(PT_MASTERY[lv]!=null) return genMastery(PT_MASTERY[lv]);
-  if(lv===34){ /* ditado difícil */
+  if(lv===36){ /* ditado difícil */
     const w = pick(DITADO_HARD);
     return {
       kind:"abc", prompt:"Ditado difícil! Escreva o que ouvir!",
@@ -3428,10 +3504,10 @@ function genPt(lv){
       answer:w, maxLen:w.length
     };
   }
-  if(lv===35) return genStory();
+  if(lv===37) return genStory();
   if(PT_OLD[lv]) return genPtCore(PT_OLD[lv]);
-  /* 36+: MESTRE — mistura os desafios da trilha inteira */
-  return genPt(pick([16,20,21,24,25,26,27,28,30,32,34,35]));
+  /* 38+: MESTRE — mistura os desafios da trilha inteira */
+  return genPt(pick([16,21,22,26,27,28,29,30,32,34,36,37]));
 }
 
 function genPtCore(lv){
@@ -3755,8 +3831,34 @@ function mathOpQ(op){
       dkey:"M:"+op
     };
   }
+  if(op[0]==="x"){ /* v3.28 — tabuada conta por conta: x7:8 = 7×8 */
+    const [m,n] = op.slice(1).split(":").map(Number);
+    const r = m*n;
+    return {
+      kind:"opts", prompt:`Quanto é ${m} × ${n}?`,
+      visual:`<span class="num-big">${m} × ${n} = ?</span>`,
+      speech:[ptT(`Tabuada do ${m}! Quanto é ${m} vezes ${n}?`)],
+      hintSpeech: ptT(TAB_HINTS[m] ? TAB_HINTS[m](n) : `Conte de ${m} em ${m}, ${n} vezes!`),
+      okSpeech:`${m} vezes ${n} é ${r}!`,
+      options: shuffle([r, r-m, r+m, r+2*m, r-2*m].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,5).map(v=>({label:String(v),correct:v===r})),
+      dkey:"M:"+op
+    };
+  }
   return null;
 }
+
+/* v3.28 — dica falada de cada tabuada (o truque certo pra conta certa) */
+const TAB_HINTS = {
+  2: n => `O dobro! ${n} mais ${n}!`,
+  3: n => `O dobro de ${n}, e mais ${n} por cima!`,
+  4: n => `Dobre o ${n}... e dobre de novo!`,
+  5: n => `Conte de cinco em cinco, ${n} vezes! Termina em cinco ou zero!`,
+  6: n => `Cinco vezes ${n}... e mais um ${n}!`,
+  7: n => n===8 ? `Lembre: cinco, seis, sete, oito... cinquenta e seis é sete vezes oito!` : `Seis vezes ${n}... e mais um ${n}!`,
+  8: n => `Dobre o ${n} três vezes seguidas!`,
+  9: n => `Dez vezes ${n}... menos um ${n}!`,
+  10: n => `É só colocar um zero do lado do ${n}!`
+};
 
 function genMath(lv){
   /* v3.14 — níveis com domínio por operação: escolhe operação não dominada */
@@ -4040,29 +4142,7 @@ function genMath(lv){
       options: numOpts(a-b, Math.max(0,a-b-3), a-b+3, 5)
     };
   }
-  if(lv===30 || lv===31){ /* tabuada do 2 e do 5 */
-    const m = lv===30? 2 : 5, n = 1+rand(10), r = m*n;
-    return {
-      kind:"opts", prompt:`Quanto é ${m} × ${n}?`,
-      visual:`<span class="num-big">${m} × ${n} = ?</span>`,
-      speech:[ptT(`Tabuada do ${m}! Quanto é ${m} vezes ${n}?`)],
-      hintSpeech: ptT(m===2? `É o dobro de ${n}!` : `Conte de 5 em 5, ${n} vezes!`),
-      okSpeech:`${m} vezes ${n} é ${r}!`,
-      options: shuffle([r, r-m, r+m, r+2*m, r-2*m].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,5).map(v=>({label:String(v),correct:v===r}))
-    };
-  }
-  if(lv===32){ /* tabuada do 10 */
-    const n = 1+rand(10), r = 10*n;
-    return {
-      kind:"opts", prompt:`Quanto é 10 × ${n}?`,
-      visual:`<span class="num-big">10 × ${n} = ?</span>`,
-      speech:[ptT(`Tabuada do dez! Quanto é dez vezes ${n}?`)],
-      hintSpeech: ptT(`É o ${n} com um zero do lado!`),
-      okSpeech:`Dez vezes ${n} é ${r}!`,
-      options: shuffle([r, r-10, r+10, r+20, r-20].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,5).map(v=>({label:String(v),correct:v===r}))
-    };
-  }
-  if(lv===33){ /* dividir entre amigos */
+  if(lv===40){ /* dividir entre amigos */
     const k = pick([2,3,4]), per = 1+rand(4), n = k*per;
     const e = pick(COUNT_EMOJIS);
     return {
@@ -4074,7 +4154,7 @@ function genMath(lv){
       options: numOpts(per, 1, per+3, 4)
     };
   }
-  if(lv===34){ /* ditado até 100 */
+  if(lv===41){ /* ditado até 100 */
     const n = 1+rand(100);
     return {
       kind:"keypad", prompt:"Ditado! Digite o número!",
@@ -4084,7 +4164,7 @@ function genMath(lv){
       answer:String(n), maxLen:3
     };
   }
-  if(lv===35){ /* probleminhas */
+  if(lv===42){ /* probleminhas */
     const a = 3+rand(10), b = 1+rand(5);
     const plus = rand(2)===0;
     const s = plus
@@ -4100,7 +4180,7 @@ function genMath(lv){
       options: numOpts(r, Math.max(0,r-3), r+3, 5)
     };
   }
-  return genMath(pick([14,16,18,19,20,22,23,24,25,26,27,28,29,30,31,32,33,34,35]));
+  return genMath(pick([14,16,18,19,20,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42]));
 }
 
 /* ---- inglês ---- */
@@ -4716,16 +4796,16 @@ function ptStageOf(lv){
   if(lv<=2) return {code:"7A", name:"Ouvir e apontar", emoji:"👂"};
   if(lv<=7) return {code:"6A", name:"Letras do alfabeto", emoji:"🔤"};
   if(lv<=14) return {code:"5A", name:"Sílabas", emoji:"🧩"};
-  if(lv<=18) return {code:"4A", name:"Palavras curtas", emoji:"📗"};
-  if(lv<=22) return {code:"3A", name:"Palavras médias", emoji:"📘"};
-  if(lv<=27) return {code:"2A", name:"Escrever e ditar", emoji:"✍️"};
-  if(lv<=31) return {code:"A",  name:"Sons especiais", emoji:"🎯"};
-  if(lv<=34) return {code:"B",  name:"Frases e ditados", emoji:"📖"};
-  if(lv<=35) return {code:"C",  name:"Historinhas", emoji:"📚"};
+  if(lv<=19) return {code:"4A", name:"Palavras curtas", emoji:"📗"};
+  if(lv<=24) return {code:"3A", name:"Palavras médias", emoji:"📘"};
+  if(lv<=29) return {code:"2A", name:"Escrever e ditar", emoji:"✍️"};
+  if(lv<=33) return {code:"A",  name:"Sons especiais", emoji:"🎯"};
+  if(lv<=36) return {code:"B",  name:"Frases e ditados", emoji:"📖"};
+  if(lv<=37) return {code:"C",  name:"Historinhas", emoji:"📚"};
   return {code:"👑", name:"Mestre da Leitura", emoji:"👑"};
 }
 function ptMasteryReport(p){
-  const grades = [["Curtinhas 🔤",0],["Fáceis 📗",1],["Médias 📘",2],["Sons novos 🎯",3],["R e L 🧩",4],["Gigantes 📚",5]];
+  const grades = [["Curtinhas 🔤",0],["Fáceis 📗",1],["Sílaba grande 💪",2],["Médias 📘",3],["3 pedaços grandes 🧱",4],["Sons novos 🎯",5],["R e L 🧩",6],["Gigantes 📚",7]];
   return grades.map(([label,gi])=>{
     const list = WORD_GRADES[gi]||[];
     if(!list.length) return "";
@@ -4784,7 +4864,17 @@ function domainMapReport(p){
     {title:"➕ Somas até 10", ops:MATH_OPS[9], label:o=>o},
     {title:"➕ Dobros e complementos do 10", ops:MATH_OPS[10], label:o=> o[0]==="d"?`${o.slice(1)}+${o.slice(1)}`:`${o.slice(1)}+${10-o.slice(1)}`},
     {title:"➖ Subtrações até 5", ops:MATH_OPS[17], label:o=>o},
-    {title:"➖ Subtrações até 10", ops:MATH_OPS[18], label:o=>o}
+    {title:"➖ Subtrações até 10", ops:MATH_OPS[18], label:o=>o},
+    {title:"✖️ Tabuada do 2", ops:MATH_OPS[30], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 5", ops:MATH_OPS[31], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 10", ops:MATH_OPS[32], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 3", ops:MATH_OPS[33], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 4", ops:MATH_OPS[34], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 6", ops:MATH_OPS[35], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 7", ops:MATH_OPS[36], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 8", ops:MATH_OPS[37], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Tabuada do 9", ops:MATH_OPS[38], label:o=>o.slice(1).replace(":","×")},
+    {title:"✖️ Contas mais difíceis", ops:MATH_OPS[39], label:o=>o.slice(1).replace(":","×")}
   ];
   parts.push(`<div style="margin-top:12px;"><b>🔢 Contas dominadas (acertando 3x sem erro):</b></div>`);
   mathBlocks.forEach(b => {
@@ -4839,14 +4929,14 @@ function openParents(){
     <h3>📖 O processo de alfabetização, passo a passo</h3>
     <p>A trilha de Português segue um caminho fônico claro: <b>1)</b> ouvir e apontar figuras (7A) → <b>2)</b> dominar cada LETRA nas 3 direções (6A) → <b>3)</b> dominar cada SÍLABA nas 3 direções (5A) → <b>4)</b> ler e montar PALAVRAS inteiras (4A/3A/2A) → <b>5)</b> sons especiais como CH, NH, LH (A) → <b>6)</b> frases (B) → <b>7)</b> pequenas histórias (C). Cada etapa só abre quando a anterior está dominada — sem pular, sem chute.</p>
     <h3>🔢 O processo de matemática, passo a passo</h3>
-    <p>Mesmo espírito: <b>1)</b> contar quantidades → <b>2)</b> comparar (maior/menor) → <b>3)</b> somar e subtrair com domínio conta por conta (cada soma até 10 precisa de 3 acertos limpos) → <b>4)</b> dezenas e somas até 50 → <b>5)</b> tabuadas do 2, 5 e 10 → <b>6)</b> divisão → <b>7)</b> probleminhas com história. A trilha Pokémon ⚡ agora é uma <b>jornada completa de 20 níveis</b> que percorre esses dois caminhos inteiros dentro do mundo Pokémon: ouvir → achar letras → sílabas → montar/escrever palavras → ler frases, e contar → comparar → somar → subtrair → dobro → times (vezes) → repartir (dividir) → probleminhas. O domínio de letras, sílabas e continhas conquistado lá conta no <b>mesmo mapa de domínio</b> das trilhas Português e Matemática.</p>
+    <p>Mesmo espírito: <b>1)</b> contar quantidades → <b>2)</b> comparar (maior/menor) → <b>3)</b> somar e subtrair com domínio conta por conta (cada soma até 10 precisa de 3 acertos limpos) → <b>4)</b> dezenas e somas até 50 → <b>5)</b> a <b>tabuada inteira decorada conta por conta</b> (2, 5 e 10 primeiro, que são mais fáceis; depois 3, 4, 6, 7, 8 e 9; e por fim as contas mais difíceis, como 7×8 — cada conta precisa de 3 acertos limpos) → <b>6)</b> divisão → <b>7)</b> probleminhas com história. A trilha Pokémon ⚡ agora é uma <b>jornada completa de 20 níveis</b> que percorre esses dois caminhos inteiros dentro do mundo Pokémon: ouvir → achar letras → sílabas → montar/escrever palavras → ler frases, e contar → comparar → somar → subtrair → dobro → times (vezes) → repartir (dividir) → probleminhas. O domínio de letras, sílabas e continhas conquistado lá conta no <b>mesmo mapa de domínio</b> das trilhas Português e Matemática.</p>
     <h3>🎌 Método Kumon</h3>
     <p>Micro-passos: cada nível ensina UMA coisinha nova. A criança precisa de ${GOAL} acertos para avançar (domínio antes de progresso). Errar não pune — o jogo dá dicas e sugere revisar o nível anterior quando percebe dificuldade.</p>
     <p>A trilha de Português segue as <b>etapas oficiais do Kumon</b>: <b>7A</b> ouvir e apontar → <b>6A</b> letras → <b>5A</b> sílabas → <b>4A/3A/2A</b> palavras → <b>A</b> sons especiais → <b>B</b> frases → <b>C</b> pequenas histórias. Nos níveis 🏅 (domínio de palavras) a MESMA palavra repete 3 vezes — ouvir, ler sozinho e montar — até ser dominada, exatamente como a repetição do Kumon.</p>
     <h3>🔁 Reforço automático + fundamento</h3>
     <p>Errou uma questão? Ela entra na fila de reforço e <b>volta misturada</b> nas próximas perguntas (no mesmo nível e nos seguintes) até a criança acertar <b>3 vezes</b>. Depois vêm <b>2 questões novas da mesma lição</b> (🔁💡 fundamento) — para provar que entendeu a <i>lógica</i>, não só decorou aquela pergunta. Errou em qualquer fase? A contagem daquela fase recomeça. A criança sempre passa de nível normalmente — o reforço vai junto, sem frustração. O contador 🔁 na barra mostra quantas lições estão na fila.</p>
     <h3>🥨 Trilha de Alemão</h3>
-    <p>Mesma progressão do Inglês: ouvir → ler → montar → escrever → ditado → falar 🎤 → frases. As palavras de escrita usam só letras A-Z (o teclado não tem Ä, Ö, Ü). A Matemática também ganhou a <b>continuação B e C</b>: metade, somas até 50, tabuadas do 2, 5 e 10, divisão e probleminhas.</p>
+    <p>Mesma progressão do Inglês: ouvir → ler → montar → escrever → ditado → falar 🎤 → frases. As palavras de escrita usam só letras A-Z (o teclado não tem Ä, Ö, Ü). A Matemática também ganhou a <b>continuação B e C</b>: metade, somas até 50, a tabuada completa (do 2 ao 10, decorada conta por conta), divisão e probleminhas.</p>
     <h3>🎤 Microfone não funciona?</h3>
     <p>Se o jogo foi aberto com <b>duplo clique</b> (endereço começa com <b>file://</b>), o navegador <b>nega o microfone sem nem perguntar</b> — é uma regra do Chrome/Edge. Solução: abra o jogo pelo <b>JOGAR.bat</b> que está na pasta do jogo (ele abre em http://127.0.0.1:8123 e aí o pedido de permissão aparece — clique em <b>Permitir</b>). <b>Atenção:</b> o progresso não passa sozinho do jeito antigo pro novo endereço — no jogo antigo use "💾 Salvar em arquivo" e no novo "📂 Recuperar de arquivo" (uma vez só). Se ainda bloquear: cadeado 🔒 na barra → Microfone → Permitir; e em Configurações do Windows → Privacidade e segurança → Microfone, ligue o acesso para aplicativos. O reconhecimento de voz precisa de internet.</p>
     <p style="text-align:center;"><button class="ov-btn alt" id="parents-mictest">🎤 Testar microfone agora</button></p>
@@ -4866,6 +4956,7 @@ function openParents(){
     <p>Acertos valem moedas (níveis altos valem mais; escrever/falar vale 50% a mais). Figurinhas lendárias custam 2000 moedas — incentivo para treinar níveis antigos na Jornada (repetição espaçada, como no Kumon).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.26:</b> a loja e o álbum ganharam uma <b>busca de Pokémon por nome</b> (procura em todas as temporadas enquanto digita) e <b>4 coleções novas</b> de figurinhas: 🎀 Gabby, ⚽ Tsubasa, 🐉 Dragon Ball e 🛡️ Cavaleiros do Zodíaco — pagas com as moedas 🪙 normais.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.27:</b> as coleções agora mostram as <b>figuras de verdade dos personagens</b> (imagens reais, como os Pokémon) e chegou a coleção 🏰 <b>Disney</b> com 102 personagens de todos os filmes — todos <b>raros</b> (300 🪙). Gabby, Tsubasa, Dragon Ball e Cavaleiros continuam bem caros (épicos e lendários).</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.28:</b> a Matemática agora ensina a <b>tabuada inteira, decorada conta por conta</b> — primeiro 2, 5 e 10 (mais fáceis), depois 3, 4, 6, 7, 8 e 9, cada um com seu truque na aulinha, e no final o <b>Mestre da Tabuada</b> com as contas mais difíceis (7×8!). Cada conta precisa de 3 acertos limpos pra ficar decorada, e aparece no mapa de domínio. Quem já tinha passado das tabuadas volta pro nível da Tabuada do 3 pra decorar as novas (moedas, figurinhas e recordes preservados). O Português ganhou <b>2 fases silábicas novas</b>: palavras de 2 pedaços com <b>sílaba grande</b> (POR-TA, FES-TA) e de 3 pedaços com sílaba grande (CAS-TE-LO, FOR-MI-GA) — o degrau que faltava entre as palavras fáceis e as difíceis.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
