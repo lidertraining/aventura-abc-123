@@ -400,6 +400,10 @@
       <span class="ic">⚡</span>
       <span class="tx"><b>POKÉMON</b><span id="pk-sub"></span></span>
     </button>
+    <button class="mode-btn" id="btn-kids" style="background:linear-gradient(135deg,#ff9ac4,#ff6fa5);box-shadow:0 6px 0 #c2497c;color:#fff;">
+      <span class="ic">🧸</span>
+      <span class="tx"><b>KIDS</b><span id="kids-sub"></span></span>
+    </button>
     <button class="mode-btn" id="btn-shop">
       <span class="ic">🛒</span>
       <span class="tx"><b>LOJA</b><span id="shop-sub">Compre figurinhas com suas moedas!</span></span>
@@ -471,6 +475,7 @@
       <button class="jtab" data-track="de">🥨 Alemão</button>
       <button class="jtab" data-track="cur">🔬 Curiosidades</button>
       <button class="jtab" data-track="pk">⚡ Pokémon</button>
+      <button class="jtab" data-track="kids">🧸 Kids</button>
     </div>
     <div class="j-list" id="journey-list"></div>
     <button class="back-btn" id="btn-back-journey" style="margin-top:14px;">⬅ Voltar</button>
@@ -485,6 +490,7 @@
       <button class="ctab" data-track="math">🔢 Matemática</button>
       <button class="ctab" data-track="en">🌎 Inglês</button>
       <button class="ctab" data-track="de">🥨 Alemão</button>
+      <button class="ctab" data-track="kids">🧸 Kids</button>
     </div>
     <div class="j-list" id="classes-list"></div>
     <button class="back-btn" id="btn-back-classes" style="margin-top:14px;">⬅ Voltar</button>
@@ -1344,13 +1350,41 @@ const PK_PT = [
   ["AMIGO",["A","MI","GO"],133,"Eevee","O Eevee é seu amigo"]
 ];
 
+/* ===== TRILHA KIDS 🧸 (v3.29) — pros bem pequenos (3 anos): números 1-10
+   um por um (1, 2, 3 → brincar misturado → 4, 5, 6...) e depois as vogais
+   A, E, I, O, U com palavrinhas ilustradas (A de ABELHA 🐝). Sem dkey:
+   cada acerto avança — níveis curtinhos pra atenção de criança pequena. */
+const KIDS_PLAN = [
+  {n:1},{n:2},{n:3},{mix:[1,2,3]},
+  {n:4},{n:5},{n:6},{mix:[4,5,6]},
+  {n:7},{n:8},{n:9},{n:10},{mix:[7,8,9,10]},
+  {v:"A"},{v:"E"},{v:"I"},{v:"O"},{v:"U"},
+  {vmix:true},{master:true}
+];
+const KIDS_LEVELS = [
+  "Número 1 ☝️","Número 2 ✌️","Número 3 🎈","Brincando com 1, 2, 3 🎪",
+  "Número 4 🍀","Número 5 🖐️","Número 6 🐞","Brincando com 4, 5, 6 🎠",
+  "Número 7 🌈","Número 8 🐙","Número 9 🎀","Número 10 🙌","Brincando com 7 a 10 🎡",
+  "Letrinha A 🐝","Letrinha E 🐘","Letrinha I 🏝️","Letrinha O 🥚","Letrinha U 🍇",
+  "Brincando com as vogais 🎨","Mestre Kids 👑"
+];
+const KIDS_VOWELS = {
+  A:[["ABELHA","🐝"],["AVIÃO","✈️"],["ANEL","💍"],["ABACAXI","🍍"]],
+  E:[["ELEFANTE","🐘"],["ESTRELA","⭐"],["ESCOLA","🏫"],["ESPIGA","🌽"]],
+  I:[["ILHA","🏝️"],["IGREJA","⛪"],["IOIÔ","🪀"],["IMÃ","🧲"]],
+  O:[["OVO","🥚"],["OVELHA","🐑"],["ONDA","🌊"],["OLHO","👁️"]],
+  U:[["UVA","🍇"],["URSO","🐻"],["UNHA","💅"],["UNICÓRNIO","🦄"]]
+};
+const KIDS_EMO = ["🐝","🦆","🍎","⭐","🎈","🐱","🌸","🐶","🍓","🦋","🐥","🍌"];
+
 const TRACKS = {
   pt:   { icon:"📚", name:"Português",  levels:PT_LEVELS },
   math: { icon:"🔢", name:"Matemática", levels:MATH_LEVELS },
   en:   { icon:"🌎", name:"Inglês",     levels:EN_LEVELS },
   de:   { icon:"🥨", name:"Alemão",     levels:DE_LEVELS },
   cur:  { icon:"🔬", name:"Curiosidades", levels:CUR_LEVELS },
-  pk:   { icon:"⚡", name:"Pokémon",    levels:PK_LEVELS }
+  pk:   { icon:"⚡", name:"Pokémon",    levels:PK_LEVELS },
+  kids: { icon:"🧸", name:"Kids",       levels:KIDS_LEVELS }
 };
 const TRACK_KEYS = Object.keys(TRACKS);
 const maxOf = t => TRACKS[t].levels.length;
@@ -1472,12 +1506,12 @@ const deT = t => ({t, lang:"de-DE"});
 const SAVE_KEY = "aventura-abc123-v2";
 let db = { activeIdx:-1, profiles:[] };
 
-function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:{pt:0,math:0,en:0,de:0,cur:0,pk:0},
-  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0}, cur:{a:0,e:0}, pk:{a:0,e:0} } }; }
+function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0},
+  stats:{ pt:{a:0,e:0}, math:{a:0,e:0}, en:{a:0,e:0}, de:{a:0,e:0}, cur:{a:0,e:0}, pk:{a:0,e:0}, kids:{a:0,e:0} } }; }
 
 function newProfile(name, avatar, bday){
   const t = freshTrackState();
-  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0} };
+  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
 }
 
 /* v3.25 — idade do perfil pela data de nascimento (null = não informada).
@@ -1507,6 +1541,10 @@ function migrateProfile(p){
     if(!p.stats.pk) p.stats.pk = {a:0,e:0};
     if(!p.lv.pk) p.lv.pk = 1;
     if(p.prog.pk==null) p.prog.pk = 0;
+    /* v3.29 — trilha Kids 🧸 */
+    if(!p.stats.kids) p.stats.kids = {a:0,e:0};
+    if(!p.lv.kids) p.lv.kids = 1;
+    if(p.prog.kids==null) p.prog.kids = 0;
     if(p.pv !== 4){
       if(p.pv === 3){
         /* v3.28 — duas fases silábicas novas (19 e 24): shift na numeração */
@@ -1532,6 +1570,7 @@ function migrateProfile(p){
     if(!p.rq.de) p.rq.de = [];
     if(!p.rq.cur) p.rq.cur = [];
     if(!p.rq.pk) p.rq.pk = [];
+    if(!p.rq.kids) p.rq.kids = [];
     /* v3.22 — trilha Pokémon virou português+matemática: a fila de reforço
        antiga guardava perguntas com nomes em inglês — limpar uma vez */
     if(p.pkv == null){ p.pkv = 2; p.rq.pk = []; }
@@ -1837,6 +1876,7 @@ function isDeep(t, lv){ const d = deepFrom(t); return d > 0 && lv >= d; }
 /* v3.14 — meta por domínio unitário: níveis 3-10 exigem N unidades dominadas 3x cada.
    Palavras 🏅 (PT_MASTERY) continuam com meta de 3-4 palavras. Resto usa GOAL/GOAL_DEEP. */
 function goalFor(t, lv){
+  if(t==="kids") return 4; /* v3.29 — níveis curtinhos pra atenção de 3 anos */
   if(t==="pt"){
     if(LET_UNITS_PT[lv]) return UNIT_GOAL[lv] || LET_UNITS_PT[lv].length;
     if(SYL_UNITS_PT[lv]) return UNIT_GOAL[lv] || SYL_UNITS_PT[lv].length;
@@ -2573,7 +2613,7 @@ const lsSum = (a,b,e,e2) => lsRow(lsCount(a,e,.4)+lsB("+","ls-pulse")+lsCount(b,
 function lessonFor(track, lv){
   if(lv > maxOf(track)) return null;
   if(track==="cur"||track==="pk") return null; /* a curiosidade/pokémon já é a aula — sem lição separada */
-  const scenes = track==="pt"? ptLesson(lv) : track==="math"? mathLesson(lv) : langLesson(track, lv);
+  const scenes = track==="pt"? ptLesson(lv) : track==="math"? mathLesson(lv) : track==="kids"? kidsLesson(lv) : langLesson(track, lv);
   return scenes && scenes.length? { scenes } : null;
 }
 
@@ -3189,6 +3229,134 @@ function genPk(lv){
   };
 }
 
+/* ===== TRILHA KIDS 🧸 — números 1-10 e vogais, um por um, pros bem
+   pequenos (v3.29). Sem dkey de propósito: cada acerto conta um passo. ===== */
+const kidsBig = d => `<span style="font-size:clamp(34px,9vw,52px);font-weight:800;">${d}</span>`;
+
+function kidsNumQ(n){
+  const e = pick(KIDS_EMO);
+  const r = Math.random();
+  if(SR && r < .15){ /* contar em voz alta no microfone (raro, só se tiver mic) */
+    const q = countAloudQ(n, emojiGroup(n, e), "desenhinhos");
+    q.okSpeech = `Você contou certinho! São ${n}! Esse é o número ${n}!`;
+    return q;
+  }
+  const numOp = o => ({ ...o, label:kidsBig(o.label), say:{t:o.label+"!", lang:"pt-BR"} });
+  if(r < .5){ /* contar os desenhinhos e tocar no número */
+    return {
+      kind:"opts", prompt:"Quantos tem aqui?",
+      visual: emojiGroup(n, e),
+      speech:[ptT("Conte com o dedinho, um por um: quantos tem aqui?")],
+      hintSpeech: ptT("Aponte com o dedinho e conte comigo: um... dois... Agora toque no número certo!"),
+      okSpeech:`São ${n}! Esse é o número ${n}!`,
+      options: makeOpts(String(n), pkNear(n,10), 3).map(numOp)
+    };
+  }
+  if(r < .8){ /* escutar o número e tocar nele */
+    return {
+      kind:"opts", prompt:"Toque no número! 👂",
+      visual:`<span class="big-emoji">👂</span>`,
+      speech:[ptT(`Onde está o número ${n}? Toque nele!`)],
+      hintSpeech: ptT(`Procure o número ${n}! Toque nele!`),
+      okSpeech:`O número ${n}! Muito bem!`,
+      options: makeOpts(String(n), pkNear(n,10), 3).map(numOp)
+    };
+  }
+  /* ver o número e achar o grupinho com essa quantidade */
+  const counts = shuffle(pkNear(n,10)).slice(0,3);
+  if(!counts.includes(String(n))) counts[0] = String(n);
+  return {
+    kind:"opts", prompt:`Onde tem ${n}?`,
+    visual: kidsBig(n),
+    speech:[ptT(`Olha o número ${n}! Toque no grupinho que tem ${n} desenhinhos!`)],
+    hintSpeech: ptT(`Conte os desenhinhos de cada grupinho com o dedinho! Qual tem ${n}?`),
+    okSpeech:`Esse grupinho tem ${n}!`,
+    optClass:"emoji-opt",
+    options: shuffle(counts.map(c=>({ label:`<span style="font-size:clamp(16px,4.5vw,24px);letter-spacing:2px;">${e.repeat(+c)}</span>`, correct:+c===n, say:{t:c+"!", lang:"pt-BR"} })))
+  };
+}
+
+function kidsVowQ(L){
+  const W = pick(KIDS_VOWELS[L]);
+  const nm = letSay(L);
+  const r = Math.random();
+  const letOp = o => ({ ...o, label:kidsBig(o.label), say:{t:letSay(o.label)+"!", lang:"pt-BR"} });
+  if(SR && r < .15){ /* falar a letrinha no microfone (raro, só se tiver mic) */
+    return {
+      kind:"mic", prompt:"Fale a letrinha! 🎤",
+      visual:`<div class="read-word" style="font-size:clamp(48px,12vw,80px);">${L}</div>`,
+      speech:[ptT(`Essa é a letra ${nm}, de ${wordSay(W[0])}! Fale bem alto: ${nm}!`)],
+      hintSpeech: ptT(`Fale bem alto: ${nm}!`),
+      okSpeech:`${nm}! Isso mesmo!`,
+      answer:L, accept:[nm, L.toLowerCase(), ...(LETTER_MIC[L]||[])]
+    };
+  }
+  if(r < .5){ /* A de ABELHA → toque no A */
+    return {
+      kind:"opts", prompt:`${W[1]} ${W[0]}`,
+      visual:`<span class="big-emoji">${W[1]}</span>`,
+      speech:[ptT(`${nm} de ${wordSay(W[0])}! Toque na letrinha ${nm}!`)],
+      hintSpeech: ptT(`${wordSay(W[0])} começa com ${nm}! Toque na letrinha ${nm}!`),
+      okSpeech:`${nm} de ${wordSay(W[0])}!`,
+      options: makeOpts(L, VOWELS, 3).map(letOp)
+    };
+  }
+  if(r < .8){ /* ABELHA começa com qual letrinha? */
+    return {
+      kind:"opts", prompt:"Começa com qual letrinha?",
+      visual:`<span class="big-emoji">${W[1]}</span>`,
+      speech:[ptT(`${wordSay(W[0])}! ${wordSay(W[0])} começa com qual letrinha?`)],
+      hintSpeech: ptT(`Escute o comecinho: ${nm}... ${wordSay(W[0])}! Toque na letrinha ${nm}!`),
+      okSpeech:`${wordSay(W[0])} começa com ${nm}!`,
+      options: makeOpts(L, VOWELS, 3).map(letOp)
+    };
+  }
+  /* qual figurinha começa com essa letrinha? */
+  const others = shuffle(VOWELS.filter(v=>v!==L)).slice(0,2).map(v=>pick(KIDS_VOWELS[v]));
+  const cands = shuffle([W, ...others]);
+  return {
+    kind:"opts", prompt:`Qual começa com ${L}?`,
+    visual: kidsBig(L),
+    speech:[ptT(`Olha a letra ${nm}! Qual figurinha começa com ${nm}?`)],
+    hintSpeech: ptT(`${nm} de ${wordSay(W[0])}! Toque na figurinha!`),
+    okSpeech:`${wordSay(W[0])} começa com ${nm}!`,
+    optClass:"emoji-opt",
+    options: cands.map(c=>({ label:`<span style="font-size:clamp(34px,9vw,52px);">${c[1]}</span>`, correct:c===W, say:{t:wordSay(c[0])+"!", lang:"pt-BR"} }))
+  };
+}
+
+function genKids(lv){
+  if(lv>=20) lv = 1 + rand(19); /* Mestre Kids: mistura tudo */
+  const pl = KIDS_PLAN[lv-1];
+  if(pl.n) return kidsNumQ(pl.n);
+  if(pl.mix) return kidsNumQ(pick(pl.mix));
+  if(pl.v) return kidsVowQ(pl.v);
+  return kidsVowQ(pick(VOWELS)); /* brincando com as vogais */
+}
+
+function kidsLesson(lv){
+  const pl = KIDS_PLAN[lv-1];
+  if(!pl) return null;
+  if(pl.master) return [
+    sc(lsRow(lsE("👑")+lsE("🧸",.4)), "Mestre Kids!", "Você aprendeu os números e as letrinhas! Agora vamos brincar com tudo misturado! Você é incrível!")];
+  if(pl.mix) return [
+    sc(lsTiles(pl.mix.map(String),"gold",.4), "Vamos brincar com eles!", `Agora vamos brincar com os números ${pl.mix.join(", ")}! Conte sempre com o dedinho, um por um!`)];
+  if(pl.vmix) return [
+    sc(lsTiles(VOWELS,"gold",.3), "As vogais juntinhas!", "Á! É! I! Ó! U! Vamos brincar com todas as letrinhas que você aprendeu!")];
+  if(pl.n){
+    const n = pl.n, e = pick(KIDS_EMO);
+    return [
+      sc(lsB(String(n)), `Esse é o número ${n}!`, `Olha que lindo! Esse é o número ${n}! Fala comigo bem alto: ${n}!`),
+      sc(lsCount(n, e), `${n} quer dizer ${n} desenhinho${n>1?"s":""}!`, `O número ${n} quer dizer isso aqui! Conte com o dedinho: ${Array.from({length:n},(_,i)=>i+1).join("... ")}!`),
+      sc(lsRow(lsB(String(n))+lsE(e,.5)), "Agora é sua vez!", `Quando você vir o número ${n}, já sabe o nome dele! Vamos brincar?`)];
+  }
+  const L = pl.v, ws = KIDS_VOWELS[L], nm = letSay(L);
+  return [
+    sc(lsB(L), `Essa é a letrinha ${L}!`, `Olha que linda! Essa é a letrinha ${nm}! Fala comigo bem alto: ${nm}!`),
+    sc(lsWord(ws[0][0], ws[0][1]), `${L} de ${ws[0][0]}! ${ws[0][1]}`, `${nm} de ${wordSay(ws[0][0])}! Escuta o comecinho: ${nm}... ${wordSay(ws[0][0])}!`),
+    sc(lsRow(lsE(ws[1][1])+lsE(ws[2][1],.4)), `${L} de ${ws[1][0]} e ${ws[2][0]}!`, `E também ${nm} de ${wordSay(ws[1][0])}, e ${nm} de ${wordSay(ws[2][0])}! Quando você vir a letrinha ${nm}, fala o nome dela bem alto!`)];
+}
+
 function genFor(track, lv){
   let q;
   if(track==="pt") q = genPt(lv);
@@ -3196,6 +3364,7 @@ function genFor(track, lv){
   else if(track==="de") q = genDe(lv);
   else if(track==="cur") q = genCur(lv);
   else if(track==="pk") q = genPk(lv);
+  else if(track==="kids") q = genKids(lv);
   else q = genEn(lv);
   q.flv = lv; /* lição de origem = fundamento (cada nível Kumon ensina UMA coisa) */
   return q;
@@ -4957,6 +5126,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.26:</b> a loja e o álbum ganharam uma <b>busca de Pokémon por nome</b> (procura em todas as temporadas enquanto digita) e <b>4 coleções novas</b> de figurinhas: 🎀 Gabby, ⚽ Tsubasa, 🐉 Dragon Ball e 🛡️ Cavaleiros do Zodíaco — pagas com as moedas 🪙 normais.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.27:</b> as coleções agora mostram as <b>figuras de verdade dos personagens</b> (imagens reais, como os Pokémon) e chegou a coleção 🏰 <b>Disney</b> com 102 personagens de todos os filmes — todos <b>raros</b> (300 🪙). Gabby, Tsubasa, Dragon Ball e Cavaleiros continuam bem caros (épicos e lendários).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.28:</b> a Matemática agora ensina a <b>tabuada inteira, decorada conta por conta</b> — primeiro 2, 5 e 10 (mais fáceis), depois 3, 4, 6, 7, 8 e 9, cada um com seu truque na aulinha, e no final o <b>Mestre da Tabuada</b> com as contas mais difíceis (7×8!). Cada conta precisa de 3 acertos limpos pra ficar decorada, e aparece no mapa de domínio. Quem já tinha passado das tabuadas volta pro nível da Tabuada do 3 pra decorar as novas (moedas, figurinhas e recordes preservados). O Português ganhou <b>2 fases silábicas novas</b>: palavras de 2 pedaços com <b>sílaba grande</b> (POR-TA, FES-TA) e de 3 pedaços com sílaba grande (CAS-TE-LO, FOR-MI-GA) — o degrau que faltava entre as palavras fáceis e as difíceis.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.29:</b> chegou a trilha 🧸 <b>Kids</b>, feita pros bem pequenos (3 anos): ensina os números de 1 a 10 <b>um por um</b> (1, 2, 3 → brincar misturado → 4, 5, 6...) e depois as vogais <b>A, E, I, O, U</b> com palavrinhas ilustradas (A de ABELHA 🐝, E de ELEFANTE 🐘). Níveis curtinhos de 4 acertos, tudo falado em voz alta, aulinha da Corujinha antes de cada número e letrinha — dá pra jogar sem saber ler nada.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
@@ -5028,6 +5198,7 @@ function init(){
   $("#btn-de").onclick   = ()=>{ sndTap(); startGame("de"); };
   $("#btn-cur").onclick  = ()=>{ sndTap(); startGame("cur"); };
   $("#btn-pk").onclick   = ()=>{ sndTap(); startGame("pk"); };
+  $("#btn-kids").onclick = ()=>{ sndTap(); startGame("kids"); };
   $("#btn-shop").onclick = ()=>{ sndTap(); renderShop(); showScreen("screen-shop");
     speak("Bem-vindo à loja! Compre figurinhas com suas moedas!"); };
   $("#btn-album").onclick = ()=>{ sndTap(); renderAlbum(); showScreen("screen-album"); };
