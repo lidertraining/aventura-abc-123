@@ -395,6 +395,14 @@
     <div id="mascot">🦊</div>
     <h1 class="title">Aventura do ABC e 123</h1>
     <p class="subtitle" id="home-greet">Toque na raposinha para ela falar!</p>
+    <!-- v3.38 — lembrete de backup do progresso -->
+    <div id="backup-hint" style="display:none;background:#fff7ef;border:2px dashed #f3b100;border-radius:14px;padding:10px 14px;margin:0 auto 12px;font-size:.92em;max-width:420px;color:#5a4500;">
+      💾 <b>Hora do backup!</b> Faz tempo que o progresso não é salvo num arquivo. Um toque e pronto:
+      <div style="margin-top:8px;">
+        <button class="ov-btn alt" id="backup-now" style="font-size:.95em;padding:8px 14px;">💾 Salvar agora</button>
+        <button class="ov-btn alt" id="backup-later" style="font-size:.95em;padding:8px 14px;">Depois</button>
+      </div>
+    </div>
     <button class="mode-btn" id="btn-pt">
       <span class="ic">📚</span>
       <span class="tx"><b>PORTUGUÊS</b><span id="pt-sub"></span></span>
@@ -1302,42 +1310,107 @@ const CUR_TRACK = [
   { name:"Espaço 🚀", scenes:[
     { cat:"🔬 Ciências", t:["O Sol é uma estrela gigante.","Cabem um milhão de Terras dentro dele!"], q:"O que é o Sol?", a:"Uma estrela", opts:["Uma estrela","Um planeta","Uma lua"] },
     { cat:"🔬 Ciências", t:["A Lua não tem luz própria.","Ela brilha refletindo a luz do Sol."], q:"De onde vem a luz da Lua?", a:"Do Sol", opts:["Do Sol","Dela mesma","Das nuvens"] },
-    { cat:"🔬 Ciências", t:["A Terra gira como um pião.","Uma volta inteira dura um dia."], q:"Quanto dura uma volta da Terra?", a:"Um dia", opts:["Um dia","Um ano","Uma hora"] }
+    { cat:"🔬 Ciências", t:["A Terra gira como um pião.","Uma volta inteira dura um dia."], q:"Quanto dura uma volta da Terra?", a:"Um dia", opts:["Um dia","Um ano","Uma hora"] },
+    { cat:"🔬 Ciências", t:["Marte é chamado de planeta vermelho.","A poeira de lá tem cor de ferrugem."], q:"Qual é a cor de Marte?", a:"Vermelha", opts:["Vermelha","Verde","Azul"] },
+    { cat:"🔬 Ciências", t:["Os astronautas flutuam na estação espacial.","Lá em cima quase não tem gravidade."], q:"O que os astronautas fazem na estação?", a:"Flutuam", opts:["Flutuam","Nadam","Dirigem"] }
   ]},
   { name:"Animais 🐾", scenes:[
     { cat:"🔬 Ciências", t:["A girafa é o animal mais alto do mundo.","O pescoço comprido alcança folhas bem no alto."], q:"Qual é o animal mais alto?", a:"A girafa", opts:["A girafa","O elefante","O leão"] },
     { cat:"🔬 Ciências", t:["O polvo tem três corações!","E o sangue dele é azul."], q:"Quantos corações tem o polvo?", a:"Três", opts:["Três","Um","Dois"] },
-    { cat:"🔬 Ciências", t:["As abelhas fazem mel.","Elas levam pólen de flor em flor."], q:"O que as abelhas fazem?", a:"Mel", opts:["Mel","Leite","Queijo"] }
+    { cat:"🔬 Ciências", t:["As abelhas fazem mel.","Elas levam pólen de flor em flor."], q:"O que as abelhas fazem?", a:"Mel", opts:["Mel","Leite","Queijo"] },
+    { cat:"🔬 Ciências", t:["O guepardo é o animal mais rápido na corrida.","Ele passa até de carro na cidade!"], q:"Qual animal corre mais rápido?", a:"O guepardo", opts:["O guepardo","A tartaruga","O pinguim"] },
+    { cat:"🔬 Ciências", t:["O camaleão muda de cor.","Assim ele se esconde no meio das folhas."], q:"O que o camaleão faz?", a:"Muda de cor", opts:["Muda de cor","Voa alto","Late"] }
   ]},
   { name:"Corpo humano 🫀", scenes:[
     { cat:"🔬 Ciências", t:["O coração bombeia sangue o dia todo.","Ele nunca para, nem quando dormimos."], q:"O que o coração faz?", a:"Bombeia sangue", opts:["Bombeia sangue","Pensa","Respira"] },
     { cat:"🔬 Ciências", t:["Um bebê nasce com uns 300 ossos.","Crescendo, alguns se juntam e viram 206."], q:"Quantos ossos tem um adulto?", a:"206", opts:["206","10","1000"] },
-    { cat:"🔬 Ciências", t:["Os dentes são a parte mais dura do corpo.","Por isso escovamos todos os dias."], q:"Qual é a parte mais dura do corpo?", a:"Os dentes", opts:["Os dentes","O cabelo","A pele"] }
+    { cat:"🔬 Ciências", t:["Os dentes são a parte mais dura do corpo.","Por isso escovamos todos os dias."], q:"Qual é a parte mais dura do corpo?", a:"Os dentes", opts:["Os dentes","O cabelo","A pele"] },
+    { cat:"🔬 Ciências", t:["A gente pisca milhares de vezes por dia.","Piscar limpa e molha os olhos."], q:"Para que serve piscar?", a:"Limpar os olhos", opts:["Limpar os olhos","Ver no escuro","Fazer cócegas"] },
+    { cat:"🔬 Ciências", t:["O corpo cresce enquanto dormimos.","Por isso criança precisa dormir cedo."], q:"Quando o corpo mais cresce?", a:"Dormindo", opts:["Dormindo","Correndo","Vendo TV"] }
   ]},
   { name:"Natureza 🌳", scenes:[
     { cat:"🔬 Ciências", t:["As plantas fazem seu alimento com a luz do Sol.","Isso se chama fotossíntese."], q:"Com o que a planta faz alimento?", a:"Luz do Sol", opts:["Luz do Sol","Areia","Pedras"] },
     { cat:"🔬 Ciências", t:["A água pode virar gelo, líquido ou vapor.","Ela muda de forma com o calor e o frio."], q:"O que a água vira no congelador?", a:"Gelo", opts:["Gelo","Fogo","Vento"] },
-    { cat:"🔬 Ciências", t:["O arco-íris aparece com Sol e chuva juntos.","A luz se divide em várias cores."], q:"Quando aparece o arco-íris?", a:"Com Sol e chuva", opts:["Com Sol e chuva","À noite","Na neve"] }
+    { cat:"🔬 Ciências", t:["O arco-íris aparece com Sol e chuva juntos.","A luz se divide em várias cores."], q:"Quando aparece o arco-íris?", a:"Com Sol e chuva", opts:["Com Sol e chuva","À noite","Na neve"] },
+    { cat:"🔬 Ciências", t:["As minhocas afofam a terra por baixo.","Isso ajuda as plantas a crescer."], q:"Quem afofa a terra?", a:"As minhocas", opts:["As minhocas","Os peixes","As nuvens"] },
+    { cat:"🔬 Ciências", t:["As árvores soltam o ar que a gente respira.","Esse ar se chama oxigênio."], q:"O que as árvores soltam?", a:"Oxigênio", opts:["Oxigênio","Fumaça","Poeira"] }
   ]},
   { name:"Dinossauros 🦕", scenes:[
     { cat:"📜 História", t:["Os dinossauros viveram há milhões de anos.","Sumiram bem antes das pessoas existirem."], q:"Quando viveram os dinossauros?", a:"Há milhões de anos", opts:["Há milhões de anos","Ano passado","Hoje"] },
     { cat:"📜 História", t:["O Tiranossauro Rex tinha dentes enormes.","Era um dos maiores caçadores de todos."], q:"Como era o T-Rex?", a:"Um grande caçador", opts:["Um grande caçador","Um peixinho","Uma planta"] },
-    { cat:"🔬 Ciências", t:["Conhecemos os dinossauros pelos fósseis.","Fósseis são ossos que viraram pedra."], q:"O que são fósseis?", a:"Ossos que viraram pedra", opts:["Ossos que viraram pedra","Brinquedos","Nuvens"] }
+    { cat:"🔬 Ciências", t:["Conhecemos os dinossauros pelos fósseis.","Fósseis são ossos que viraram pedra."], q:"O que são fósseis?", a:"Ossos que viraram pedra", opts:["Ossos que viraram pedra","Brinquedos","Nuvens"] },
+    { cat:"🔬 Ciências", t:["Alguns dinossauros só comiam plantas.","O braquiossauro adorava folhas bem altas."], q:"O que o braquiossauro comia?", a:"Plantas", opts:["Plantas","Pizza","Peixes"] },
+    { cat:"🔬 Ciências", t:["As aves vieram dos dinossauros.","O passarinho é parente bem distante do T-Rex!"], q:"Quem é parente dos dinossauros?", a:"As aves", opts:["As aves","Os gatos","Os peixes"] }
   ]},
   { name:"Egito Antigo 🏺", scenes:[
     { cat:"📜 História", t:["Os egípcios construíram pirâmides gigantes.","Elas eram túmulos dos faraós."], q:"Quem construiu as pirâmides?", a:"Os egípcios", opts:["Os egípcios","Os vikings","Os astronautas"] },
     { cat:"📜 História", t:["O rei do Egito se chamava faraó.","Todos achavam que ele era muito poderoso."], q:"Como se chamava o rei do Egito?", a:"Faraó", opts:["Faraó","Presidente","Cacique"] },
-    { cat:"📜 História", t:["Os egípcios escreviam com desenhos.","Esses desenhos se chamam hieróglifos."], q:"Como os egípcios escreviam?", a:"Com desenhos", opts:["Com desenhos","Com números","Com fotos"] }
+    { cat:"📜 História", t:["Os egípcios escreviam com desenhos.","Esses desenhos se chamam hieróglifos."], q:"Como os egípcios escreviam?", a:"Com desenhos", opts:["Com desenhos","Com números","Com fotos"] },
+    { cat:"📜 História", t:["Os egípcios adoravam os gatos.","Lá, os gatos eram tratados como reis."], q:"Qual animal os egípcios adoravam?", a:"O gato", opts:["O gato","O pinguim","O dinossauro"] },
+    { cat:"📜 História", t:["O rio Nilo dava água e comida ao Egito.","É um dos rios mais compridos do mundo."], q:"Qual rio ajudava o Egito?", a:"O Nilo", opts:["O Nilo","O Amazonas","O riacho da praça"] }
   ]},
   { name:"Invenções 💡", scenes:[
     { cat:"📜 História", t:["A roda foi inventada há muito tempo.","Ela facilitou carregar coisas pesadas."], q:"Para que serve a roda?", a:"Carregar coisas", opts:["Carregar coisas","Cozinhar","Dormir"] },
     { cat:"📜 História", t:["Antes da lâmpada, as casas usavam velas.","A lâmpada trouxe luz sem fogo."], q:"O que havia antes da lâmpada?", a:"Velas", opts:["Velas","Televisão","Celular"] },
-    { cat:"📜 História", t:["Santos Dumont fez um avião voar.","Ele foi um grande inventor brasileiro."], q:"Quem foi Santos Dumont?", a:"Um inventor", opts:["Um inventor","Um cantor","Um cozinheiro"] }
+    { cat:"📜 História", t:["Santos Dumont fez um avião voar.","Ele foi um grande inventor brasileiro."], q:"Quem foi Santos Dumont?", a:"Um inventor", opts:["Um inventor","Um cantor","Um cozinheiro"] },
+    { cat:"📜 História", t:["O sorvete de palito foi inventado sem querer.","Um menino esqueceu o copo com palitinho no frio!"], q:"Como surgiu o sorvete de palito?", a:"Sem querer", opts:["Sem querer","Numa prova","Num livro de receitas"] },
+    { cat:"📜 História", t:["Antes do telefone, as notícias iam por carta.","A carta levava dias para chegar."], q:"O que se usava antes do telefone?", a:"Cartas", opts:["Cartas","Robôs","Patinetes"] }
   ]},
   { name:"Brasil 🇧🇷", scenes:[
     { cat:"📜 História", t:["Pedro Álvares Cabral chegou ao Brasil em 1500.","Ele veio de barco lá de Portugal."], q:"Quem chegou ao Brasil em 1500?", a:"Cabral", opts:["Cabral","Tiradentes","Pelé"] },
     { cat:"📜 História", t:["Antes de Cabral, já viviam pessoas aqui.","Eram os povos indígenas."], q:"Quem já morava no Brasil antes?", a:"Os indígenas", opts:["Os indígenas","Ninguém","Os robôs"] },
-    { cat:"🔬 Ciências", t:["A Amazônia é a maior floresta do mundo.","Ela fica quase toda dentro do Brasil."], q:"Qual é a maior floresta do mundo?", a:"A Amazônia", opts:["A Amazônia","O deserto","O parque"] }
+    { cat:"🔬 Ciências", t:["A Amazônia é a maior floresta do mundo.","Ela fica quase toda dentro do Brasil."], q:"Qual é a maior floresta do mundo?", a:"A Amazônia", opts:["A Amazônia","O deserto","O parque"] },
+    { cat:"🔬 Ciências", t:["O boto cor-de-rosa vive nos rios da Amazônia.","É um golfinho de água doce!"], q:"Onde vive o boto cor-de-rosa?", a:"Nos rios da Amazônia", opts:["Nos rios da Amazônia","No deserto","Na neve"] },
+    { cat:"📜 História", t:["Brasília é a capital do Brasil.","Ela foi construída bem no meio do país."], q:"Qual é a capital do Brasil?", a:"Brasília", opts:["Brasília","Paris","A praia"] }
+  ]},
+  /* v3.38 — a trilha dobrou: 8 temas novos de ciências, história e mundo */
+  { name:"Oceano 🌊", scenes:[
+    { cat:"🔬 Ciências", t:["A baleia-azul é o maior animal do mundo.","Ela é maior que um ônibus!"], q:"Qual é o maior animal do mundo?", a:"A baleia-azul", opts:["A baleia-azul","O cavalo","O jacaré"] },
+    { cat:"🔬 Ciências", t:["A água do mar é salgada.","Por isso não dá pra beber água do mar."], q:"Como é a água do mar?", a:"Salgada", opts:["Salgada","Doce","Quente"] },
+    { cat:"🔬 Ciências", t:["O tubarão troca de dentes a vida toda.","Caiu um dente, nasce outro no lugar!"], q:"O que acontece com o dente do tubarão?", a:"Nasce outro", opts:["Nasce outro","Nunca cai","Vira pedra"] },
+    { cat:"🔬 Ciências", t:["A estrela-do-mar anda e come no fundo do mar.","E ela nem tem cérebro!"], q:"Onde vive a estrela-do-mar?", a:"No fundo do mar", opts:["No fundo do mar","Na árvore","No céu"] }
+  ]},
+  { name:"Céu e clima ⛅", scenes:[
+    { cat:"🔬 Ciências", t:["As nuvens são feitas de gotinhas de água.","Quando ficam pesadas, cai a chuva."], q:"Do que são feitas as nuvens?", a:"Gotinhas de água", opts:["Gotinhas de água","Algodão","Fumaça"] },
+    { cat:"🔬 Ciências", t:["O trovão é o som do raio.","Primeiro vemos a luz, depois ouvimos o barulho."], q:"O que é o trovão?", a:"O som do raio", opts:["O som do raio","Um avião","Um tambor"] },
+    { cat:"🔬 Ciências", t:["A neve é feita de cristaizinhos de gelo.","Cada floco tem um desenho diferente."], q:"Do que é feita a neve?", a:"Gelo", opts:["Gelo","Açúcar","Papel"] },
+    { cat:"🔬 Ciências", t:["O vento é o ar se mexendo.","É ele que faz a pipa voar!"], q:"O que faz a pipa voar?", a:"O vento", opts:["O vento","A chuva","A música"] }
+  ]},
+  { name:"Planeta Terra 🌋", scenes:[
+    { cat:"🔬 Ciências", t:["O vulcão solta lava bem quente.","Lava é pedra derretida de dentro da Terra."], q:"O que o vulcão solta?", a:"Lava", opts:["Lava","Suco","Gelo"] },
+    { cat:"🔬 Ciências", t:["No deserto quase não chove.","O camelo guarda energia na corcova pra viver lá."], q:"O que quase não tem no deserto?", a:"Chuva", opts:["Chuva","Areia","Sol"] },
+    { cat:"🔬 Ciências", t:["A montanha mais alta do mundo é o Everest.","Lá no topo é frio e difícil de respirar."], q:"Qual é a montanha mais alta do mundo?", a:"O Everest", opts:["O Everest","O morro da praça","A pirâmide"] },
+    { cat:"🔬 Ciências", t:["A Terra é redonda como uma bola.","Vista do espaço, ela é azul!"], q:"Qual é a forma da Terra?", a:"Redonda", opts:["Redonda","Quadrada","Reta"] }
+  ]},
+  { name:"Transportes 🚗", scenes:[
+    { cat:"📜 História", t:["O trem anda sobre trilhos de ferro.","Os primeiros trens soltavam muita fumaça."], q:"Onde o trem anda?", a:"Nos trilhos", opts:["Nos trilhos","Na água","Nas nuvens"] },
+    { cat:"🔬 Ciências", t:["O submarino navega por baixo da água.","Ele enche tanques de água pra afundar."], q:"Onde o submarino navega?", a:"Por baixo da água", opts:["Por baixo da água","No céu","Na estrada"] },
+    { cat:"🔬 Ciências", t:["O balão sobe com ar quente.","Ar quente é mais leve que ar frio."], q:"O que faz o balão subir?", a:"Ar quente", opts:["Ar quente","Pedra","Corda"] },
+    { cat:"📜 História", t:["A bicicleta de antigamente tinha uma roda gigante.","Hoje as duas rodas são do mesmo tamanho."], q:"Como era a bicicleta antiga?", a:"Tinha uma roda gigante", opts:["Tinha uma roda gigante","Tinha motor","Voava"] }
+  ]},
+  { name:"Esportes ⚽", scenes:[
+    { cat:"🔬 Ciências", t:["No futebol, só o goleiro pega a bola com a mão.","Os outros usam os pés e a cabeça."], q:"Quem pega a bola com a mão?", a:"O goleiro", opts:["O goleiro","O juiz","A torcida"] },
+    { cat:"📜 História", t:["As Olimpíadas nasceram na Grécia, há muito tempo.","Hoje atletas do mundo todo competem juntos."], q:"Onde nasceram as Olimpíadas?", a:"Na Grécia", opts:["Na Grécia","Na Lua","No shopping"] },
+    { cat:"🔬 Ciências", t:["Nadar mexe com o corpo inteiro.","Braços, pernas e respiração treinam juntos."], q:"O que a natação treina?", a:"O corpo inteiro", opts:["O corpo inteiro","Só o nariz","Só o cabelo"] },
+    { cat:"📜 História", t:["Pelé foi um jogador brasileiro famoso no mundo todo.","Ele ganhou três Copas do Mundo!"], q:"Quantas Copas o Pelé ganhou?", a:"Três", opts:["Três","Nenhuma","Dez"] }
+  ]},
+  { name:"Música 🎵", scenes:[
+    { cat:"🔬 Ciências", t:["O som do violão sai quando a corda treme.","Cada corda faz uma nota diferente."], q:"O que treme no violão?", a:"A corda", opts:["A corda","A cadeira","O sapato"] },
+    { cat:"🔬 Ciências", t:["O tambor toca quando a pele estica e treme.","Quanto maior o tambor, mais grosso o som."], q:"Como é o som do tambor grandão?", a:"Grosso", opts:["Grosso","Fininho","Mudo"] },
+    { cat:"📜 História", t:["O violino se toca com um arco.","O arco desliza nas cordas e elas cantam."], q:"Com o que se toca violino?", a:"Com um arco", opts:["Com um arco","Com uma colher","Com o pé"] },
+    { cat:"🔬 Ciências", t:["Som muito alto machuca os ouvidos.","Por isso não se grita no ouvido de ninguém!"], q:"O que o som muito alto faz?", a:"Machuca os ouvidos", opts:["Machuca os ouvidos","Dá sorte","Vira luz"] }
+  ]},
+  { name:"Mundo 🌍", scenes:[
+    { cat:"📜 História", t:["A Torre Eiffel fica em Paris, na França.","Ela é feita de ferro e é altíssima."], q:"Onde fica a Torre Eiffel?", a:"Em Paris", opts:["Em Paris","Na praia","No Egito"] },
+    { cat:"📜 História", t:["A Muralha da China é gigante.","É uma das maiores construções do mundo."], q:"Qual construção gigante fica na China?", a:"A Muralha", opts:["A Muralha","O escorregador","A padaria"] },
+    { cat:"🔬 Ciências", t:["No Japão, muita gente come com hashi.","São dois pauzinhos no lugar do garfo."], q:"O que é hashi?", a:"Pauzinhos de comer", opts:["Pauzinhos de comer","Um bicho","Um sapato"] },
+    { cat:"🔬 Ciências", t:["Na Antártida é gelado o ano inteiro.","É lá que vivem os pinguins."], q:"Quem vive na Antártida?", a:"Os pinguins", opts:["Os pinguins","Os camelos","Os macacos"] }
+  ]},
+  { name:"Comidas 🍿", scenes:[
+    { cat:"🔬 Ciências", t:["A pipoca é um milho que explode no calor.","A aguinha de dentro vira vapor e... PUF!"], q:"De que é feita a pipoca?", a:"De milho", opts:["De milho","De arroz","De pedra"] },
+    { cat:"🔬 Ciências", t:["O chocolate vem do cacau.","E o cacau é fruta de uma árvore!"], q:"De onde vem o chocolate?", a:"Do cacau", opts:["Do cacau","Da nuvem","Do mar"] },
+    { cat:"🔬 Ciências", t:["O queijo é feito do leite.","Ele descansa um tempão até ficar gostoso."], q:"De que é feito o queijo?", a:"Do leite", opts:["Do leite","Da areia","Do suco"] },
+    { cat:"📜 História", t:["O macarrão é famoso na Itália.","Lá existem centenas de formatos diferentes."], q:"Qual país é famoso pelo macarrão?", a:"A Itália", opts:["A Itália","O Polo Norte","A Lua"] }
   ]}
 ];
 const CUR_LEVELS = CUR_TRACK.map(l=>l.name).concat("Mestre das Curiosidades 👑");
@@ -1774,12 +1847,21 @@ function save(){ try{
 }catch(e){} }
 
 function exportSave(){
+  db.lastExport = dayKey(); save(); /* v3.38 — lembra quando foi o último arquivo */
   const blob = new Blob([JSON.stringify(db)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "aventura-abc123-progresso-"+new Date().toISOString().slice(0,10)+".json";
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+}
+/* v3.38 — lembrete de backup: se tem progresso de verdade e faz 14+ dias sem
+   salvar um arquivo (e sem adiar há menos de 7), um aviso aparece na tela inicial. */
+function backupDue(){
+  if(!db.profiles.some(p=>p.coins >= 50)) return false;
+  if(db.lastExport && db.lastExport >= dayKey(14)) return false;
+  if(db.bkSnooze && db.bkSnooze >= dayKey(7)) return false;
+  return true;
 }
 function importSave(file){
   const r = new FileReader();
@@ -1900,6 +1982,7 @@ function goHome(){
     el.textContent = (lv>mx? "Trilha completa! 👑 Modo mestre" : `Nível ${lv} de ${mx} · ${TRACKS[t].levels[Math.min(lv,mx)-1]}`);
   });
   $("#album-sub").textContent = `${p.stickers.length} de ${TOTAL_STICKERS} figurinhas`;
+  $("#backup-hint").style.display = backupDue() ? "" : "none"; /* v3.38 */
   showScreen("screen-home");
   if(p.rf===1){
     p.rf = 2; save();
@@ -5794,6 +5877,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.35:</b> matemática do dia a dia, do jeito lúdico: <b>lojinha 🛒</b> — comprinhas com moedinhas 🪙 (figurinhas de Pokémon, balinhas, pirulitos: quanto gastou?) nos níveis de soma, e <b>troco</b> (comprou, quanto sobrou?) nos de subtração; <b>relógio ⏰</b> — que horas são? (hora cheia e "e meia") nos probleminhas; e <b>estimativa 👀</b> — olhar o montão e chutar esperto ("uns 10, uns 20 ou uns 30?"), que treina o senso de quantidade sem contar um por um.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.36:</b> o Inglês 🌎 e o Alemão 🥨 agora têm <b>domínio por palavra</b>, igual às letras e contas: cada palavra precisa de <b>3 acertos limpos</b> (ouvindo, lendo ou falando no microfone 🎤) pra ser dominada, o jogo <b>prioriza as palavras que a criança ainda não domina</b>, palavra dominada entra na <b>revisão espaçada</b> (volta em 1, 7 e 30 dias), e o <b>mapa de vocabulário</b> apareceu aqui embaixo: cores, animais, comidas e coisas nas duas línguas, verde = dominada.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.37:</b> jogar virou hábito: a <b>sequência de dias 🔥</b> dá um bônus de moedas <b>crescente</b> na primeira jogada de cada dia (+5 no 1º dia, +10 no 2º... até +35 do 7º dia em diante — pular um dia recomeça do 1), o foguinho 🔥 aparece no topo enquanto a sequência está viva, e o painel ganhou o <b>resumo da semana</b> aqui em cima: acertos, erros, aproveitamento, moedas e conquistas 🏅 de cada um dos últimos 7 dias, com a sequência atual e o recorde.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.38:</b> a trilha <b>Curiosidades 🔬 dobrou</b>: agora são <b>16 temas</b> — oceano 🌊, céu e clima ⛅, planeta Terra 🌋, transportes 🚗, esportes ⚽, música 🎵, mundo 🌍 e comidas 🍿, além dos 8 antigos com mais perguntas — e o nível Mestre mistura tudo. E o progresso ficou mais protegido: passou <b>14 dias sem salvar um arquivo</b>, aparece um <b>lembrete de backup</b> 💾 na tela inicial — um toque no "Salvar agora" e o arquivo é baixado na hora (a data do último backup aparece aqui em cima).</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
@@ -5801,7 +5885,7 @@ function openParents(){
       <li>Toque no nome da criança (canto superior) para trocar de jogador.</li>
     </ul>
     <h3>💾 Progresso protegido</h3>
-    <p>O jogo salva sozinho (com cópia de segurança) a cada acerto. Para garantir de vez, salve um arquivo de vez em quando — dá pra recuperar tudo em qualquer computador.</p>
+    <p>O jogo salva sozinho (com cópia de segurança) a cada acerto. Para garantir de vez, salve um arquivo de vez em quando — dá pra recuperar tudo em qualquer computador. ${db.lastExport ? `Último arquivo salvo: <b>${db.lastExport.split("-").reverse().join("/")}</b>.` : `<b>Nenhum arquivo salvo ainda.</b>`}</p>
     <div style="text-align:center;">
       <button class="ov-btn alt" id="parents-export">💾 Salvar em arquivo</button>
       <button class="ov-btn alt" id="parents-import">📂 Recuperar de arquivo</button>
@@ -5877,6 +5961,11 @@ function init(){
   });
   $("#btn-ranking").onclick = ()=>{ sndTap(); openRanking(); };
   $("#btn-ranking-prof").onclick = ()=>{ sndTap(); openRanking(); };
+
+  /* v3.38 — lembrete de backup na tela inicial */
+  $("#backup-now").onclick = ()=>{ sndTap(); exportSave(); $("#backup-hint").style.display = "none";
+    speak("Progresso salvo num arquivo! Peça pro papai ou pra mamãe guardar num lugar seguro."); };
+  $("#backup-later").onclick = ()=>{ sndTap(); db.bkSnooze = dayKey(); save(); $("#backup-hint").style.display = "none"; };
 
   $("#btn-back").onclick = ()=>{ sndTap(); stopMic(); speechSynthesis.cancel();
     if(state.practice) openJourney(state.track); else goHome(); };
