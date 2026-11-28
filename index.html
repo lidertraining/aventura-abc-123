@@ -1588,7 +1588,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1
 
 function newProfile(name, avatar, bday){
   const t = freshTrackState();
-  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, srs:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, ext:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
+  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, srs:{}, daylog:{}, dstreak:{n:0,best:0,last:null}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, ext:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
 }
 
 /* v3.25 — idade do perfil pela data de nascimento (null = não informada).
@@ -1626,6 +1626,9 @@ function migrateProfile(p){
     if(!p.ext) p.ext = {pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0};
     /* v3.33 — revisão espaçada do que foi dominado */
     if(!p.srs) p.srs = {};
+    /* v3.37 — sequência de dias 🔥 e diário pro resumo semanal */
+    if(!p.daylog) p.daylog = {};
+    if(!p.dstreak) p.dstreak = {n:0,best:0,last:null};
     if(p.pv !== 4){
       if(p.pv === 3){
         /* v3.28 — duas fases silábicas novas (19 e 24): shift na numeração */
@@ -1807,7 +1810,10 @@ function updateHUD(){
     chip.style.visibility = "visible";
     chip.querySelector(".av").textContent = p.avatar;
     chip.querySelector(".pn").textContent = p.name;
-    $("#coin-count").textContent = `${p.coins} · ⚡ ${p.pcoins||0}`;
+    /* v3.37 — mostra a sequência de dias 🔥 enquanto ela está viva (jogou hoje ou ontem) */
+    const st37 = p.dstreak || {};
+    const fire = (st37.n||0) >= 2 && (st37.last === dayKey() || st37.last === dayKey(1)) ? ` · 🔥${st37.n}` : "";
+    $("#coin-count").textContent = `${p.coins} · ⚡ ${p.pcoins||0}${fire}`;
     $("#coin-pill").style.visibility = "visible";
   } else {
     chip.style.visibility = "hidden";
@@ -1955,6 +1961,31 @@ const EXPAND_ERRS = 3, FAST_N = 3;
    1 → 7 → 30 dias (repetição espaçada). Fluência (Kumon): acerto LENTO em
    conta/letra não conta domínio. Rodadas ✨ misturam degraus já vencidos 🔀. */
 const SRS_DAYS = [1, 7, 30], REVIEW_MAX = 3, FLUENT_MS = 10000, INTER_P = .3, DAY_MS = 864e5;
+/* v3.37 — sequência de dias 🔥: jogar todo dia vale bônus crescente (hábito),
+   e cada dia guarda acertos/erros/moedas/conquistas pro resumo semanal dos pais. */
+function dayKey(off){
+  const d = new Date(Date.now() - (off||0)*DAY_MS);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function dayLog(p){
+  const k = dayKey();
+  if(!p.daylog) p.daylog = {};
+  if(!p.daylog[k]){
+    p.daylog[k] = {a:0,e:0,c:0,d:0};
+    const lim = dayKey(35);
+    Object.keys(p.daylog).forEach(x=>{ if(x < lim) delete p.daylog[x]; });
+  }
+  return p.daylog[k];
+}
+function dayStreakHit(p){
+  if(!p.dstreak) p.dstreak = {n:0,best:0,last:null};
+  const s = p.dstreak, today = dayKey();
+  if(s.last === today) return {first:false, n:s.n, bonus:0};
+  s.n = (s.last === dayKey(1)) ? (s.n||0) + 1 : 1;
+  s.best = Math.max(s.best||0, s.n);
+  s.last = today;
+  return {first:true, n:s.n, bonus: 5*Math.min(s.n, 7)};
+}
 function reinfQ(t){ const p=P(); if(!p.rq) p.rq={pt:[],math:[],en:[],de:[],cur:[]}; if(!p.rq[t]) p.rq[t]=[]; return p.rq[t]; }
 const qKey = q => (q.prompt||"") + "|" + (q.answer || (q.pieces||[]).join("") || (((q.options||[]).find(o=>o.correct))||{}).label || "");
 
@@ -2045,6 +2076,14 @@ function startGame(track){
   state.track = track; state.practice = false; state.reinf = null; state.lastReinf = false;
   state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.recent = [];
   state.sawDkey = false; state.fastPassed = false; state.reviews = 0;
+  /* v3.37 — primeira jogada do dia: bônus crescente pela sequência 🔥 */
+  const ds = dayStreakHit(p);
+  if(ds.first){
+    earnCoins(p, ds.bonus); save(); updateHUD(); confetti(24);
+    state.daySpeech = ds.n >= 2
+      ? `Uau! ${ds.n} dias seguidos jogando! Ganhou ${ds.bonus} moedas de presente! `
+      : `Que bom que você veio jogar hoje! Ganhou ${ds.bonus} moedinhas de presente! `;
+  }
   if(!p.prog[track]) p.prog[track] = 0;
   const lv = curLevel();
   if(lessonPending(track, lv)){ playLesson(track, lv, beginLevel); return; }
@@ -2057,8 +2096,9 @@ function beginLevel(){
   updateGameHUD();
   const lv = curLevel();
   const ext = ((P().ext||{})[track])||0;
-  speak(ext ? `Rodada de reforço do nível ${lv}! Vamos deixar essa base bem fortinha! Vamos lá!`
-            : `${TRACKS[track].name}! Nível ${lv}: ${TRACKS[track].levels[lv-1].replace(/[🎧🎤👑🏅📖·]/g,"")}. Vamos lá!`, ()=>nextQuestion());
+  const dayMsg = state.daySpeech || ""; state.daySpeech = "";
+  speak(dayMsg + (ext ? `Rodada de reforço do nível ${lv}! Vamos deixar essa base bem fortinha! Vamos lá!`
+            : `${TRACKS[track].name}! Nível ${lv}: ${TRACKS[track].levels[lv-1].replace(/[🎧🎤👑🏅📖·]/g,"")}. Vamos lá!`), ()=>nextQuestion());
   setTimeout(()=>{ if(!state.q) nextQuestion(); }, 3500);
 }
 
@@ -2610,6 +2650,10 @@ function onCorrect(){
   }
   earnCoins(p, coins + extra);
   p.stats[t].a++;
+  /* v3.37 — diário do dia: acertos, moedas e conquistas pro resumo semanal */
+  const dl = dayLog(p);
+  dl.a++; dl.c += coins + extra;
+  if(masteredNow || unitMasteredNow) dl.d++;
   const gainTxt = `+${coins+extra}🪙 +${coins+extra}⚡`;
   const fb = $("#feedback");
   fb.className = "good";
@@ -2682,6 +2726,7 @@ function onWrong(said){
   const p = P(), t = state.track, q = state.q;
   state.qWrong++; state.levelErrors++; state.streak = 0;
   p.stats[t].e++;
+  dayLog(p).e++; /* v3.37 — diário do dia */
   /* errou 1 vez → a MESMA questão entra na fila de reforço (3 acertos + 2 de fundamento pra sair)
      v3.16 — exceto questão de MIC com domínio (dkey): o mic erra sozinho, e o
      domínio já exige 3 acertos — reforço em cima disso só inflava a fila */
@@ -5677,6 +5722,25 @@ function openParents(){
           ${ptMasteryReport(p)}
         </div>
       </div>`;
+    /* v3.37 — resumo da semana: um raio-x dos últimos 7 dias */
+    const DIAS37 = ["dom","seg","ter","qua","qui","sex","sáb"];
+    let wa=0, we=0, wc=0, wd=0, played=0;
+    const wk = [];
+    for(let i=6;i>=0;i--){
+      const d = (p.daylog||{})[dayKey(i)];
+      const dt = new Date(Date.now()-i*DAY_MS);
+      if(d){ wa+=d.a; we+=d.e; wc+=d.c; wd+=d.d; played++; }
+      const tot = d ? d.a+d.e : 0;
+      wk.push(`<tr><td>${i===0?"<b>hoje</b>":DIAS37[dt.getDay()]} ${dt.getDate()}/${dt.getMonth()+1}</td><td>${d?d.a:"—"}</td><td>${d?d.e:"—"}</td><td>${tot?Math.round(d.a/tot*100)+"%":"—"}</td><td>${d?d.c:"—"}</td><td>${d?d.d:"—"}</td></tr>`);
+    }
+    const st37p = p.dstreak || {n:0,best:0};
+    const wtot = wa+we;
+    report += `<div style="background:#fff7ef;border-radius:14px;padding:12px 14px;margin:10px 0;">
+      <b>📅 Resumo da semana</b> · 🔥 sequência: <b>${st37p.n||0}</b> dia(s) seguidos · recorde: <b>${st37p.best||0}</b><br>
+      <table><tr><th>Dia</th><th>Acertos</th><th>Erros</th><th>%</th><th>🪙</th><th>🏅</th></tr>${wk.join("")}
+      <tr><th>Total</th><th>${wa}</th><th>${we}</th><th>${wtot?Math.round(wa/wtot*100)+"%":"—"}</th><th>${wc}</th><th>${wd}</th></tr></table>
+      <span style="opacity:.75;">Jogou em <b>${played}</b> de 7 dias · 🏅 = palavras, letras e contas dominadas no dia. Jogar todo dia dá bônus crescente: +5 moedas no 1º dia, +10 no 2º... até +35 do 7º em diante (pulou um dia, recomeça do 1).</span>
+    </div>`;
   }
   showOverlay(`<div id="parents-card">
     <h2 style="text-align:center;color:#454a75;">ℹ️ Para os pais</h2>
@@ -5729,6 +5793,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.34:</b> alfabetização mais forte, guiada pela ciência (PNA): <b>junta-sons 🧩</b> — o jogo fala a palavra em pedacinhos (ga... to...) e a criança descobre qual palavra se formou (síntese fonêmica, sem nada escrito); <b>troca-som 🔁</b> — MALA vira BALA: trocar um sominho faz nascer outra palavra (manipulação fonêmica, o degrau mais avançado da consciência fonológica); e <b>fluência de leitura ⭐</b> — no nível de frases, ler a frase inteira em voz alta no microfone vale até <b>3 estrelas</b> pela rapidez (e moedas extras por estrela).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.35:</b> matemática do dia a dia, do jeito lúdico: <b>lojinha 🛒</b> — comprinhas com moedinhas 🪙 (figurinhas de Pokémon, balinhas, pirulitos: quanto gastou?) nos níveis de soma, e <b>troco</b> (comprou, quanto sobrou?) nos de subtração; <b>relógio ⏰</b> — que horas são? (hora cheia e "e meia") nos probleminhas; e <b>estimativa 👀</b> — olhar o montão e chutar esperto ("uns 10, uns 20 ou uns 30?"), que treina o senso de quantidade sem contar um por um.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.36:</b> o Inglês 🌎 e o Alemão 🥨 agora têm <b>domínio por palavra</b>, igual às letras e contas: cada palavra precisa de <b>3 acertos limpos</b> (ouvindo, lendo ou falando no microfone 🎤) pra ser dominada, o jogo <b>prioriza as palavras que a criança ainda não domina</b>, palavra dominada entra na <b>revisão espaçada</b> (volta em 1, 7 e 30 dias), e o <b>mapa de vocabulário</b> apareceu aqui embaixo: cores, animais, comidas e coisas nas duas línguas, verde = dominada.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.37:</b> jogar virou hábito: a <b>sequência de dias 🔥</b> dá um bônus de moedas <b>crescente</b> na primeira jogada de cada dia (+5 no 1º dia, +10 no 2º... até +35 do 7º dia em diante — pular um dia recomeça do 1), o foguinho 🔥 aparece no topo enquanto a sequência está viva, e o painel ganhou o <b>resumo da semana</b> aqui em cima: acertos, erros, aproveitamento, moedas e conquistas 🏅 de cada um dos últimos 7 dias, com a sequência atual e o recorde.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
