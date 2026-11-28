@@ -673,6 +673,22 @@ const SENTENCES = [
   { t:"O MACACO COME BANANA", e:"🐒🍌" }, { t:"O SAPO PULA NA LAGOA", e:"🐸💦" }
 ];
 const MIC_WORDS_PT = ["GATO","BOLA","CASA","PATO","SAPO","LUA","SOL","MEL","VACA","MALA","MOTO","BOLO","BANANA","MACACO","MENINO","MENINA"];
+/* v3.34 — TROCA-SOM (manipulação fonêmica, PNA): trocar UM pedacinho faz
+   nascer outra palavra de verdade. Falamos a SÍLABA (ma→ba), não a letra. */
+const SWAP_PAIRS = [
+  { a:"MALA", ea:"🧳", b:"BALA", eb:"🍬", de:"MA", para:"BA" },
+  { a:"BALA", ea:"🍬", b:"SALA", eb:"🛋️", de:"BA", para:"SA" },
+  { a:"GATO", ea:"🐱", b:"PATO", eb:"🦆", de:"GA", para:"PA" },
+  { a:"PATO", ea:"🦆", b:"RATO", eb:"🐭", de:"PA", para:"RA" },
+  { a:"RATO", ea:"🐭", b:"MATO", eb:"🌿", de:"RA", para:"MA" },
+  { a:"BOCA", ea:"👄", b:"FOCA", eb:"🦭", de:"BO", para:"FO" },
+  { a:"FOCA", ea:"🦭", b:"TOCA", eb:"🕳️", de:"FO", para:"TO" },
+  { a:"LUA",  ea:"🌙", b:"RUA",  eb:"🛣️", de:"LU", para:"RU" },
+  { a:"VACA", ea:"🐮", b:"FACA", eb:"🔪", de:"VA", para:"FA" },
+  { a:"BOLA", ea:"⚽", b:"BOLO", eb:"🍰", de:"LA", para:"LO" },
+  { a:"PIPA", ea:"🪁", b:"MAPA", eb:"🗺️", de:"PI", para:"MA" },
+  { a:"GELO", ea:"🧊", b:"GALO", eb:"🐓", de:"GE", para:"GA" }
+];
 const DITADO_EASY = ["GATO","BOLA","CASA","PATO","UVA","VACA","SAPO","RATO","LOBO","DADO","PIPA","FOCA","MOTO","MALA","LUA","MEL","SOL","BOLO","MAPA"];
 const DITADO_HARD = ["MACACO","CAVALO","SAPATO","BANANA","TOMATE","GIRAFA","PIPOCA","MENINO","MENINA","JANELA","BONECA","PANELA"];
 
@@ -2344,7 +2360,14 @@ function micMatch(alts, q){
         const c = tk.replace(/h/g, "");
         return c.length > 0 && c.length <= 3 && c.includes(t) &&
                [...c].every(ch => "aeiou".includes(ch));
-      }))
+      })) ||
+      /* v3.34 — fluência: frase inteira; aceita se a MAIORIA das palavras
+         grandes da frase apareceu (o reconhecimento come artigos: O, A, NA) */
+      (q.fluency && t.includes(" ") && (()=>{
+        const tw = t.split(" ").filter(w=>w.length>2);
+        const hit = tw.filter(w=>toks.includes(w)).length;
+        return tw.length > 0 && hit >= Math.max(2, Math.ceil(tw.length*.6));
+      })())
     );
   });
 }
@@ -2563,6 +2586,13 @@ function onCorrect(){
       reviewOk = true;
     }
   }
+  /* v3.34 — fluência de leitura: frase inteira no mic ganha estrelas pela rapidez */
+  let fluStars = 0;
+  if(q.fluency && !state.reinf){
+    const secs = state.qStart ? (Date.now() - state.qStart)/1000 : 99;
+    fluStars = secs <= 8 ? 3 : secs <= 15 ? 2 : 1;
+    extra += fluStars * 2;
+  }
   earnCoins(p, coins + extra);
   p.stats[t].a++;
   const gainTxt = `+${coins+extra}🪙 +${coins+extra}⚡`;
@@ -2576,6 +2606,8 @@ function onCorrect(){
     ? `🏅 Palavra dominada! ${gainTxt}!`
     : unitMasteredNow
     ? `🏅 Dominou! ${gainTxt}!`
+    : fluStars
+    ? `${"⭐".repeat(fluStars)} Leu a frase inteira! ${gainTxt}!`
     : reviewOk
     ? `🔄 Ainda lembra! Memória de elefante! 🐘 ${gainTxt}!`
     : slowHit
@@ -2613,6 +2645,9 @@ function onCorrect(){
                : fundNow ? "Boa! Agora vamos ver umas parecidas, pra ter certeza que você entendeu o porquê!"
                : masteredNow ? `Você dominou a palavra ${wordSay(q.mword)}! Incrível!`
                : unitMasteredNow ? `Você dominou ${unitLabel}! Três vezes seguidas sem errar! Incrível!`
+               : fluStars === 3 ? "Uau! Você leu rápido como um foguete! Três estrelas!"
+               : fluStars === 2 ? "Muito bem! Leitura forte! Duas estrelas!"
+               : fluStars === 1 ? "Você leu a frase inteirinha! Uma estrela! Vamos treinar pra ler mais rapidinho!"
                : reviewOk ? "Você ainda lembra! Sua memória está fortíssima!"
                : slowHit ? "Isso! Agora vamos treinar pra sair bem rapidinho, como um raio!"
                : pick(PRAISE);
@@ -3702,9 +3737,46 @@ function letterQ(letters, nOpts){
   };
 }
 
+/* v3.34 — JUNTA-SONS (síntese fonêmica, PNA): o jogo fala os pedacinhos bem
+   separados e a criança descobre a palavra — sem NADA escrito, é ouvido puro. */
+function blendQ(pool, n){
+  const w = pick(pool.filter(x=>x.syl && x.syl.length>=2));
+  return {
+    kind:"opts", prompt:"Junte os pedacinhos! Que palavra ficou? 🧩",
+    visual:`<span class="big-emoji">🧩</span>`,
+    speech:[ptT(`Vou falar uma palavra em pedacinhos! Escute: ${sylJoinSay(w.syl)}... Junte os sons! Que palavra ficou?`)],
+    hintSpeech: ptT(`${sylJoinSay(w.syl)}... ${wordSay(w.w)}! Ache ${wordSay(w.w)}!`),
+    okSpeech:`${wordSay(w.w)}! Você juntou os sons!`,
+    optClass:"emoji-opt",
+    options: makeOpts(w, pool, n, x=>x.e)
+  };
+}
+
+/* v3.34 — TROCA-SOM: mostra a palavra, troca um pedacinho e a criança descobre
+   qual palavra nasceu (MALA → BALA) */
+function swapQ(){
+  const s = pick(SWAP_PAIRS);
+  const decoys = shuffle(WORDS.filter(x=>x.w!==s.a && x.w!==s.b)).slice(0,2);
+  const opts = shuffle([
+    { e:s.eb, w:s.b, correct:true }, { e:s.ea, w:s.a, correct:false },
+    ...decoys.map(x=>({ e:x.e, w:x.w, correct:false }))
+  ]);
+  return {
+    kind:"opts", prompt:`Troque ${s.de} por ${s.para}! Que palavra nasce? 🔁`,
+    visual:`<div class="read-word">${s.a}</div>`,
+    speech:[ptT(`${wordSay(s.a)}! Agora tire o ${sylSay(s.de)} e coloque o ${sylSay(s.para)} no lugar. Que palavra nasceu?`)],
+    hintSpeech: ptT(`${wordSay(s.a)} sem ${sylSay(s.de)}, com ${sylSay(s.para)}... vira ${wordSay(s.b)}!`),
+    okSpeech:`${wordSay(s.b)}! Trocou o som e virou outra palavra!`,
+    optClass:"emoji-opt",
+    options: opts.map(o=>({ label:o.e, correct:o.correct, say:ptT(wordSay(o.w)+"!") }))
+  };
+}
+
 /* 7A do Kumon: ouvir a palavra e apontar a figura (antes de ler) */
 function genListenWord(n){
   const pool = n===3 ? WORDS : WORDS.concat(WORDS_BIG);
+  /* v3.34 — às vezes é junta-sons: ouvir os pedacinhos e juntar */
+  if(Math.random() < .25) return blendQ(pool, n);
   const w = pick(pool);
   return {
     kind:"opts", prompt:"Escute e toque na figura!",
@@ -4048,6 +4120,8 @@ function genPtCore(lv){
     };
   }
   if(lv===12){ /* primeira sílaba */
+    /* v3.34 — às vezes junta-sons: ouvir os pedacinhos e descobrir a palavra */
+    if(Math.random() < .3) return blendQ(WORDS, 4);
     const w = pick(WORDS.filter(x=>x.syl.length>=2));
     const first = w.syl[0];
     const pool = shuffle(Object.values(SYL_FAMILIES).flat().filter(s=>s!==first)).slice(0,3).concat(first);
@@ -4092,6 +4166,8 @@ function genPtCore(lv){
     };
   }
   if(lv===15){ /* palavras parecidas */
+    /* v3.34 — às vezes troca-som: trocar um pedacinho faz nascer outra palavra */
+    if(Math.random() < .4) return swapQ();
     const set = pick(SIM_SETS);
     const target = pick(set.fam);
     return {
@@ -4215,6 +4291,18 @@ function genPtCore(lv){
     };
   }
   if(lv===25){ /* frases */
+    /* v3.34 — fluência: ler a frase INTEIRA em voz alta, estrelas pela rapidez */
+    if(SR && Math.random() < .4){
+      const s = pick(SENTENCES);
+      return {
+        kind:"mic", prompt:"Leia a frase inteira bem alto! 🎤⭐",
+        visual:`<div class="read-sentence">${s.t}</div>`,
+        speech:[ptT("Desafio de leitura! Leia a frase inteira no microfone, bem bonito!")],
+        hintSpeech: ptT("Leia palavra por palavra, com calma. Você consegue!"),
+        okSpeech: s.t,
+        answer: s.t, fluency:true
+      };
+    }
     const s = pick(SENTENCES);
     return {
       kind:"opts", prompt:"Leia a frase e ache as figuras!",
@@ -5496,6 +5584,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.31:</b> melhorias guiadas pela ciência: a trilha Kids 🧸 ganhou a <b>fase 2</b> (níveis 20 a 28) com <b>consciência fonológica</b> — palminhas das sílabas 👏, rimas 🎵 e "começa com o mesmo sominho" 🗣️, os maiores preditores de alfabetização segundo a PNA — e <b>senso numérico</b>: olho de águia ⚡ (subitizing: ver a quantidade sem contar, como num dado) e amigos do 5 🖐️. Na Matemática 🔢: flash de pontinhos nos níveis de contagem, <b>reta numérica</b> nos níveis de vizinhos (pesquisa de Siegler), o "quanto falta pro 10" agora mostra o <b>quadro de 10</b> bolinhas, e a tabuada mostra os <b>grupinhos de verdade</b> nas contas pequenas (concreto → figura → símbolo, método de Singapura).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.32:</b> a jornada agora é <b>adaptativa</b> — ela cresce exatamente onde a criança precisa aprender. Se teve <b>3 ou mais erros</b> num nível, ao completá-lo a trilha ganha <b>rodadas de reforço ✨</b> do mesmo conteúdo (aparecem no mapa da jornada) antes do próximo degrau — base sólida primeiro, como no mastery learning de Bloom e no método Kumon. E se ela acerta as <b>3 primeiras de primeira</b> (em níveis sem domínio por item), o jogo entende que ela está <b>acima do nível</b> e sobe direto. A ciência mostra que se aprende mais rápido em torno de <b>85% de acerto</b>: nem fácil demais, nem difícil demais.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.33:</b> memória de longo prazo — tudo que a criança domina volta como <b>revisão 🔄</b> depois de <b>1, 7 e 30 dias</b> (repetição espaçada, a técnica com mais evidência contra o esquecimento). Lembrou: a próxima revisão espera mais. Esqueceu: a lição volta pra fila de reforço, sem bronca. Além disso, <b>fluência</b> no estilo Kumon: nas contas e letras de toque rápido, acerto <b>lento demais</b> (mais de 10s pensando) vale moedas mas ainda não vale domínio — dominar é responder certo E rápido. E as rodadas de reforço ✨ agora <b>misturam degraus já vencidos 🔀</b> (prática intercalada, que fixa mais que repetir só uma coisa).</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.34:</b> alfabetização mais forte, guiada pela ciência (PNA): <b>junta-sons 🧩</b> — o jogo fala a palavra em pedacinhos (ga... to...) e a criança descobre qual palavra se formou (síntese fonêmica, sem nada escrito); <b>troca-som 🔁</b> — MALA vira BALA: trocar um sominho faz nascer outra palavra (manipulação fonêmica, o degrau mais avançado da consciência fonológica); e <b>fluência de leitura ⭐</b> — no nível de frases, ler a frase inteira em voz alta no microfone vale até <b>3 estrelas</b> pela rapidez (e moedas extras por estrela).</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
