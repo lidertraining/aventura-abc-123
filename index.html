@@ -291,6 +291,8 @@
   .j-item.now { background:#f3e9ff; color:#a044ff; box-shadow:0 3px 0 #d6a6e8; }
   .j-item.now .jn { background:#a044ff; color:#fff; }
   .j-item.lock { opacity:.5; cursor:default; }
+  .j-item.ext { background:#fff6e5; color:#b86e00; border:2px dashed #f0a830; }
+  .j-item.ext .jn { background:#f0a830; color:#fff; }
 
   /* overlay */
   #overlay {
@@ -1570,7 +1572,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1
 
 function newProfile(name, avatar, bday){
   const t = freshTrackState();
-  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
+  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, ext:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
 }
 
 /* v3.25 — idade do perfil pela data de nascimento (null = não informada).
@@ -1604,6 +1606,8 @@ function migrateProfile(p){
     if(!p.stats.kids) p.stats.kids = {a:0,e:0};
     if(!p.lv.kids) p.lv.kids = 1;
     if(p.prog.kids==null) p.prog.kids = 0;
+    /* v3.32 — jornada adaptativa: rodadas de reforço restantes do nível atual */
+    if(!p.ext) p.ext = {pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0};
     if(p.pv !== 4){
       if(p.pv === 3){
         /* v3.28 — duas fases silábicas novas (19 e 24): shift na numeração */
@@ -1925,6 +1929,10 @@ let state = { track:"pt", practice:false, practiceLv:0, q:null, lock:false, rein
    Depois dos 3 acertos, vem a fase de FUNDAMENTO: 2 questões novas da MESMA lição de origem,
    pra provar que entendeu a lógica (não decorou). Só então a lição sai da fila. */
 const REINF_HITS = 3, FUND_HITS = 2;
+/* v3.32 — jornada adaptativa: 3+ erros no nível = o degrau cresce (rodada extra
+   do mesmo conteúdo, Bloom/Kumon); 3 primeiras limpas = acima do nível, sobe
+   direto (regra dos ~85% de acerto, Wilson 2019) */
+const EXPAND_ERRS = 3, FAST_N = 3;
 function reinfQ(t){ const p=P(); if(!p.rq) p.rq={pt:[],math:[],en:[],de:[],cur:[]}; if(!p.rq[t]) p.rq[t]=[]; return p.rq[t]; }
 const qKey = q => (q.prompt||"") + "|" + (q.answer || (q.pieces||[]).join("") || (((q.options||[]).find(o=>o.correct))||{}).label || "");
 
@@ -1957,6 +1965,7 @@ function startGame(track){
   const p = P();
   state.track = track; state.practice = false; state.reinf = null; state.lastReinf = false;
   state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.recent = [];
+  state.sawDkey = false; state.fastPassed = false;
   if(!p.prog[track]) p.prog[track] = 0;
   const lv = curLevel();
   if(lessonPending(track, lv)){ playLesson(track, lv, beginLevel); return; }
@@ -1968,13 +1977,16 @@ function beginLevel(){
   showScreen("screen-game");
   updateGameHUD();
   const lv = curLevel();
-  speak(`${TRACKS[track].name}! Nível ${lv}: ${TRACKS[track].levels[lv-1].replace(/[🎧🎤👑🏅📖·]/g,"")}. Vamos lá!`, ()=>nextQuestion());
+  const ext = ((P().ext||{})[track])||0;
+  speak(ext ? `Rodada de reforço do nível ${lv}! Vamos deixar essa base bem fortinha! Vamos lá!`
+            : `${TRACKS[track].name}! Nível ${lv}: ${TRACKS[track].levels[lv-1].replace(/[🎧🎤👑🏅📖·]/g,"")}. Vamos lá!`, ()=>nextQuestion());
   setTimeout(()=>{ if(!state.q) nextQuestion(); }, 3500);
 }
 
 function startPractice(track, lv){
   state.track = track; state.practice = true; state.practiceLv = lv; state.reinf = null; state.lastReinf = false;
   state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.practiceProg = 0; state.recent = [];
+  state.sawDkey = false; state.fastPassed = false;
   showScreen("screen-game");
   updateGameHUD();
   const g = goalFor(track, lv);
@@ -1987,7 +1999,8 @@ function updateGameHUD(){
   const p = P(), t = state.track, lv = curLevel();
   const name = TRACKS[t].levels[lv-1] || "Mestre";
   const badge = $("#level-badge");
-  badge.textContent = `${TRACKS[t].icon} ${state.practice?"Treino ":""}Nível ${lv} · ${name}${isDeep(t,lv)?" 📚":""}`;
+  const extHud = state.practice ? 0 : (((p.ext||{})[t])||0);
+  badge.textContent = `${TRACKS[t].icon} ${state.practice?"Treino ":""}Nível ${lv}${extHud?" · Reforço ✨":""} · ${name}${isDeep(t,lv)?" 📚":""}`;
   badge.classList.toggle("practice", state.practice);
   const prog = state.practice ? (state.practiceProg||0) : p.prog[t];
   const goal = goalFor(t, lv);
@@ -2031,6 +2044,7 @@ function nextQuestion(){
   state.recent = state.recent || [];
   state.recent.push(qKey(q));
   if(state.recent.length > 6) state.recent.shift();
+  if(q.dkey) state.sawDkey = true; /* nível com domínio por item: não encurta */
   state.q = q;
   renderQ(q);
   updateGameHUD();
@@ -2490,6 +2504,14 @@ function onCorrect(){
     if(state.practiceProg >= goal) done = "practice";
   } else if(step){
     p.prog[t]++;
+    /* v3.32 — acima do nível: as primeiras respostas todas limpas, sem domínio
+       por item no caminho e sem reforço pendente → ela já sabe esse degrau */
+    if(p.prog[t] < goal && p.prog[t] >= FAST_N && goal > FAST_N &&
+       !state.sawDkey && state.levelErrors === 0 &&
+       ((p.ext||{})[t]||0) === 0 && reinfQ(t).length === 0 && p.lv[t] <= maxOf(t)){
+      state.fastPassed = true;
+      p.prog[t] = goal;
+    }
     if(p.prog[t] >= goal) done = "levelup";
   }
   save(); updateGameHUD();
@@ -2600,6 +2622,19 @@ function suggestReview(){
 function levelUp(){
   const p = P(), t = state.track;
   const lv = p.lv[t];
+  /* v3.32 — jornada adaptativa: muitos erros no degrau = a trilha CRESCE aqui.
+     Rodada(s) extra(s) do MESMO conteúdo antes de subir — base sólida primeiro. */
+  if(!p.ext) p.ext = {};
+  if(lv <= maxOf(t)){
+    if((p.ext[t]||0) > 0){
+      p.ext[t]--; /* rodada completa: sempre anda um passo (sem loop infinito) */
+      if(p.ext[t] > 0){ beginExtraRound(false); return; }
+    } else if(state.levelErrors >= EXPAND_ERRS){
+      p.ext[t] = state.levelErrors >= EXPAND_ERRS*2 ? 2 : 1;
+      beginExtraRound(true); return;
+    }
+  }
+  const fast = !!state.fastPassed; state.fastPassed = false;
   const bonus = levelUpBonus(lv);
   earnCoins(p, bonus);
   p.lv[t] = lv+1;
@@ -2608,7 +2643,7 @@ function levelUp(){
   p.prog[t] = 0;
   /* sempre passa de nível — as lições erradas seguem misturadas na fila de reforço */
   const pendR = reinfQ(t).length;
-  state.levelErrors = 0; state.reviewSuggested = false;
+  state.levelErrors = 0; state.reviewSuggested = false; state.sawDkey = false;
   save();
   sndLevelUp(); confetti(60); coinBump(); updateHUD();
   const mx = maxOf(t);
@@ -2624,12 +2659,14 @@ function levelUp(){
     const nname = TRACKS[t].levels[p.lv[t]-1].replace(/[🎧🎤👑🏅📖·]/g,"");
     showOverlay(`
       <span class="big">🚀</span>
-      <h2>NÍVEL ${p.lv[t]}!</h2>
+      <h2>${fast? "ACIMA DO NÍVEL! 🌟" : `NÍVEL ${p.lv[t]}!`}</h2>
+      ${fast? `<p>Você acertou <b>tudo de primeira</b> — esse degrau você já sabia! O caminho encurtou. 🚀</p>` : ""}
       <p>Você subiu de nível e ganhou <b>+${bonus} 🪙</b> pras figurinhas e <b>+${bonus} ⚡</b> pros Pokémon!<br>Agora vem: <b>${TRACKS[t].levels[p.lv[t]-1]}</b></p>
       ${pendR? `<p style="color:#e67e22;">🔁 ${pendR===1? "Uma lição de reforço vai junto — ela volta misturada" : `<b>${pendR} lições de reforço</b> vão junto — elas voltam misturadas`} até você pegar de vez!</p>` : ""}
       <button class="ov-btn" id="lvl-go">Continuar! 🚀</button>
       <button class="ov-btn alt" id="lvl-home">Menu</button>`);
-    speak(`Uau! Você subiu para o nível ${p.lv[t]}! Ganhou ${bonus} moedas de bônus! Agora vamos aprender: ${nname}!`);
+    speak(fast? `Uau! Tudo certo de primeira! Você já estava acima desse nível, então o caminho encurtou! Agora vamos aprender: ${nname}!`
+              : `Uau! Você subiu para o nível ${p.lv[t]}! Ganhou ${bonus} moedas de bônus! Agora vamos aprender: ${nname}!`);
   }
   $("#lvl-go").onclick = ()=>{
     sndTap(); hideOverlay();
@@ -2639,6 +2676,29 @@ function levelUp(){
     } else { updateGameHUD(); nextQuestion(); }
   };
   $("#lvl-home").onclick = ()=>{ sndTap(); hideOverlay(); goHome(); };
+}
+
+/* v3.32 — a trilha cresce onde precisa: rodada extra do MESMO nível quando a
+   criança errou bastante. Base sólida antes do próximo degrau (Bloom/Kumon). */
+function beginExtraRound(first){
+  const p = P(), t = state.track, lv = p.lv[t];
+  p.prog[t] = 0;
+  const pendR = reinfQ(t).length;
+  state.levelErrors = 0; state.reviewSuggested = false; state.sawDkey = false; state.fastPassed = false;
+  save();
+  sndLevelUp(); confetti(30); coinBump(); updateHUD();
+  const nm = (TRACKS[t].levels[lv-1]||"Mestre").replace(/[🎧🎤👑🏅📖·]/g,"");
+  showOverlay(`
+    <span class="big">✨</span>
+    <h2>Rodada de reforço!</h2>
+    <p>${first? "Você completou o nível! Mas algumas ainda escaparam, então" : "Boa! Você está pegando o jeito. Agora"} a jornada <b>cresceu um pouquinho aqui</b>: mais uma rodada de <b>${nm}</b> pra sua base ficar bem forte antes do próximo degrau! 💪</p>
+    ${pendR? `<p style="color:#e67e22;">🔁 ${pendR===1? "Uma lição de reforço vem misturada" : `<b>${pendR} lições de reforço</b> vêm misturadas`} também!</p>` : ""}
+    <button class="ov-btn" id="ext-go">Vamos lá! 💪</button>
+    <button class="ov-btn alt" id="ext-home">Menu</button>`);
+  speak(first? `Você completou o nível! Mas eu vi que algumas ainda escaparam. Então a jornada cresceu um pouquinho: vamos fazer mais uma rodada de ${nm}, pra sua base ficar bem forte! Errar faz parte de aprender!`
+             : `Muito bem! Mais uma rodadinha de ${nm} e a sua base vai ficar fortíssima!`);
+  $("#ext-go").onclick = ()=>{ sndTap(); hideOverlay(); updateGameHUD(); nextQuestion(); };
+  $("#ext-home").onclick = ()=>{ sndTap(); hideOverlay(); goHome(); };
 }
 
 function practiceDone(){
@@ -5093,6 +5153,17 @@ function renderJourney(){
       else speak("Esse nível ainda está trancado! Continue jogando pra chegar lá!");
     };
     list.appendChild(item);
+    /* v3.32 — a trilha cresce onde precisa: rodadas de reforço visíveis na jornada */
+    const ext = (p.ext && p.ext[t]) || 0;
+    if(st === "now" && ext > 0){
+      for(let e = 0; e < ext; e++){
+        const x = document.createElement("button");
+        x.className = "j-item ext";
+        x.innerHTML = `<span class="jn">✨</span><span class="jt">Reforço: ${name}</span><span class="js">Base forte 💪</span>`;
+        x.onclick = ()=>{ sndTap(); startGame(t); };
+        list.appendChild(x);
+      }
+    }
   });
   if(cur > mx){
     const item = document.createElement("button");
@@ -5325,6 +5396,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.29:</b> chegou a trilha 🧸 <b>Kids</b>, feita pros bem pequenos (3 anos): ensina os números de 1 a 10 <b>um por um</b> (1, 2, 3 → brincar misturado → 4, 5, 6...) e depois as vogais <b>A, E, I, O, U</b> com palavrinhas ilustradas (A de ABELHA 🐝, E de ELEFANTE 🐘). Níveis curtinhos de 4 acertos, tudo falado em voz alta, aulinha da Corujinha antes de cada número e letrinha — dá pra jogar sem saber ler nada.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.30:</b> o microfone 🎤 agora abre <b>junto com a pergunta</b> — a criança pode responder antes mesmo do jogo terminar de falar o enunciado (antes, a resposta dela se perdia porque o mic só abria no fim). O jogo filtra o eco da própria voz pra não se auto-responder, e <b>fecha o microfone assim que ouve a resposta certa</b>, parando a fala na hora pra comemorar.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.31:</b> melhorias guiadas pela ciência: a trilha Kids 🧸 ganhou a <b>fase 2</b> (níveis 20 a 28) com <b>consciência fonológica</b> — palminhas das sílabas 👏, rimas 🎵 e "começa com o mesmo sominho" 🗣️, os maiores preditores de alfabetização segundo a PNA — e <b>senso numérico</b>: olho de águia ⚡ (subitizing: ver a quantidade sem contar, como num dado) e amigos do 5 🖐️. Na Matemática 🔢: flash de pontinhos nos níveis de contagem, <b>reta numérica</b> nos níveis de vizinhos (pesquisa de Siegler), o "quanto falta pro 10" agora mostra o <b>quadro de 10</b> bolinhas, e a tabuada mostra os <b>grupinhos de verdade</b> nas contas pequenas (concreto → figura → símbolo, método de Singapura).</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.32:</b> a jornada agora é <b>adaptativa</b> — ela cresce exatamente onde a criança precisa aprender. Se teve <b>3 ou mais erros</b> num nível, ao completá-lo a trilha ganha <b>rodadas de reforço ✨</b> do mesmo conteúdo (aparecem no mapa da jornada) antes do próximo degrau — base sólida primeiro, como no mastery learning de Bloom e no método Kumon. E se ela acerta as <b>3 primeiras de primeira</b> (em níveis sem domínio por item), o jogo entende que ela está <b>acima do nível</b> e sobe direto. A ciência mostra que se aprende mais rápido em torno de <b>85% de acerto</b>: nem fácil demais, nem difícil demais.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
