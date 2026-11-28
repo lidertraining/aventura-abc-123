@@ -1465,15 +1465,33 @@ if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged =
 let ttsUntil = 0;
 function ttsBusy(){ return (speechSynthesis.speaking || speechSynthesis.pending) && Date.now() < ttsUntil; }
 
+/* v3.30 — o microfone agora abre JUNTO com o enunciado (a criança às vezes já
+   responde antes do jogo terminar de falar). Pra não se auto-responder, o jogo
+   guarda as palavras que ELE MESMO está falando e descarta do reconhecimento
+   qualquer transcrição cujas palavras estejam TODAS nesse texto (= eco da
+   própria voz nos alto-falantes). A janela do eco dura a fala + um rabinho de
+   1,5s (a transcrição do eco chega atrasada). */
+let ttsToks = new Set(), echoUntil = 0;
+const ttsTok = s => norm(s).replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+function ttsEcho(t){
+  if(Date.now() >= echoUntil || !ttsToks.size) return false;
+  const toks = ttsTok(t);
+  return toks.length > 0 && toks.every(tk => ttsToks.has(tk));
+}
+
 /* speak("texto") ou speak([{t:"Encontre",lang:"pt-BR"},{t:"RED!",lang:"en-US"}], cb) */
 function speak(parts, cb){
   if(typeof parts === "string") parts = [{t:parts, lang:"pt-BR"}];
   const list = (parts||[]).filter(p=>p && p.t);
   let called = false;
-  const fire = ()=>{ if(!called){ called = true; ttsUntil = 0; if(cb) cb(); } };
+  const fire = ()=>{ if(!called){ called = true; ttsUntil = 0;
+    echoUntil = Date.now() + 1500;                    /* v3.30 — eco ainda chega um tiquinho depois */
+    if(cb) cb(); } };
   if(!("speechSynthesis" in window) || !list.length){ fire(); return; }
   speechSynthesis.cancel();
   ttsUntil = Date.now() + Math.min(list.reduce((s,p)=>s+Math.max(1300, p.t.length*95), 600), 9000) + 2500;
+  ttsToks = new Set(list.flatMap(p=>ttsTok(p.t)));    /* v3.30 — palavras da nossa fala */
+  echoUntil = ttsUntil + 1500;
   list.forEach((p,i)=>{
     const u = new SpeechSynthesisUtterance(p.t);
     u.lang = p.lang || "pt-BR";
@@ -2075,10 +2093,11 @@ function renderQ(q){
     const mb = document.createElement("button");
     mb.id = "mic-btn"; mb.textContent = "🎤";
     const heard = document.createElement("div");
-    heard.id = "mic-heard"; heard.textContent = "Já vou te ouvir... 👂";
+    heard.id = "mic-heard"; heard.textContent = "Pode falar! 👂";
     ans.appendChild(mb); ans.appendChild(heard);
-    /* v3.22 — o botão continua funcionando (religa na hora), mas o microfone
-       liga SOZINHO assim que o jogo termina de falar o enunciado */
+    /* v3.30 — o botão continua funcionando (religa na hora), mas o microfone
+       liga SOZINHO junto com o enunciado — pode responder antes do jogo
+       terminar de falar */
     mb.onclick = ()=>startMic(q, mb, heard);
     autoMic(q, mb, heard);
   }
@@ -2210,24 +2229,16 @@ function micMatch(alts, q){
   });
 }
 
-/* v3.22 — liga o microfone SOZINHO quando a pergunta 🎤 aparece: espera o jogo
-   terminar de falar o enunciado (senão ele ouviria a própria voz) e chama
-   startMic. Se a criança trocar de pergunta nesse meio tempo, desiste.
-   v3.25 — usa ttsBusy() (relógio próprio) em vez do flag speechSynthesis.speaking,
-   que trava em true em alguns Chrome e deixava o mic esperando pra sempre. */
+/* v3.22 — liga o microfone SOZINHO quando a pergunta 🎤 aparece.
+   v3.30 — agora liga JUNTO com o enunciado, sem esperar o jogo terminar de
+   falar: a criança muitas vezes já responde no meio da pergunta e antes o mic
+   ainda estava fechado (a fala dela se perdia). O eco da voz do próprio jogo
+   é descartado no onresult pelo ttsEcho(). */
 function autoMic(q, mb, heard){
-  let waited = 0;
-  const tryStart = ()=>{
+  setTimeout(()=>{
     if(state.lock || state.q !== q) return;             /* já saiu da pergunta */
-    if(ttsBusy() && waited < 12000){
-      waited += 300; setTimeout(tryStart, 300); return; /* TTS ainda falando */
-    }
-    if(speechSynthesis.speaking && !ttsBusy()){
-      try{ speechSynthesis.cancel(); }catch(e){}        /* flag travado: destrava */
-    }
     startMic(q, mb, heard);
-  };
-  setTimeout(tryStart, 500);
+  }, 150);
 }
 
 function startMic(q, mb, heard){
@@ -2256,19 +2267,29 @@ function startMic(q, mb, heard){
     let matched = false, fatal = false, lastTxt = "";
     rec.onresult = ev=>{
       if(matched || state.rec !== rec) return;
-      if(ttsBusy()) return;                             /* não ouvir a si mesmo */
-      const results = [...ev.results];
-      const alts = results.flatMap(res=>[...res].map(r=>norm(r.transcript))).filter(Boolean);
+      /* v3.30 — o mic abre JUNTO com o enunciado: em vez de ignorar tudo
+         enquanto o jogo fala, descartamos só o ECO da nossa própria voz
+         (ttsEcho). Resultados antigos não são reavaliados (resultIndex) —
+         senão um eco que falou a resposta poderia "acertar" sozinho depois. */
+      const results = [...ev.results].slice(ev.resultIndex || 0);
+      const alts = results.flatMap(res=>[...res].map(r=>norm(r.transcript)))
+                          .filter(a => a && !ttsEcho(a));
+      if(!alts.length) return;
       const last = results[results.length-1];
-      lastTxt = (last[0].transcript||"").trim() || lastTxt;
+      const lastRaw = (last[0].transcript||"").trim();
+      if(lastRaw && !ttsEcho(norm(lastRaw))) lastTxt = lastRaw;
       if(micMatch(alts, q)){
         matched = true;
-        try{ rec.stop(); }catch(e){}
+        try{ speechSynthesis.cancel(); }catch(e){}      /* acertou no meio da fala: cala e festeja */
+        ttsUntil = 0;
+        try{ rec.stop(); }catch(e){}                    /* fecha o mic na primeira resposta certa */
         mb.classList.remove("listening");
         onCorrect();
         return;
       }
+      if(ttsBusy()) return;                             /* jogo ainda falando: não marca erro */
       if(last.isFinal){
+        if(!lastTxt || (lastRaw && ttsEcho(norm(lastRaw)))) return; /* o final era só eco */
         heard.textContent = `Eu ouvi: "${lastTxt}" 🤔 Fale de novo!`;
         state.micFails++;
         onWrong();                                      /* mic não trava: só encoraja */
@@ -5127,6 +5148,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.27:</b> as coleções agora mostram as <b>figuras de verdade dos personagens</b> (imagens reais, como os Pokémon) e chegou a coleção 🏰 <b>Disney</b> com 102 personagens de todos os filmes — todos <b>raros</b> (300 🪙). Gabby, Tsubasa, Dragon Ball e Cavaleiros continuam bem caros (épicos e lendários).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.28:</b> a Matemática agora ensina a <b>tabuada inteira, decorada conta por conta</b> — primeiro 2, 5 e 10 (mais fáceis), depois 3, 4, 6, 7, 8 e 9, cada um com seu truque na aulinha, e no final o <b>Mestre da Tabuada</b> com as contas mais difíceis (7×8!). Cada conta precisa de 3 acertos limpos pra ficar decorada, e aparece no mapa de domínio. Quem já tinha passado das tabuadas volta pro nível da Tabuada do 3 pra decorar as novas (moedas, figurinhas e recordes preservados). O Português ganhou <b>2 fases silábicas novas</b>: palavras de 2 pedaços com <b>sílaba grande</b> (POR-TA, FES-TA) e de 3 pedaços com sílaba grande (CAS-TE-LO, FOR-MI-GA) — o degrau que faltava entre as palavras fáceis e as difíceis.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.29:</b> chegou a trilha 🧸 <b>Kids</b>, feita pros bem pequenos (3 anos): ensina os números de 1 a 10 <b>um por um</b> (1, 2, 3 → brincar misturado → 4, 5, 6...) e depois as vogais <b>A, E, I, O, U</b> com palavrinhas ilustradas (A de ABELHA 🐝, E de ELEFANTE 🐘). Níveis curtinhos de 4 acertos, tudo falado em voz alta, aulinha da Corujinha antes de cada número e letrinha — dá pra jogar sem saber ler nada.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.30:</b> o microfone 🎤 agora abre <b>junto com a pergunta</b> — a criança pode responder antes mesmo do jogo terminar de falar o enunciado (antes, a resposta dela se perdia porque o mic só abria no fim). O jogo filtra o eco da própria voz pra não se auto-responder, e <b>fecha o microfone assim que ouve a resposta certa</b>, parando a fala na hora pra comemorar.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
