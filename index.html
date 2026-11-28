@@ -1572,7 +1572,7 @@ function freshTrackState(){ return { lv:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1
 
 function newProfile(name, avatar, bday){
   const t = freshTrackState();
-  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, ext:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
+  return { name, avatar, bday: bday||null, coins:0, pcoins:0, stickers:[], stickerSet:"classic", lv:t.lv, hi:{pt:1,math:1,en:1,de:1,cur:1,pk:1,kids:1}, prog:t.prog, stats:t.stats, mast:{}, dmast:{}, srs:{}, pv:4, mv:1, rm:2, ra:2, rf:2, rfp:1, pkv:3, rq:{pt:[],math:[],en:[],de:[],cur:[],pk:[],kids:[]}, deep:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, les:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0}, ext:{pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0} };
 }
 
 /* v3.25 — idade do perfil pela data de nascimento (null = não informada).
@@ -1608,6 +1608,8 @@ function migrateProfile(p){
     if(p.prog.kids==null) p.prog.kids = 0;
     /* v3.32 — jornada adaptativa: rodadas de reforço restantes do nível atual */
     if(!p.ext) p.ext = {pt:0,math:0,en:0,de:0,cur:0,pk:0,kids:0};
+    /* v3.33 — revisão espaçada do que foi dominado */
+    if(!p.srs) p.srs = {};
     if(p.pv !== 4){
       if(p.pv === 3){
         /* v3.28 — duas fases silábicas novas (19 e 24): shift na numeração */
@@ -1933,6 +1935,10 @@ const REINF_HITS = 3, FUND_HITS = 2;
    do mesmo conteúdo, Bloom/Kumon); 3 primeiras limpas = acima do nível, sobe
    direto (regra dos ~85% de acerto, Wilson 2019) */
 const EXPAND_ERRS = 3, FAST_N = 3;
+/* v3.33 — memória de longo prazo: o que foi dominado volta pra revisão 🔄 em
+   1 → 7 → 30 dias (repetição espaçada). Fluência (Kumon): acerto LENTO em
+   conta/letra não conta domínio. Rodadas ✨ misturam degraus já vencidos 🔀. */
+const SRS_DAYS = [1, 7, 30], REVIEW_MAX = 3, FLUENT_MS = 10000, INTER_P = .3, DAY_MS = 864e5;
 function reinfQ(t){ const p=P(); if(!p.rq) p.rq={pt:[],math:[],en:[],de:[],cur:[]}; if(!p.rq[t]) p.rq[t]=[]; return p.rq[t]; }
 const qKey = q => (q.prompt||"") + "|" + (q.answer || (q.pieces||[]).join("") || (((q.options||[]).find(o=>o.correct))||{}).label || "");
 
@@ -1961,11 +1967,53 @@ function pendingUnits(p, t, lv){
   return [];
 }
 
+/* v3.33 — revisão espaçada: o que foi dominado volta pra conferir depois de
+   1 → 7 → 30 dias. Lembrou: espera mais tempo. Esqueceu: o domínio zera e a
+   lição volta pra fila de reforço (esquecer = reaprender, sem bronca). */
+function srsSchedule(p, t, key){
+  if(!p.srs) p.srs = {};
+  p.srs[key] = { s:0, d: Date.now() + SRS_DAYS[0]*DAY_MS, t };
+}
+function srsDue(p, t){
+  const s = (p && p.srs) || {};
+  return Object.keys(s).filter(k => s[k].t === t && s[k].d <= Date.now());
+}
+function reviewQFor(key){
+  let q = null;
+  if(key.startsWith("W:")){
+    const w = key.slice(2);
+    const list = WORD_GRADES.flat();
+    const it = list.find(x => x.w === w);
+    if(it) q = {
+      kind:"opts", prompt:"Leia e ache a figura!",
+      visual:`<div class="read-word" style="font-size:clamp(26px,6.5vw,40px);">${it.w}</div>`,
+      speech:[ptT("Leia a palavra e toque na figura!")],
+      hintSpeech: ptT(`${sylJoinSay(it.syl||[it.w])}...`),
+      okSpeech:`${wordSay(it.w)}!`,
+      optClass:"emoji-opt",
+      options: makeOpts(it, list, Math.min(5,list.length), x=>x.e)
+    };
+  } else if(key.startsWith("L:")){
+    q = findLetterQ(key.slice(2), null) || letterMasteryQ(key.slice(2), AZ);
+  } else if(key.startsWith("S:")){
+    q = findSylQ(key.slice(2), null) ||
+        sylMasteryQ(key.slice(2), shuffle(Object.values(SYL_FAMILIES).flat()).slice(0,5).concat([key.slice(2)]));
+  } else if(key.startsWith("M:")){
+    q = mathOpQ(key.slice(2));
+  }
+  if(!q) return null;
+  delete q.dkey; delete q.mword; /* revisão não mexe na contagem de domínio por acerto */
+  q.review = key;
+  q.prompt = "🔄 " + (q.prompt||"");
+  q.speech = [ptT("Hora de revisar! Vamos ver se você ainda lembra!"), ...(q.speech||[])];
+  return q;
+}
+
 function startGame(track){
   const p = P();
   state.track = track; state.practice = false; state.reinf = null; state.lastReinf = false;
   state.levelErrors = 0; state.reviewSuggested = false; state.streak = 0; state.recent = [];
-  state.sawDkey = false; state.fastPassed = false;
+  state.sawDkey = false; state.fastPassed = false; state.reviews = 0;
   if(!p.prog[track]) p.prog[track] = 0;
   const lv = curLevel();
   if(lessonPending(track, lv)){ playLesson(track, lv, beginLevel); return; }
@@ -2034,11 +2082,26 @@ function nextQuestion(){
     }
     state.lastReinf = true;
   } else {
-    q = genFor(state.track, curLevel());
-    /* 📚 anti-repetição: no modo aprender a base é grande — evita repetir as últimas questões */
-    state.recent = state.recent || [];
-    let tries = 0;
-    while(state.recent.includes(qKey(q)) && tries++ < 8) q = genFor(state.track, curLevel());
+    /* v3.33 — revisão espaçada: itens dominados que venceram voltam primeiro (máx. 3 por sessão) */
+    const due = state.practice ? [] : srsDue(P(), state.track);
+    if(due.length && (state.reviews||0) < REVIEW_MAX){
+      q = reviewQFor(due[0]);
+      if(q) state.reviews = (state.reviews||0) + 1;
+    }
+    /* v3.33 — interleaving: na rodada de reforço ✨, mistura degraus já vencidos 🔀 */
+    const lvNow = curLevel();
+    if(!q && !state.practice && (((P().ext||{})[state.track])||0) > 0 && lvNow > 1 && Math.random() < INTER_P){
+      q = genFor(state.track, 1 + rand(lvNow - 1));
+      delete q.dkey; delete q.mword;
+      q.inter = true; q.prompt = "🔀 " + (q.prompt||"");
+    }
+    if(!q){
+      q = genFor(state.track, curLevel());
+      /* 📚 anti-repetição: no modo aprender a base é grande — evita repetir as últimas questões */
+      state.recent = state.recent || [];
+      let tries = 0;
+      while(state.recent.includes(qKey(q)) && tries++ < 8) q = genFor(state.track, curLevel());
+    }
     state.lastReinf = false;
   }
   state.recent = state.recent || [];
@@ -2049,6 +2112,8 @@ function nextQuestion(){
   renderQ(q);
   updateGameHUD();
   speak(q.speech);
+  /* v3.33 — fluência: o relógio da resposta só começa quando a fala da pergunta termina */
+  state.qStart = Math.max(Date.now(), ttsUntil - 2500);
 }
 
 function renderQ(q){
@@ -2459,25 +2524,44 @@ function onCorrect(){
     p.mast[q.mword] = Math.min(m, MASTERY);
     masteredNow = m >= MASTERY;
     step = masteredNow;
-    if(masteredNow){ extra += 10; confetti(24); }
+    if(masteredNow){ extra += 10; confetti(24); srsSchedule(p, t, "W:"+q.mword); }
   }
   /* v3.14 — domínio por LETRA/SÍLABA/OPERAÇÃO: só acerto limpo conta */
-  let unitMasteredNow = false;
+  let unitMasteredNow = false, slowHit = false;
+  /* v3.33 — fluência (Kumon): acertar pensando MUITO ainda não é domínio.
+     Só vale pro domínio a resposta limpa E rápida (toque/teclado numérico). */
+  const slow = (q.kind === "opts" || q.kind === "keypad") && state.qStart &&
+               (Date.now() - state.qStart) > FLUENT_MS;
   /* v3.16 — no MIC não existe chute: ou a criança falou certo ou não. Se o
      reconhecimento entendeu errado antes, o acerto de agora conta mesmo assim
      (e nunca zera o domínio por falha de microfone). */
   const cleanHit = state.qWrong === 0 || q.kind === "mic";
-  if(q.dkey && !state.reinf && cleanHit){
+  if(q.dkey && !state.reinf && cleanHit && slow){
+    /* v3.33 — acertou devagar: vale moeda e elogio, mas o domínio espera a resposta rápida */
+    slowHit = true; step = false;
+  } else if(q.dkey && !state.reinf && cleanHit){
     const m = (p.dmast[q.dkey]||0) + 1;
     p.dmast[q.dkey] = Math.min(m, MASTERY_DEEP);
     unitMasteredNow = m >= MASTERY_DEEP;
     step = unitMasteredNow; /* nível só sobe quando UMA unidade é dominada — 3 acertos limpos por item */
-    if(unitMasteredNow){ extra += 8; confetti(20); }
+    if(unitMasteredNow){ extra += 8; confetti(20); srsSchedule(p, t, q.dkey); }
     else step = false;      /* acertos parciais não avançam o nível, só o domínio */
   } else if(q.dkey && state.qWrong > 0 && !state.reinf){
     /* errou uma vez no meio do domínio (opções/teclado): reset da unidade — não pode chutar até dominar */
     p.dmast[q.dkey] = 0;
     step = false;
+  }
+  /* v3.33 — revisão espaçada: lembrou → a próxima revisão espera mais (1 → 7 → 30 dias).
+     Revisão não conta no progresso do nível (ela visita, não mora aqui). */
+  let reviewOk = false;
+  if(q.review && !state.reinf){
+    step = false;
+    const ri = (p.srs||{})[q.review];
+    if(ri && cleanHit){
+      ri.s = Math.min((ri.s||0) + 1, SRS_DAYS.length - 1);
+      ri.d = Date.now() + SRS_DAYS[ri.s]*DAY_MS;
+      reviewOk = true;
+    }
   }
   earnCoins(p, coins + extra);
   p.stats[t].a++;
@@ -2492,6 +2576,10 @@ function onCorrect(){
     ? `🏅 Palavra dominada! ${gainTxt}!`
     : unitMasteredNow
     ? `🏅 Dominou! ${gainTxt}!`
+    : reviewOk
+    ? `🔄 Ainda lembra! Memória de elefante! 🐘 ${gainTxt}!`
+    : slowHit
+    ? `🐢 Certinho! Tenta bem rapidinho na próxima! ${gainTxt}!`
     : deepDirty
     ? `💛 ${gainTxt}! Essa volta pra contar de novo!`
     : `${pick(["🎉","⭐","🌈","💪","🏅"])} ${gainTxt}!` + (extra?` (${state.streak} seguidas! 🔥)`:"");
@@ -2525,6 +2613,8 @@ function onCorrect(){
                : fundNow ? "Boa! Agora vamos ver umas parecidas, pra ter certeza que você entendeu o porquê!"
                : masteredNow ? `Você dominou a palavra ${wordSay(q.mword)}! Incrível!`
                : unitMasteredNow ? `Você dominou ${unitLabel}! Três vezes seguidas sem errar! Incrível!`
+               : reviewOk ? "Você ainda lembra! Sua memória está fortíssima!"
+               : slowHit ? "Isso! Agora vamos treinar pra sair bem rapidinho, como um raio!"
                : pick(PRAISE);
   const okSpeech = q.okSpeech || null;
   const after = ()=>{
@@ -2548,6 +2638,14 @@ function onWrong(said){
     const ex = queue.find(it=>it.k===k);
     if(ex){ ex.left = REINF_HITS; ex.fleft = FUND_HITS; }
     else queue.push({ k, left: REINF_HITS, fleft: FUND_HITS, q: JSON.parse(JSON.stringify(q)) });
+  }
+  /* v3.33 — esqueceu na revisão espaçada: o domínio zera e a lição volta pro
+     reforço (a fila já recebeu a questão acima). Esquecer = reaprender, sem bronca. */
+  if(q.review && state.qWrong === 1 && !state.practice && !state.reinf){
+    const ri = (p.srs||{})[q.review];
+    if(ri){ ri.s = 0; ri.d = Date.now() + SRS_DAYS[0]*DAY_MS; }
+    if(q.review.startsWith("W:")) p.mast[q.review.slice(2)] = 0;
+    else p.dmast[q.review] = 0;
   }
   /* errou uma questão de reforço → a fase atual recomeça e ela vai pro FIM da fila (volta misturada) */
   if(state.reinf && state.qWrong === 1){
@@ -5397,6 +5495,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.30:</b> o microfone 🎤 agora abre <b>junto com a pergunta</b> — a criança pode responder antes mesmo do jogo terminar de falar o enunciado (antes, a resposta dela se perdia porque o mic só abria no fim). O jogo filtra o eco da própria voz pra não se auto-responder, e <b>fecha o microfone assim que ouve a resposta certa</b>, parando a fala na hora pra comemorar.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.31:</b> melhorias guiadas pela ciência: a trilha Kids 🧸 ganhou a <b>fase 2</b> (níveis 20 a 28) com <b>consciência fonológica</b> — palminhas das sílabas 👏, rimas 🎵 e "começa com o mesmo sominho" 🗣️, os maiores preditores de alfabetização segundo a PNA — e <b>senso numérico</b>: olho de águia ⚡ (subitizing: ver a quantidade sem contar, como num dado) e amigos do 5 🖐️. Na Matemática 🔢: flash de pontinhos nos níveis de contagem, <b>reta numérica</b> nos níveis de vizinhos (pesquisa de Siegler), o "quanto falta pro 10" agora mostra o <b>quadro de 10</b> bolinhas, e a tabuada mostra os <b>grupinhos de verdade</b> nas contas pequenas (concreto → figura → símbolo, método de Singapura).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.32:</b> a jornada agora é <b>adaptativa</b> — ela cresce exatamente onde a criança precisa aprender. Se teve <b>3 ou mais erros</b> num nível, ao completá-lo a trilha ganha <b>rodadas de reforço ✨</b> do mesmo conteúdo (aparecem no mapa da jornada) antes do próximo degrau — base sólida primeiro, como no mastery learning de Bloom e no método Kumon. E se ela acerta as <b>3 primeiras de primeira</b> (em níveis sem domínio por item), o jogo entende que ela está <b>acima do nível</b> e sobe direto. A ciência mostra que se aprende mais rápido em torno de <b>85% de acerto</b>: nem fácil demais, nem difícil demais.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.33:</b> memória de longo prazo — tudo que a criança domina volta como <b>revisão 🔄</b> depois de <b>1, 7 e 30 dias</b> (repetição espaçada, a técnica com mais evidência contra o esquecimento). Lembrou: a próxima revisão espera mais. Esqueceu: a lição volta pra fila de reforço, sem bronca. Além disso, <b>fluência</b> no estilo Kumon: nas contas e letras de toque rápido, acerto <b>lento demais</b> (mais de 10s pensando) vale moedas mas ainda não vale domínio — dominar é responder certo E rápido. E as rodadas de reforço ✨ agora <b>misturam degraus já vencidos 🔀</b> (prática intercalada, que fixa mais que repetir só uma coisa).</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
