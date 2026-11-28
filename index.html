@@ -2016,6 +2016,21 @@ function reviewQFor(key){
         sylMasteryQ(key.slice(2), shuffle(Object.values(SYL_FAMILIES).flat()).slice(0,5).concat([key.slice(2)]));
   } else if(key.startsWith("M:")){
     q = mathOpQ(key.slice(2));
+  } else if(key.startsWith("E:") || key.startsWith("D:")){
+    /* v3.36 — revisão de vocabulário: ler a palavra e achar a figura */
+    const en = key.startsWith("E:"), w = key.slice(2);
+    const list = en ? EN_ALL_X.concat(EN_COLORS_X) : DE_ALL_X.concat(DE_COLORS_X);
+    const it = list.find(x => x.v === w);
+    const T = en ? enT : deT;
+    if(it) q = {
+      kind:"opts", prompt:`Leia a palavra em ${en?"inglês":"alemão"} e ache a figura!`,
+      visual:`<div class="read-word" style="font-size:clamp(26px,7vw,42px);">${it.v}</div>`,
+      speech:[ptT(`Leia a palavra em ${en?"inglês":"alemão"} e toque na figura!`)],
+      hintSpeech: T(it.v+"!"),
+      okSpeech:[T(it.v+"!")],
+      optClass:"emoji-opt",
+      options: withSay(makeOpts(it, list, 5, x=>x.d), list, en?"en-US":"de-DE")
+    };
   }
   if(!q) return null;
   delete q.dkey; delete q.mword; /* revisão não mexe na contagem de domínio por acerto */
@@ -2639,7 +2654,9 @@ function onCorrect(){
   const unitLabel = q.dkey && unitMasteredNow ? (
     q.dkey.startsWith("L:") ? `a letra ${letSay(q.dkey.slice(2))}` :
     q.dkey.startsWith("S:") ? `a sílaba ${sylSay(q.dkey.slice(2))}` :
-    q.dkey.startsWith("M:") ? `essa conta` : ""
+    q.dkey.startsWith("M:") ? `essa conta` :
+    q.dkey.startsWith("E:") ? `essa palavra em inglês` :
+    q.dkey.startsWith("D:") ? `essa palavra em alemão` : ""
   ) : "";
   const praise = reinfGone ? "Agora você pegou essa lição de vez! Entendeu o fundamento! Muito bem!"
                : fundNow ? "Boa! Agora vamos ver umas parecidas, pra ter certeza que você entendeu o porquê!"
@@ -4881,8 +4898,16 @@ function genMath(lv){
 }
 
 /* ---- inglês ---- */
+/* v3.36 — domínio de vocabulário em inglês e alemão: cada palavra precisa de
+   3 acertos limpos pra ser dominada (igual às letras, sílabas e contas), e o
+   jogo prioriza as palavras que a criança ainda não domina. */
+function vocabPick(pool, pfx){
+  const dm = (P() && P().dmast) || {};
+  const need = pool.filter(x => (dm[pfx + x.v]||0) < MASTERY_DEEP);
+  return need.length ? pick(need) : pick(pool);
+}
 function enListenQ(pool, nOpts, instr){
-  const item = pick(pool);
+  const item = vocabPick(pool, "E:");
   return {
     kind:"opts", prompt:"Ouça e toque na figura!",
     visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">👂</span>`,
@@ -4890,7 +4915,8 @@ function enListenQ(pool, nOpts, instr){
     hintSpeech: enT(item.v+"! "+item.v+"!"),
     okSpeech:[enT(item.v+"!")],
     optClass:"emoji-opt",
-    options: withSay(makeOpts(item, pool, nOpts, x=>x.d), pool, "en-US")
+    options: withSay(makeOpts(item, pool, nOpts, x=>x.d), pool, "en-US"),
+    dkey:"E:"+item.v
   };
 }
 
@@ -4951,7 +4977,7 @@ function genEn(lv){
   }
   if(lv===11 || lv===12){ /* LER palavra inglês → figura (não fala!) */
     const pool = lv===11? (deep?EN_ANIMALS_X:EN_ANIMALS) : (deep?EN_ALL_X:EN_ALL);
-    const item = pick(pool);
+    const item = vocabPick(pool, "E:"); /* v3.36 — prioriza palavra não dominada */
     return {
       kind:"opts", prompt:"Leia a palavra em inglês e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(30px,8vw,46px);">${item.v}</div>`,
@@ -4959,7 +4985,8 @@ function genEn(lv){
       hintSpeech: enT(item.v+"!"),
       okSpeech:[enT(item.v+"!")],
       optClass:"emoji-opt",
-      options: withSay(makeOpts(item, pool, lv===11?3:5, x=>x.d), pool, "en-US")
+      options: withSay(makeOpts(item, pool, lv===11?3:5, x=>x.d), pool, "en-US"),
+      dkey:"E:"+item.v
     };
   }
   if(lv===13){ /* first letter */
@@ -5008,7 +5035,11 @@ function genEn(lv){
   }
   if(lv===17){ /* say it! mic EN */
     if(!SR) return genEn(15);
-    const w = pick(deep?EN_MIC_X:EN_MIC);
+    /* v3.36 — prioriza palavra não dominada */
+    const micPool = deep?EN_MIC_X:EN_MIC;
+    const dmv = (P() && P().dmast) || {};
+    const micNeed = micPool.filter(x => (dmv["E:"+x]||0) < MASTERY_DEEP);
+    const w = micNeed.length ? pick(micNeed) : pick(micPool);
     const item = EN_ALL_X.concat(EN_COLORS_X).find(x=>x.v===w) || {d:"🗣️"};
     const nIx = EN_NUMS_X.indexOf(w); /* números: aceitar também o dígito ("seven" vira "7") */
     return {
@@ -5017,7 +5048,8 @@ function genEn(lv){
       speech:[ptT("Fale essa palavra em inglês no microfone!"), enT(w+"!")],
       hintSpeech: enT(w+"! "+w+"!"),
       okSpeech:[enT("Great! "+w+"!")],
-      en:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined
+      en:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined,
+      dkey: nIx>-1? undefined : "E:"+w /* números não entram no vocabulário */
     };
   }
   if(lv===18){ /* cor + coisa: RED CAT */
@@ -5072,7 +5104,7 @@ function genEn(lv){
 
 /* ---- alemão ---- */
 function deListenQ(pool, nOpts, instr){
-  const item = pick(pool);
+  const item = vocabPick(pool, "D:"); /* v3.36 — prioriza palavra não dominada */
   return {
     kind:"opts", prompt:"Ouça e toque na figura!",
     visual:`<span class="big-emoji" style="font-size:clamp(40px,10vw,60px);">👂</span>`,
@@ -5080,7 +5112,8 @@ function deListenQ(pool, nOpts, instr){
     hintSpeech: deT(item.v+"! "+item.v+"!"),
     okSpeech:[deT(item.v+"!")],
     optClass:"emoji-opt",
-    options: withSay(makeOpts(item, pool, nOpts, x=>x.d), pool, "de-DE")
+    options: withSay(makeOpts(item, pool, nOpts, x=>x.d), pool, "de-DE"),
+    dkey:"D:"+item.v
   };
 }
 
@@ -5132,7 +5165,7 @@ function genDe(lv){
   }
   if(lv===11 || lv===12){ /* LER palavra alemã → figura (não fala!) */
     const pool = lv===11? (deep?DE_ANIMALS_X:DE_ANIMALS) : (deep?DE_ALL_X:DE_ALL);
-    const item = pick(pool);
+    const item = vocabPick(pool, "D:"); /* v3.36 — prioriza palavra não dominada */
     return {
       kind:"opts", prompt:"Leia a palavra em alemão e ache a figura!",
       visual:`<div class="read-word" style="font-size:clamp(26px,7vw,42px);">${item.v}</div>`,
@@ -5140,7 +5173,8 @@ function genDe(lv){
       hintSpeech: deT(item.v+"!"),
       okSpeech:[deT(item.v+"!")],
       optClass:"emoji-opt",
-      options: withSay(makeOpts(item, pool, lv===11?3:5, x=>x.d), pool, "de-DE")
+      options: withSay(makeOpts(item, pool, lv===11?3:5, x=>x.d), pool, "de-DE"),
+      dkey:"D:"+item.v
     };
   }
   if(lv===13){ /* primeira letra */
@@ -5189,7 +5223,11 @@ function genDe(lv){
   }
   if(lv===17){ /* Sprich! mic DE */
     if(!SR) return genDe(15);
-    const w = pick(deep?DE_MIC_X:DE_MIC);
+    /* v3.36 — prioriza palavra não dominada */
+    const micPool = deep?DE_MIC_X:DE_MIC;
+    const dmv = (P() && P().dmast) || {};
+    const micNeed = micPool.filter(x => (dmv["D:"+x]||0) < MASTERY_DEEP);
+    const w = micNeed.length ? pick(micNeed) : pick(micPool);
     const item = DE_ALL_X.concat(DE_COLORS_X).find(x=>x.v===w) || {d:"🗣️"};
     const nIx = DE_NUMS_X.indexOf(w); /* números: aceitar também o dígito ("sieben" vira "7") */
     return {
@@ -5198,7 +5236,8 @@ function genDe(lv){
       speech:[ptT("Fale essa palavra em alemão no microfone!"), deT(w+"!")],
       hintSpeech: deT(w+"! "+w+"!"),
       okSpeech:[deT("Super! "+w+"!")],
-      de:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined
+      de:true, answer:w, accept: nIx>-1? [String(nIx+1)] : undefined,
+      dkey: nIx>-1? undefined : "D:"+w /* números não entram no vocabulário */
     };
   }
   if(lv===18){ /* cor + bicho: ROTE KATZE */
@@ -5590,6 +5629,23 @@ function domainMapReport(p){
     const cells = b.ops.map(op => unitCell(b.label(op), unitState(p,"M:"+op))).join("");
     parts.push(`<div style="margin:6px 0;"><span style="display:inline-block;min-width:120px;font-weight:600;opacity:.8;">${b.title}:</span> ${cells} <span style="opacity:.7;">${done}/${b.ops.length}</span></div>`);
   });
+  /* v3.36 — vocabulário de inglês e alemão por categoria */
+  const vocBlocks = [
+    {title:"🌎 Inglês — cores", list:EN_COLORS_X, pfx:"E:"},
+    {title:"🌎 Inglês — animais", list:EN_ANIMALS_X, pfx:"E:"},
+    {title:"🌎 Inglês — comidas", list:EN_FOOD_X, pfx:"E:"},
+    {title:"🌎 Inglês — coisas", list:EN_THINGS_X, pfx:"E:"},
+    {title:"🥨 Alemão — cores", list:DE_COLORS_X, pfx:"D:"},
+    {title:"🥨 Alemão — animais", list:DE_ANIMALS_X, pfx:"D:"},
+    {title:"🥨 Alemão — comidas", list:DE_FOOD_X, pfx:"D:"},
+    {title:"🥨 Alemão — coisas", list:DE_THINGS_X, pfx:"D:"}
+  ];
+  parts.push(`<div style="margin-top:12px;"><b>🗣️ Palavras de inglês e alemão dominadas (3 acertos limpos — ouvindo, lendo ou falando 🎤):</b></div>`);
+  vocBlocks.forEach(b => {
+    const done = b.list.filter(x => (p.dmast[b.pfx+x.v]||0) >= MASTERY_DEEP).length;
+    const cells = b.list.map(x => unitCell(x.d+" "+x.v, unitState(p, b.pfx+x.v))).join("");
+    parts.push(`<div style="margin:6px 0;"><span style="display:inline-block;min-width:120px;font-weight:600;opacity:.8;">${b.title}:</span> ${cells} <span style="opacity:.7;">${done}/${b.list.length}</span></div>`);
+  });
   return parts.join("");
 }
 
@@ -5672,6 +5728,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.33:</b> memória de longo prazo — tudo que a criança domina volta como <b>revisão 🔄</b> depois de <b>1, 7 e 30 dias</b> (repetição espaçada, a técnica com mais evidência contra o esquecimento). Lembrou: a próxima revisão espera mais. Esqueceu: a lição volta pra fila de reforço, sem bronca. Além disso, <b>fluência</b> no estilo Kumon: nas contas e letras de toque rápido, acerto <b>lento demais</b> (mais de 10s pensando) vale moedas mas ainda não vale domínio — dominar é responder certo E rápido. E as rodadas de reforço ✨ agora <b>misturam degraus já vencidos 🔀</b> (prática intercalada, que fixa mais que repetir só uma coisa).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.34:</b> alfabetização mais forte, guiada pela ciência (PNA): <b>junta-sons 🧩</b> — o jogo fala a palavra em pedacinhos (ga... to...) e a criança descobre qual palavra se formou (síntese fonêmica, sem nada escrito); <b>troca-som 🔁</b> — MALA vira BALA: trocar um sominho faz nascer outra palavra (manipulação fonêmica, o degrau mais avançado da consciência fonológica); e <b>fluência de leitura ⭐</b> — no nível de frases, ler a frase inteira em voz alta no microfone vale até <b>3 estrelas</b> pela rapidez (e moedas extras por estrela).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.35:</b> matemática do dia a dia, do jeito lúdico: <b>lojinha 🛒</b> — comprinhas com moedinhas 🪙 (figurinhas de Pokémon, balinhas, pirulitos: quanto gastou?) nos níveis de soma, e <b>troco</b> (comprou, quanto sobrou?) nos de subtração; <b>relógio ⏰</b> — que horas são? (hora cheia e "e meia") nos probleminhas; e <b>estimativa 👀</b> — olhar o montão e chutar esperto ("uns 10, uns 20 ou uns 30?"), que treina o senso de quantidade sem contar um por um.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.36:</b> o Inglês 🌎 e o Alemão 🥨 agora têm <b>domínio por palavra</b>, igual às letras e contas: cada palavra precisa de <b>3 acertos limpos</b> (ouvindo, lendo ou falando no microfone 🎤) pra ser dominada, o jogo <b>prioriza as palavras que a criança ainda não domina</b>, palavra dominada entra na <b>revisão espaçada</b> (volta em 1, 7 e 30 dias), e o <b>mapa de vocabulário</b> apareceu aqui embaixo: cores, animais, comidas e coisas nas duas línguas, verde = dominada.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
