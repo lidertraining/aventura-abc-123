@@ -4459,6 +4459,80 @@ const TAB_HINTS = {
   10: n => `É só colocar um zero do lado do ${n}!`
 };
 
+/* v3.35 — MATEMÁTICA DO DIA A DIA (pedido do Caio: "comprar figurinhas do
+   Pokémon... comprei uma balinha" — sempre lúdico): lojinha com moedinhas 🪙,
+   troco, relógio ⏰ e estimativa 👀, como variantes dos níveis que já existem. */
+const SHOP_ITEMS = [
+  { art:"uma", n:"figurinha de Pokémon", e:"🎴" },
+  { art:"uma", n:"balinha", e:"🍬" },
+  { art:"um",  n:"pirulito", e:"🍭" },
+  { art:"um",  n:"biscoito", e:"🍪" },
+  { art:"um",  n:"suquinho", e:"🧃" },
+  { art:"um",  n:"carrinho", e:"🚗" },
+  { art:"um",  n:"adesivo brilhante", e:"✨" }
+];
+const CLOCK_FULL = ["🕐","🕑","🕒","🕓","🕔","🕕","🕖","🕗","🕘","🕙","🕚","🕛"];
+const CLOCK_HALF = ["🕜","🕝","🕞","🕟","🕠","🕡","🕢","🕣","🕤","🕥","🕦","🕧"];
+
+/* lojinha: comprou duas coisinhas, quanto gastou? (soma) */
+function shopQ(a, b){
+  const its = shuffle(SHOP_ITEMS.slice()).slice(0, 2);
+  return {
+    kind:"opts", prompt:"Hora da comprinha! Quanto você gastou? 🛒",
+    visual:`<div style="font-size:clamp(24px,6.5vw,38px);line-height:1.5;">${its[0].e} ${a} 🪙 &nbsp;+&nbsp; ${its[1].e} ${b} 🪙</div>`,
+    speech:[ptT(`Você foi na lojinha! Comprou ${its[0].art} ${its[0].n} de ${a} moedinhas e ${its[1].art} ${its[1].n} de ${b} moedinhas. Quanto você gastou?`)],
+    hintSpeech: ptT(`É ${a} mais ${b}!`),
+    okSpeech:`Você gastou ${a+b} moedinhas! Boa compra!`,
+    options: numOpts(a+b, Math.max(2,a+b-3), a+b+3, 5)
+  };
+}
+
+/* troco: tinha tantas moedinhas, comprou, quanto sobrou? (subtração) */
+function trocoQ(t, c){
+  const it = pick(SHOP_ITEMS);
+  const have = t <= 12 ? "🪙".repeat(t) : `${t} 🪙`;
+  return {
+    kind:"opts", prompt:"Comprinha! Quantas moedinhas sobraram? 🛒",
+    visual:`<div style="font-size:clamp(20px,5.5vw,30px);line-height:1.5;">${have}<br>${it.e} custa ${c} 🪙</div>`,
+    speech:[ptT(`Você tem ${t} moedinhas! Comprou ${it.art} ${it.n} que custa ${c}. Com quantas moedinhas você ficou?`)],
+    hintSpeech: ptT(`É ${t} menos ${c}!`),
+    okSpeech:`Sobraram ${t-c} moedinhas!`,
+    options: numOpts(t-c, Math.max(0,t-c-3), t-c+3, 5)
+  };
+}
+
+/* relógio: que horas são? (hora cheia e "e meia") */
+function clockQ(withHalf){
+  const h = 1+rand(12);
+  const half = withHalf && rand(2)===0;
+  const face = (half ? CLOCK_HALF : CLOCK_FULL)[h-1];
+  const lbl = hh => half ? `${hh} e meia` : `${hh} hora${hh>1?"s":""}`;
+  const wrong = shuffle([1,2,3,4,5,6,7,8,9,10,11,12].filter(x=>x!==h)).slice(0,2);
+  return {
+    kind:"opts", prompt:"Que horas são? ⏰",
+    visual:`<span class="big-emoji" style="font-size:clamp(70px,20vw,110px);">${face}</span>`,
+    speech:[ptT("Olhe o relógio! Que horas ele está mostrando?")],
+    hintSpeech: ptT(half ? "O ponteiro pequeno mostra a hora, e o grande no seis quer dizer: e meia!" : "O ponteiro pequeno mostra a hora!"),
+    okSpeech:`São ${lbl(h)}!`,
+    options: shuffle([h, ...wrong]).map(v=>({ label:lbl(v), correct:v===h }))
+  };
+}
+
+/* estimativa: olhar o montão e chutar esperto, sem contar um por um */
+function estimQ(){
+  const tens = pick([10,20,30]);
+  const n = tens + pick([-4,-3,-2,2,3,4]);
+  const e = pick(COUNT_EMOJIS);
+  return {
+    kind:"opts", prompt:"Sem contar! Quantos tem, MAIS OU MENOS? 👀",
+    visual: emojiGroup(n,e),
+    speech:[ptT("Olho de águia! Sem contar um por um: tem mais ou menos quantos?")],
+    hintSpeech: ptT("Não precisa contar certinho! Olhe o montão e dê um chute esperto!"),
+    okSpeech:`São ${n}! Bem pertinho de ${tens}! Que olho bom!`,
+    options: [10,20,30].map(v=>({ label:`uns ${v}`, correct:v===tens }))
+  };
+}
+
 function genMath(lv){
   /* v3.14 — níveis com domínio por operação: escolhe operação não dominada */
   if(MATH_OPS[lv]){
@@ -4573,6 +4647,8 @@ function genMath(lv){
     };
   }
   if(lv===13){ /* números 11-20 */
+    /* v3.35 — às vezes estimativa: olhar o montão e chutar esperto (senso numérico) */
+    if(Math.random() < .25) return estimQ();
     const n = 11+rand(10), e = pick(COUNT_EMOJIS);
     return {
       kind:"opts", prompt:"Quantos são? Números grandes!",
@@ -4583,6 +4659,8 @@ function genMath(lv){
     };
   }
   if(lv===14){ /* soma até 20 */
+    /* v3.35 — às vezes lojinha: comprinha do dia a dia com moedinhas 🪙 */
+    if(Math.random() < .3){ const sa = 5+rand(9), sb = 2+rand(Math.min(6,19-sa)); return shopQ(sa, sb); }
     const a = 5+rand(10), b = 1+rand(Math.min(9,20-a));
     return {
       kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
@@ -4690,6 +4768,8 @@ function genMath(lv){
     };
   }
   if(lv===24){ /* subtração até 20 */
+    /* v3.35 — às vezes troco: comprou, quanto sobrou? */
+    if(Math.random() < .3) return trocoQ(11+rand(9), 1+rand(9));
     const a = 11+rand(9), b = 1+rand(9);
     return {
       kind:"opts", prompt:`Quanto é ${a} − ${b}?`,
@@ -4732,6 +4812,8 @@ function genMath(lv){
     };
   }
   if(lv===28){ /* somar até 50 sem vai-um */
+    /* v3.35 — lojinha com moedinhas maiores */
+    if(Math.random() < .3){ const sa = 10*(1+rand(3)) + (1+rand(5)); return shopQ(sa, 1+rand(9-(sa%10))); }
     const a = 10*(1+rand(3)) + (1+rand(5)), b = 1+rand(9-(a%10));
     return {
       kind:"opts", prompt:`Quanto é ${a} + ${b}?`,
@@ -4743,6 +4825,8 @@ function genMath(lv){
     };
   }
   if(lv===29){ /* subtrair até 50 sem empréstimo */
+    /* v3.35 — troco com moedinhas maiores */
+    if(Math.random() < .3){ const st = 10*(2+rand(3)) + (2+rand(7)); return trocoQ(st, 1+rand(st%10)); }
     const a = 10*(2+rand(3)) + (2+rand(7)), b = 1+rand(a%10);
     return {
       kind:"opts", prompt:`Quanto é ${a} − ${b}?`,
@@ -4776,11 +4860,13 @@ function genMath(lv){
     };
   }
   if(lv===42){ /* probleminhas */
+    /* v3.35 — relógio: que horas são? (hora cheia e "e meia") */
+    if(Math.random() < .25) return clockQ(true);
     const a = 3+rand(10), b = 1+rand(5);
     const plus = rand(2)===0;
     const s = plus
-      ? pick([`Ana tinha ${a} figurinhas e ganhou mais ${b}.`, `O ônibus tinha ${a} pessoas e subiram ${b}.`, `Leo tinha ${a} bolinhas e achou mais ${b}.`])
-      : pick([`Ana tinha ${a} doces e comeu ${b}.`, `O ônibus tinha ${a} pessoas e desceram ${b}.`, `Leo tinha ${a} balões e ${b} estouraram.`]);
+      ? pick([`Ana tinha ${a} figurinhas e ganhou mais ${b}.`, `O ônibus tinha ${a} pessoas e subiram ${b}.`, `Leo tinha ${a} bolinhas e achou mais ${b}.`, `Você comprou ${a} figurinhas de Pokémon e ganhou mais ${b} de presente.`])
+      : pick([`Ana tinha ${a} doces e comeu ${b}.`, `O ônibus tinha ${a} pessoas e desceram ${b}.`, `Leo tinha ${a} balões e ${b} estouraram.`, `Você tinha ${a} reais e comprou uma balinha de ${b} reais.`]);
     const r = plus? a+b : a-b;
     return {
       kind:"opts", prompt: plus? "Quantos ficaram no total?" : "Quantos sobraram?",
@@ -5585,6 +5671,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.32:</b> a jornada agora é <b>adaptativa</b> — ela cresce exatamente onde a criança precisa aprender. Se teve <b>3 ou mais erros</b> num nível, ao completá-lo a trilha ganha <b>rodadas de reforço ✨</b> do mesmo conteúdo (aparecem no mapa da jornada) antes do próximo degrau — base sólida primeiro, como no mastery learning de Bloom e no método Kumon. E se ela acerta as <b>3 primeiras de primeira</b> (em níveis sem domínio por item), o jogo entende que ela está <b>acima do nível</b> e sobe direto. A ciência mostra que se aprende mais rápido em torno de <b>85% de acerto</b>: nem fácil demais, nem difícil demais.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.33:</b> memória de longo prazo — tudo que a criança domina volta como <b>revisão 🔄</b> depois de <b>1, 7 e 30 dias</b> (repetição espaçada, a técnica com mais evidência contra o esquecimento). Lembrou: a próxima revisão espera mais. Esqueceu: a lição volta pra fila de reforço, sem bronca. Além disso, <b>fluência</b> no estilo Kumon: nas contas e letras de toque rápido, acerto <b>lento demais</b> (mais de 10s pensando) vale moedas mas ainda não vale domínio — dominar é responder certo E rápido. E as rodadas de reforço ✨ agora <b>misturam degraus já vencidos 🔀</b> (prática intercalada, que fixa mais que repetir só uma coisa).</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.34:</b> alfabetização mais forte, guiada pela ciência (PNA): <b>junta-sons 🧩</b> — o jogo fala a palavra em pedacinhos (ga... to...) e a criança descobre qual palavra se formou (síntese fonêmica, sem nada escrito); <b>troca-som 🔁</b> — MALA vira BALA: trocar um sominho faz nascer outra palavra (manipulação fonêmica, o degrau mais avançado da consciência fonológica); e <b>fluência de leitura ⭐</b> — no nível de frases, ler a frase inteira em voz alta no microfone vale até <b>3 estrelas</b> pela rapidez (e moedas extras por estrela).</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.35:</b> matemática do dia a dia, do jeito lúdico: <b>lojinha 🛒</b> — comprinhas com moedinhas 🪙 (figurinhas de Pokémon, balinhas, pirulitos: quanto gastou?) nos níveis de soma, e <b>troco</b> (comprou, quanto sobrou?) nos de subtração; <b>relógio ⏰</b> — que horas são? (hora cheia e "e meia") nos probleminhas; e <b>estimativa 👀</b> — olhar o montão e chutar esperto ("uns 10, uns 20 ou uns 30?"), que treina o senso de quantidade sem contar um por um.</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
