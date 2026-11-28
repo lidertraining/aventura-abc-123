@@ -120,6 +120,23 @@
   .read-word { font-size:clamp(38px,10vw,58px); font-weight:700; color:#454a75; letter-spacing:4px; animation:popIn .5s; }
   .read-sentence { font-size:clamp(24px,6vw,34px); font-weight:700; color:#454a75; letter-spacing:1px; text-align:center; line-height:1.3; animation:popIn .5s; }
 
+  /* v3.31 — senso numérico: flash de pontos (subitizing), frame de 10, reta numérica, grupinhos da tabuada */
+  .flash-box { animation:flashHide .35s ease 2.6s forwards; }
+  @keyframes flashHide { to { opacity:0; transform:scale(.55); } }
+  .dice-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; width:clamp(120px,32vw,170px); aspect-ratio:1; margin:0 auto; background:#fff; border-radius:22px; box-shadow:0 6px 0 #cfd4ff; padding:14px; }
+  .dice-dot { border-radius:50%; background:radial-gradient(circle at 35% 30%,#7f8df7,#4a56d8); width:72%; aspect-ratio:1; align-self:center; justify-self:center; }
+  .ten-frame { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; width:clamp(200px,54vw,290px); margin:0 auto; }
+  .tf-cell { aspect-ratio:1; border-radius:10px; border:3px solid #cfd4ff; background:#f4f5ff; display:flex; align-items:center; justify-content:center; font-size:clamp(16px,4.2vw,24px); }
+  .tf-cell.fill { background:#fff; border-color:#9aa4f5; }
+  .nline { display:flex; justify-content:center; margin:4px auto 0; position:relative; width:fit-content; max-width:100%; }
+  .nline::before { content:""; position:absolute; left:8px; right:8px; top:29px; height:4px; background:#cfd4ff; border-radius:2px; }
+  .nl-tick { display:flex; flex-direction:column; align-items:center; width:clamp(24px,7vw,38px); font-weight:800; color:#7a7fa8; font-size:clamp(13px,3.4vw,18px); }
+  .nl-mark { height:20px; font-size:15px; line-height:20px; }
+  .nl-bar { width:4px; height:14px; background:#aab1f0; border-radius:2px; margin-bottom:2px; position:relative; z-index:1; }
+  .nl-tick.nl-target span:last-child { color:#ff5e62; }
+  .x-groups { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; max-width:460px; margin:0 auto; }
+  .x-group { background:#f4f5ff; border:3px solid #cfd4ff; border-radius:14px; padding:6px 9px; font-size:clamp(14px,3.8vw,19px); line-height:1.35; max-width:120px; animation:popIn .4s both; }
+
   #speak-again, #lesson-replay {
     background:linear-gradient(135deg,#ffd54f,#ffb300); border:none; cursor:pointer;
     font-family:inherit; font-weight:700; color:#5d3600; font-size:15px;
@@ -1359,14 +1376,21 @@ const KIDS_PLAN = [
   {n:4},{n:5},{n:6},{mix:[4,5,6]},
   {n:7},{n:8},{n:9},{n:10},{mix:[7,8,9,10]},
   {v:"A"},{v:"E"},{v:"I"},{v:"O"},{v:"U"},
-  {vmix:true},{master:true}
+  {vmix:true},
+  /* v3.31 — fase 2: consciência fonológica (PNA) + senso numérico */
+  {clap:1},{rhyme:true},{flash:3},{mix2:1},
+  {snd:true},{clap:2},{flash:6},{am5:true},
+  {mix2:2},{master:true}
 ];
 const KIDS_LEVELS = [
   "Número 1 ☝️","Número 2 ✌️","Número 3 🎈","Brincando com 1, 2, 3 🎪",
   "Número 4 🍀","Número 5 🖐️","Número 6 🐞","Brincando com 4, 5, 6 🎠",
   "Número 7 🌈","Número 8 🐙","Número 9 🎀","Número 10 🙌","Brincando com 7 a 10 🎡",
   "Letrinha A 🐝","Letrinha E 🐘","Letrinha I 🏝️","Letrinha O 🥚","Letrinha U 🍇",
-  "Brincando com as vogais 🎨","Mestre Kids 👑"
+  "Brincando com as vogais 🎨",
+  "Palminhas 👏","O que rima? 🎵","Olho de águia ⚡","Brincando: sons e olho 🎪",
+  "Começa igual 🗣️","Palminhas grandes 👏","Olho de águia 2 ⚡","Amigos do 5 🖐️",
+  "Brincando com tudo 🎉","Mestre Kids 👑"
 ];
 const KIDS_VOWELS = {
   A:[["ABELHA","🐝"],["AVIÃO","✈️"],["ANEL","💍"],["ABACAXI","🍍"]],
@@ -1376,6 +1400,23 @@ const KIDS_VOWELS = {
   U:[["UVA","🍇"],["URSO","🐻"],["UNHA","💅"],["UNICÓRNIO","🦄"]]
 };
 const KIDS_EMO = ["🐝","🦆","🍎","⭐","🎈","🐱","🌸","🐶","🍓","🦋","🐥","🍌"];
+/* v3.31 — consciência fonológica (PNA): rimas e sons iniciais, ANTES das letras */
+const KIDS_RHYMES = [
+  [["PÃO","🍞"],["MÃO","✋"],["BALÃO","🎈"],["CORAÇÃO","❤️"],["AVIÃO","✈️"]],
+  [["GATO","🐱"],["PATO","🦆"],["RATO","🐭"],["SAPATO","👟"]],
+  [["BOLA","⚽"],["COLA","🧴"],["SACOLA","🛍️"]],
+  [["VELA","🕯️"],["PANELA","🍲"],["JANELA","🪟"]],
+  [["ANEL","💍"],["PASTEL","🥟"],["PAPEL","📄"]],
+  [["PASSARINHO","🐦"],["GOLFINHO","🐬"],["CARRINHO","🛒"]]
+];
+const KIDS_SOUNDS = [
+  { s:"mmm", ws:[["MACACO","🐒"],["MALA","🧳"],["MEIA","🧦"],["MOTO","🛵"]] },
+  { s:"sss", ws:[["SAPO","🐸"],["SINO","🔔"],["SUCO","🧃"],["SOL","☀️"]] },
+  { s:"lll", ws:[["LUA","🌙"],["LOBO","🐺"],["LATA","🥫"],["LEITE","🥛"]] },
+  { s:"fff", ws:[["FADA","🧚"],["FOCA","🦭"],["FOGUETE","🚀"]] },
+  { s:"vvv", ws:[["VACA","🐮"],["VELA","🕯️"],["VESTIDO","👗"]] },
+  { s:"nnn", ws:[["NAVIO","🚢"],["NINHO","🪺"],["NUVEM","☁️"]] }
+];
 
 const TRACKS = {
   pt:   { icon:"📚", name:"Português",  levels:PT_LEVELS },
@@ -3346,13 +3387,78 @@ function kidsVowQ(L){
   };
 }
 
+/* v3.31 — FASE 2 do Kids: consciência fonológica (PNA) + senso numérico */
+function kidsClapQ(stage){
+  const pool = stage===1 ? WORDS.filter(w=>w.syl.length===2 || w.syl.length===3) : WORDS_BIG;
+  const w = pick(pool);
+  const n = w.syl.length, nmax = stage===1? 3 : 4;
+  return {
+    kind:"opts", prompt:"Bata palminhas! Quantos pedacinhos? 👏",
+    visual:`<span class="big-emoji">${w.e}</span>`,
+    speech:[ptT(`${wordSay(w.w)}! Bata uma palminha pra cada pedacinho: ${sylJoinSay(w.syl)}! Quantas palminhas?`)],
+    hintSpeech: ptT(`Bata comigo: ${sylJoinSay(w.syl)}! Conte as palminhas!`),
+    okSpeech:`${sylJoinSay(w.syl)}! São ${n} pedacinhos!`,
+    options: numOpts(n, Math.max(1,n-2), Math.min(nmax,n+2), 3).map(o=>({ ...o, label:o.label+" 👏", say:{t:o.label+"!", lang:"pt-BR"} }))
+  };
+}
+function kidsRhymeQ(){
+  const tail = s => norm(s[0][0]).slice(-2);
+  const set = pick(KIDS_RHYMES);
+  const [target, correct] = shuffle(set).slice(0,2);
+  const others = shuffle(KIDS_RHYMES.filter(x=>x!==set && tail(x)!==tail(set))).slice(0,2).map(s=>pick(s));
+  const cands = shuffle([correct, ...others]);
+  return {
+    kind:"opts", prompt:`O que rima com ${target[0]}? 🎵`,
+    visual:`<span class="big-emoji">${target[1]}</span>`,
+    speech:[ptT(`${wordSay(target[0])}! Que palavra termina com o mesmo sonzinho de ${wordSay(target[0])}?`)],
+    hintSpeech: ptT(`Escute o fim: ${wordSay(target[0])}... ${wordSay(correct[0])}! Rimam!`),
+    okSpeech:`${wordSay(target[0])} rima com ${wordSay(correct[0])}!`,
+    optClass:"emoji-opt",
+    options: cands.map(c=>({ label:`<span style="font-size:clamp(34px,9vw,52px);">${c[1]}</span>`, correct:c===correct, say:{t:wordSay(c[0])+"!", lang:"pt-BR"} }))
+  };
+}
+function kidsSoundQ(){
+  const g = pick(KIDS_SOUNDS);
+  const [target, correct] = shuffle(g.ws).slice(0,2);
+  const others = shuffle(KIDS_SOUNDS.filter(x=>x!==g)).slice(0,2).map(x=>pick(x.ws));
+  const cands = shuffle([correct, ...others]);
+  return {
+    kind:"opts", prompt:"Começa com o mesmo sominho? 🗣️",
+    visual:`<span class="big-emoji">${target[1]}</span>`,
+    speech:[ptT(`${wordSay(target[0])} começa com ${g.s}! Qual figurinha também começa com ${g.s}?`)],
+    hintSpeech: ptT(`${g.s}... ${wordSay(correct[0])}! Começa igualzinho a ${wordSay(target[0])}!`),
+    okSpeech:`${wordSay(target[0])} e ${wordSay(correct[0])} começam com ${g.s}!`,
+    optClass:"emoji-opt",
+    options: cands.map(c=>({ label:`<span style="font-size:clamp(34px,9vw,52px);">${c[1]}</span>`, correct:c===correct, say:{t:wordSay(c[0])+"!", lang:"pt-BR"} }))
+  };
+}
+function kidsAm5Q(){
+  const n = 1+rand(4);
+  return {
+    kind:"opts", prompt:"Quantos faltam pra fazer 5? 🖐️",
+    visual: tenFrame(n, 5),
+    speech:[ptT(`Olha a mãozinha de casinhas: tem ${n} bolinha${n>1?"s":""}! Quantas faltam pra encher as cinco?`)],
+    hintSpeech: ptT(`Conte as casinhas vazias com o dedinho!`),
+    okSpeech:`${n} mais ${5-n} é cinco! Vocês são amigos do cinco!`,
+    options: numOpts(5-n, 1, 4, 3).map(o=>({...o, say:{t:o.label+"!", lang:"pt-BR"}}))
+  };
+}
+
 function genKids(lv){
-  if(lv>=20) lv = 1 + rand(19); /* Mestre Kids: mistura tudo */
+  if(lv>=29) lv = 1 + rand(28); /* Mestre Kids: mistura tudo */
   const pl = KIDS_PLAN[lv-1];
   if(pl.n) return kidsNumQ(pl.n);
   if(pl.mix) return kidsNumQ(pick(pl.mix));
   if(pl.v) return kidsVowQ(pl.v);
-  return kidsVowQ(pick(VOWELS)); /* brincando com as vogais */
+  if(pl.vmix) return kidsVowQ(pick(VOWELS)); /* brincando com as vogais */
+  if(pl.clap) return kidsClapQ(pl.clap);
+  if(pl.rhyme) return kidsRhymeQ();
+  if(pl.flash) return flashQ(pl.flash);
+  if(pl.snd) return kidsSoundQ();
+  if(pl.am5) return kidsAm5Q();
+  const gens = pl.mix2===1 ? [()=>kidsClapQ(1), kidsRhymeQ, ()=>flashQ(3)]
+                           : [()=>kidsClapQ(2), kidsRhymeQ, ()=>flashQ(6), kidsSoundQ, kidsAm5Q];
+  return pick(gens)();
 }
 
 function kidsLesson(lv){
@@ -3364,6 +3470,23 @@ function kidsLesson(lv){
     sc(lsTiles(pl.mix.map(String),"gold",.4), "Vamos brincar com eles!", `Agora vamos brincar com os números ${pl.mix.join(", ")}! Conte sempre com o dedinho, um por um!`)];
   if(pl.vmix) return [
     sc(lsTiles(VOWELS,"gold",.3), "As vogais juntinhas!", "Á! É! I! Ó! U! Vamos brincar com todas as letrinhas que você aprendeu!")];
+  if(pl.clap) return [
+    sc(lsRow(lsE("👏")+lsE("👏",.4)), "As palavras têm pedacinhos!", "Toda palavra tem pedacinhos! Escute: BO... LA! Bata uma palminha pra cada pedacinho: BO, LA! Duas palminhas!"),
+    sc(lsWord("BANANA","🍌"), "BA-NA-NA: três palminhas!", "BA... NA... NA! Três palminhas! Escute a palavra e bata palminhas comigo!")];
+  if(pl.rhyme) return [
+    sc(lsRow(lsE("🍞")+lsE("✋",.4)), "PÃO e MÃO rimam!", "Escute: PÃO... MÃO! Terminam com o mesmo sonzinho! Quando o fim é igualzinho, a gente diz que RIMA!"),
+    sc(lsE("🎵"), "Rimar é quase cantar!", "GATO e PATO! BOLA e SACOLA! Rimar é quase uma música! Escute o fim das palavras e ache a rima!")];
+  if(pl.flash) return [
+    sc(lsRow(lsE("👀")+lsE("⚡",.4)), "Seu olho é rápido!", "Seu olho é muito esperto! Ele consegue VER quantos tem, sem nem contar! Igual quando você olha um dado!"),
+    sc(lsCount(pl.flash>3?5:3,"🔵",.25), "Olhe... e já sabe!", "Os pontinhos vão aparecer e se esconder rapidinho! Olhe bem... e toque no número que o seu olho viu!")];
+  if(pl.snd) return [
+    sc(lsRow(lsE("🐒")+lsE("🧳",.4)), "MACACO e MALA começam igual!", "Escute o comecinho: mmm, MACACO! mmm, MALA! Os dois começam com o mesmo sominho: mmm!"),
+    sc(lsE("🗣️"), "Escute o comecinho!", "Toda palavra começa com um sominho! Escute bem o comecinho e ache a figurinha que começa igual!")];
+  if(pl.am5) return [
+    sc(lsRow(lsE("🖐️")), "A mãozinha tem 5 dedinhos!", "Olha a sua mãozinha: ela tem CINCO dedinhos! O cinco é um amigão dos números!"),
+    sc(tenFrame(3,5), "Tem 3... faltam 2!", "Olha a casinha do cinco: tem três bolinhas! Faltam DUAS pra encher! O três e o dois são amigos do cinco!")];
+  if(pl.mix2) return [
+    sc(lsRow(lsE("🎪")+lsE("🎉",.4)), "Vamos brincar com tudo!", "Palminhas, rimas e olho de águia! Agora vamos brincar com tudo misturado! Você é incrível!")];
   if(pl.n){
     const n = pl.n, e = pick(KIDS_EMO);
     return [
@@ -3965,6 +4088,41 @@ function numOpts(correct, min, max, n){
   return shuffle([...set]).map(v=>({label:String(v), correct:v===correct}));
 }
 
+/* v3.31 — SENSO NUMÉRICO visual: subitizing (ver a quantidade sem contar, como
+   num dado), frame de 10 (base do "fazer 10") e reta numérica (Siegler) */
+const DICE_POS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+function diceDots(n, hide){
+  const pos = DICE_POS[n] || DICE_POS[6];
+  let h = `<div class="dice-grid${hide?" flash-box":""}">`;
+  for(let i=0;i<9;i++) h += `<span class="dice-dot"${pos.includes(i)?"":' style="visibility:hidden"'}></span>`;
+  return h+`</div>`;
+}
+function tenFrame(n, total){
+  const T = total||10;
+  let h = `<div class="ten-frame">`;
+  for(let i=0;i<T;i++) h += `<div class="tf-cell${i<n?" fill":""}">${i<n?"🔵":""}</div>`;
+  return h+`</div>`;
+}
+function numberLine(min, max, target){
+  let h = `<div class="nline">`;
+  for(let i=min;i<=max;i++)
+    h += `<div class="nl-tick${i===target?" nl-target":""}"><span class="nl-mark">${i===target?"⭐":""}</span><span class="nl-bar"></span><span>${i===target?"❓":i}</span></div>`;
+  return h+`</div>`;
+}
+const xGroups = (m,n,e) => `<div class="x-groups">${Array.from({length:m},(_,i)=>`<div class="x-group" style="animation-delay:${i*.1}s">${e.repeat(n)}</div>`).join("")}</div>`;
+/* flash de pontos: aparece, some — e a criança responde o que o OLHO viu */
+function flashQ(maxN){
+  const n = 1+rand(maxN);
+  return {
+    kind:"opts", prompt:"Olhe rápido! Quantos eram? ⚡",
+    visual: diceDots(n, true),
+    speech:[ptT("Olhe bem rápido! Os pontinhos vão se esconder... Quantos eram?")],
+    hintSpeech: ptT("Seu olho de águia já viu! Confie nele e toque no número!"),
+    okSpeech:`Eram ${n}! Seu olho de águia viu sem contar!`,
+    options: numOpts(n, Math.max(1,n-2), Math.min(maxN,n+2), 3).map(o=>({...o, say:{t:o.label+"!", lang:"pt-BR"}}))
+  };
+}
+
 /* v3.14 — gera problema para uma OPERAÇÃO específica (não aleatório):
    permite domínio por operação (+1, +2, ..., -1, ..., dobros, complementos do 10) */
 function mathOpQ(op){
@@ -4013,9 +4171,9 @@ function mathOpQ(op){
     const n = +op.slice(1);
     return {
       kind:"opts", prompt:`Quanto falta pro 10? ${n} + ?`,
-      visual:`<span class="num-big">${n} + ? = 10</span>`,
-      speech:[ptT(`Quanto falta pro dez? Tem ${n}, quanto mais precisa pra chegar em dez?`)],
-      hintSpeech: ptT(`Conte a partir de ${n} até dez: ${n}... quantos passos?`),
+      visual: tenFrame(n)+`<div class="num-big" style="font-size:clamp(26px,7vw,40px);margin-top:6px;">${n} + ? = 10</div>`, /* v3.31 — frame de 10 (CPA) */
+      speech:[ptT(`Olha o quadro do dez! Tem ${n} bolinha${n>1?"s":""}... quantas casinhas vazias faltam pra encher o dez?`)],
+      hintSpeech: ptT(`Conte as casinhas vazias do quadro, uma por uma!`),
       okSpeech:`${n} mais ${10-n} é dez!`,
       options: numOpts(10-n, 1, 9, 5),
       dkey:"M:"+op
@@ -4024,10 +4182,15 @@ function mathOpQ(op){
   if(op[0]==="x"){ /* v3.28 — tabuada conta por conta: x7:8 = 7×8 */
     const [m,n] = op.slice(1).split(":").map(Number);
     const r = m*n;
+    /* v3.31 — CPA (Singapura): nas contas pequenas, mostra os grupinhos DE VERDADE
+       antes do símbolo — 3×4 são 3 grupinhos com 4 em cada */
+    const pict = r <= 20;
     return {
       kind:"opts", prompt:`Quanto é ${m} × ${n}?`,
-      visual:`<span class="num-big">${m} × ${n} = ?</span>`,
-      speech:[ptT(`Tabuada do ${m}! Quanto é ${m} vezes ${n}?`)],
+      visual: pict? xGroups(m,n,e)+`<div class="num-big" style="font-size:clamp(28px,8vw,44px);margin-top:6px;">${m} × ${n} = ?</div>`
+                  : `<span class="num-big">${m} × ${n} = ?</span>`,
+      speech:[ptT(pict? `Tabuada do ${m}! Olha: ${m} grupinhos com ${n} em cada! Quanto é ${m} vezes ${n}?`
+                      : `Tabuada do ${m}! Quanto é ${m} vezes ${n}?`)],
       hintSpeech: ptT(TAB_HINTS[m] ? TAB_HINTS[m](n) : `Conte de ${m} em ${m}, ${n} vezes!`),
       okSpeech:`${m} vezes ${n} é ${r}!`,
       options: shuffle([r, r-m, r+m, r+2*m, r-2*m].filter((v,i,arr)=>v>0&&arr.indexOf(v)===i)).slice(0,5).map(v=>({label:String(v),correct:v===r})),
@@ -4063,6 +4226,7 @@ function genMath(lv){
     const max = lv===1?3 : lv===2?5 : (tinyKid()? 5 : 10);
     const n = 1+rand(max), e = pick(COUNT_EMOJIS);
     if(SR && tinyKid() && Math.random()<.5) return countAloudQ(n, emojiGroup(n,e), "desenhos");
+    if(Math.random()<.25) return flashQ(Math.min(max,6)); /* v3.31 — olho de águia: subitizing */
     return {
       kind:"opts", prompt:"Quantos são? Conte com o dedinho!",
       visual: emojiGroup(n,e),
@@ -4083,6 +4247,17 @@ function genMath(lv){
     };
   }
   if(lv===5 || lv===6){ /* sucessor / antecessor */
+    if(Math.random()<.35){ /* v3.31 — reta numérica (Siegler): a casinha dos números */
+      const t = 1+rand(9);
+      return {
+        kind:"opts", prompt:"Que número mora aqui? ⭐",
+        visual: numberLine(0,10,t),
+        speech:[ptT("Olhe a reta dos números! Que número mora na casinha da estrela?")],
+        hintSpeech: ptT(`Olhe os vizinhos: vem depois do ${t-1} e antes do ${t+1}!`),
+        okSpeech:`É o ${t}! Ele mora entre o ${t-1} e o ${t+1}!`,
+        options: numOpts(t, Math.max(0,t-2), Math.min(10,t+2), 3)
+      };
+    }
     const after = lv===5;
     const n = after? 1+rand(8) : 2+rand(8);
     const correct = after? n+1 : n-1;
@@ -5149,6 +5324,7 @@ function openParents(){
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.28:</b> a Matemática agora ensina a <b>tabuada inteira, decorada conta por conta</b> — primeiro 2, 5 e 10 (mais fáceis), depois 3, 4, 6, 7, 8 e 9, cada um com seu truque na aulinha, e no final o <b>Mestre da Tabuada</b> com as contas mais difíceis (7×8!). Cada conta precisa de 3 acertos limpos pra ficar decorada, e aparece no mapa de domínio. Quem já tinha passado das tabuadas volta pro nível da Tabuada do 3 pra decorar as novas (moedas, figurinhas e recordes preservados). O Português ganhou <b>2 fases silábicas novas</b>: palavras de 2 pedaços com <b>sílaba grande</b> (POR-TA, FES-TA) e de 3 pedaços com sílaba grande (CAS-TE-LO, FOR-MI-GA) — o degrau que faltava entre as palavras fáceis e as difíceis.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.29:</b> chegou a trilha 🧸 <b>Kids</b>, feita pros bem pequenos (3 anos): ensina os números de 1 a 10 <b>um por um</b> (1, 2, 3 → brincar misturado → 4, 5, 6...) e depois as vogais <b>A, E, I, O, U</b> com palavrinhas ilustradas (A de ABELHA 🐝, E de ELEFANTE 🐘). Níveis curtinhos de 4 acertos, tudo falado em voz alta, aulinha da Corujinha antes de cada número e letrinha — dá pra jogar sem saber ler nada.</p>
     <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.30:</b> o microfone 🎤 agora abre <b>junto com a pergunta</b> — a criança pode responder antes mesmo do jogo terminar de falar o enunciado (antes, a resposta dela se perdia porque o mic só abria no fim). O jogo filtra o eco da própria voz pra não se auto-responder, e <b>fecha o microfone assim que ouve a resposta certa</b>, parando a fala na hora pra comemorar.</p>
+    <p style="font-size:.9em;opacity:.85;">🆕 <b>v3.31:</b> melhorias guiadas pela ciência: a trilha Kids 🧸 ganhou a <b>fase 2</b> (níveis 20 a 28) com <b>consciência fonológica</b> — palminhas das sílabas 👏, rimas 🎵 e "começa com o mesmo sominho" 🗣️, os maiores preditores de alfabetização segundo a PNA — e <b>senso numérico</b>: olho de águia ⚡ (subitizing: ver a quantidade sem contar, como num dado) e amigos do 5 🖐️. Na Matemática 🔢: flash de pontinhos nos níveis de contagem, <b>reta numérica</b> nos níveis de vizinhos (pesquisa de Siegler), o "quanto falta pro 10" agora mostra o <b>quadro de 10</b> bolinhas, e a tabuada mostra os <b>grupinhos de verdade</b> nas contas pequenas (concreto → figura → símbolo, método de Singapura).</p>
     <h3>💡 Dicas</h3>
     <ul>
       <li>Use <b>Chrome ou Edge</b> para a melhor voz em português e inglês.</li>
